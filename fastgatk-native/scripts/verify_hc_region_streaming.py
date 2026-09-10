@@ -64,6 +64,25 @@ def main() -> int:
         result = run(binary, [*common, "--stream-by-region", "500",
                               "-O", str(tiled), "--output-manifest", str(tiled_manifest)])
         assert result.returncode == 0, result.stderr
+        # SCOPE OF THIS ASSERTION - read before relying on it.
+        # This holds for THIS fixture, but it is NOT a general property of
+        # --stream-by-region, and the general form is provably unattainable:
+        # GATK's own gVCF output depends on where the -L interval starts
+        # (reference-block granularity, annotations, and even phasing change
+        # with the window), while the streamed path evaluates each tile window
+        # separately and stitches the results.  A tile therefore faithfully
+        # reproduces a non-streamed GATK run ON ITS OWN WINDOW, which is not the
+        # same as a single run on the user's interval.
+        # Measured counterexample: fixtures/chr20/mnp.bam with
+        # -L 20:10019901-10020710 (48 records non-streamed and in GATK) yields
+        # only 20 records at --stream-by-region 500, because 29 <NON_REF> blocks
+        # collapse into one; the tile's output is byte-identical to a
+        # non-streamed run on that tile's halo window, and pinned GATK produces
+        # the same collapsed block for that window.
+        # Full evidence:
+        # fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md
+        # (sections "Wave 0" and "Wave 1").  Treat this as a fixture-scoped
+        # regression guard, not as a parity claim for the flag.
         assert keys(records(tiled)) == keys(records(normal))
         metadata = json.loads(tiled_manifest.read_text(encoding="utf-8"))
         telemetry = metadata["telemetry"]
