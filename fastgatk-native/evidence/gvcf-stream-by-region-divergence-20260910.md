@@ -151,6 +151,36 @@ third_party/jdk17/bin/java -Xmx1g -jar \
 **(D2) 注释 read 作用域错误。** 同前：10020680 处
 `RAW_MQandDP` 由 `28800,8` 变为 `97200,27`，`SB` 由 `0,0,3,3` 变为 `0,0,0,0`。
 
+进一步测量表明 **D2 是「分块相关」的，而非某个固定 tile 边界的局部效应**。
+同一 locus 在不同分块下取值如下（默认 pad=100）：
+
+| `--stream-by-region` | 10020680 的 `RAW_MQandDP` | `SB` | 与非流式一致 |
+| ---: | --- | --- | --- |
+| 非流式 | `28800,8` | `0,0,3,3` | 基准 |
+| 200 | `97200,27` | `0,0,0,0` | 否 |
+| 300 | `97200,27` | `0,0,0,0` | 否 |
+| 405 | `28800,8` | `0,0,3,3` | 是 |
+| 500 | `28800,8` | `0,0,3,3` | 是 |
+| 600 | `97200,27` | `0,0,0,0` | 否 |
+| 700 | `28800,8` | `0,0,3,3` | 是 |
+| 810 | `28800,8` | `0,0,3,3` | 是 |
+
+并且 `--assembly-region-padding` 也会翻转这个结果（tile=500 在 pad=100 正确、pad=300 错误）。
+即：**流式路径的注释不满足「分块不变性」，而非流式路径按构造满足。**
+
+已定位到的可疑代码位置（尚未证实，供修复用）：`run_region_streaming` 的每 tile 渲染调用
+
+```cpp
+auto result = fastgatk::calling::run(decoded.reads, references, tile_options);   // hc_call.cpp:6666
+...
+? gvcf(metadata_reader, result, ..., &decoded.reads,                              // hc_call.cpp:6674-6681
+       tile_options.informative_read_overlap_margin, options.max_alternate_alleles)
+```
+
+`decoded.reads` 是 **tile 的 halo 读取批**，`tile_options` 携带该 tile 的
+`interval_start/end` 与 `informative_read_overlap_margin`。注释证据集看起来由此二者共同决定，
+因此随分块变化。注意不能简单归因为「batch 过大」：tile=810 的 batch 更大，却给出正确的 `28800,8`。
+
 ### 仍未完成：定位到具体代码
 
 候选仍是参考块的两个构造器（精确的 `build_reference_blocks` vs 近似的
