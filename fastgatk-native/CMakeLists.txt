@@ -1411,6 +1411,17 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_gvcf_stream_overlapping_indels_gatk_oracle.py")
     set_tests_properties(fastgatk-hc-gvcf-stream-overlap-diagnostic PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>")
+    # STRICT gate for the fixed -L-window-invariance defect (D2): a published
+    # allele must be annotated from the AssemblyRegion owner that actually
+    # carries its PairHMM context, so RAW_MQandDP/SB at 20:10020680 must equal
+    # pinned GATK's per-window value in every window.  This is a hard assertion
+    # (the script exits non-zero on mismatch) and it is green as of the
+    # twin-owner fix; it runs pinned GATK across 12 windows (~90 s).
+    add_test(NAME fastgatk-hc-window-invariance-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_window_invariance_gatk_oracle.py")
+    set_tests_properties(fastgatk-hc-window-invariance-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).

@@ -237,10 +237,31 @@ pinned GATK 4.6.2.0 不一致：
 完整证据、最小复现命令与根因分析见
 `fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md`。
 
-### 第 2 轮定位进展（第 4–8 轮已收敛；方案 1 被否决，修复仍未落地）
+### 第 2 轮定位进展（**D2 已修复并落地**；D1/D3 经判别实验证明非缺陷）
 
-已把基准钉死：**非流式 native 与 GATK 在该区间上全部 48 条数据行逐字段相同**
-（含 29 块碎片结构），因此非流式是对的、流式是偏离方。
+**最新状态（第 5 轮起）：D2 —— 唯一被证明「同一 `-L` 窗口下 native ≠ GATK」的真 bug —— 已修复。**
+改动仅在 `fastgatk-native/src/hc_call.cpp`（+53/-2）：新增 `owner_has_pairhmm_context()`，
+并在注释时优先选用**真正携带该等位基因 PairHMM context 的 AssemblyRegion owner**
+（twin owner），历史顺序保留为回退。根因是同一等位基因出现在多个 owner 中，
+被注释用的那个 owner 从未为其请求 PairHMM，故 context ordinal 是哨兵 `UINT32_MAX`、
+likelihood 行为 `-inf`，导致 MQ 证据门落到几何回退谓词（27 条读而非 GATK 的 8 条）
+且 strand 证据归零。
+
+门禁（已注册进 CTest，strict 形态，当前绿）：
+`fastgatk-hc-window-invariance-gatk-oracle`（12 窗口逐窗口比对 GATK，
+外加 `POS 10020680` 的 `RAW_MQandDP`/`SB` 门控，约 50–90 s）。
+
+**分类收敛结论（重要，取代此前的「三类偏离 = 三个待修缺陷」）**：判别实验证明
+**D1（凭空 phasing）与 D3（参考块粒度）都不是缺陷** —— pinned GATK 自己在相应窗口下
+就产生同样的 phased 行与同样的退化块，native 逐字节相同。它们与
+`--stream-by-region` 的关系属**范围/语义问题**：GATK 的 gVCF 输出本身依赖 `-L` 窗口
+（块粒度、注释值、是否定相都会变），而流式路径按 tile 窗口分别求值再拼接，
+**原理上无法**复现「对用户 `-L` 跑一次」的结果。处置选项：显式定义其语义并记录为
+已文档化分歧（GATK 无该开关），或放宽内存上界、放弃分块。
+连带影响：`fastgatk-hc-region-streaming-contract` 断言「流式 key 集合 == 非流式」
+在当前实现上原理性不可满足，应重新定义或降级为语义契约。
+
+以下为 D2 的定位过程（保留作为证据链）。
 
 三类偏离（第 3 类为本轮新发现）：
 
