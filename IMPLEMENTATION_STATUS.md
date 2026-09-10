@@ -361,25 +361,43 @@ Track B 的**退出码分歧**（某 `--alleles` 记录经 Event 最小化后 AL
   说明：`ctest -O`（output log）**不会**记录通过用例的 stdout，只有 `-V` 才会；因此
   「统计静默跳过」必须用 `-V`。这是上一轮误判「0 skip」的原因，已修正。
 
-## 下一步执行顺序
+## 下一步执行顺序（第 12 轮更新；修复仍**未落地**）
 
-1. ~~结束并确认 Serial 构建，完成 Serial oracle。~~ 已完成，见「最近验证状态」。
-2. ~~跑完整 HC/Mutect2 回归。~~ 已完成；并已取得全量双后端 280/280 证据。
-3. 第 1 轮差异清单已完成第一条（Track A 的 `--stream-by-region` P1）；
-   Track B / Track C 的剩余部分见「执行状态与阻塞」。
-4. **单线串行**落地修复，按下列优先级（每步：改 → 双后端增量构建 → 定向 oracle + 72 子集 →
-   全量回归 → commit）：
-   - **优先级 1：`-L` 窗口依赖的 annotation evidence**（`*`/spanning-deletion 记录的
-     `RAW_MQandDP`/`SB`）。这是**非流式路径**就会复现的 GATK parity 缺陷，影响面比流式更广。
-   - **优先级 2：流式路径 D1（凭空 phasing）与 D3（参考块粒度）**，Track D 已分别定位到
-     `gvcf()` 的 phasing 块（`hc_call.cpp:4085-4195`）与 tile 内逐 locus RCM 取值。
-   - **优先级 3：Track B 的 `--alleles` 注入缺失与退出码分歧**（含 GATK 会中止而 native 静默
-     成功的那一例）。
-   修复后把对应 oracle 的断言由 diagnostic 改为真断言并注册进 CTest，
-   注册需在主会话统一改 `fastgatk-native/CMakeLists.txt`（避免并行冲突）。
-5. 补齐 Track B（`--alleles` 复杂注入）与 Track C 的两个复核脚本；子代理配额恢复前由主会话
-   执行，或等配额恢复后重新并行下发。
+1. ~~结束并确认 Serial 构建，完成 Serial oracle。~~ 已完成。
+2. ~~跑完整 HC/Mutect2 回归。~~ 已完成；最新为第 10 轮对 commit `03b02b7` 的
+   双后端全量 **280/280**（`.diag/regression/20260911-010134/`），套件规模在第 11 轮
+   注册诊断 oracle 后为 281（OpenMP）。
+3. ~~第 1 轮三路审计~~ 全部完成，报告在
+   `fastgatk-native/evidence/2026-09-10-parallel-audit/`（Track B / C / D）
+   与 `fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md`（Track A）。
+4. **落地修复（唯一未完成的交付）**。当前状态与建议：
+
+   - **D2（`-L` 窗口依赖的 `RAW_MQandDP`/`SB`）**：根因、产生点、验收判据都已定案，
+     但**方案 1（merge 处成组去重）已被验收判据否决**（窗口 A 0 → 4 行回归、
+     窗口 B 未修复），不应再试。**唯一推荐方向是方案 2**：渲染/注释处优先采用
+     **已配对孪生**，且 **strand 路径必须一并采用孪生的 likelihood 行**
+     （只换 context ordinal 治不了 `SB`）—— 属**中等改动**，不是小修。
+     验收判据：两个窗口（`20:10019901-10020710`、`20:10020381-10020710`）下该行都须为
+     `RAW_MQandDP=28800,8` 且 `SB=0,0,3,3`，且窗口 A 的 48 行保持与 GATK 逐字节相同；
+     另需复核 `10020421/10020431` 的第三种错误状态。详细交接见上述 evidence 文件
+     「第 6/7/8 轮」各节。
+   - **投入产出提示**：D2 已消耗 5 轮且结论是「小修不够」。若继续不划算，
+     **Track B 的退出码分歧**（`--alleles` 记录经 Event 最小化后 ALT 为空时，
+     GATK exit 3 而 native exit 0 静默成功）形状最收敛、验收只需比对退出码，
+     是更划算的替换目标；注意仓库内**没有现成的 `makeMinimalRepresentation` helper**。
+   - 优先级 2：流式 D1（凭空 phasing，`hc_call.cpp:4085-4195`）与 D3（参考块粒度，
+     tile 内逐 locus RCM 取值）。
+   - 优先级 3：Track B 的 `--alleles` 注入缺失（重叠 feature event 丢行）。
+   - 每步都要：改 → 双后端增量构建 → 定向 oracle + 72 子集 → 全量回归 → commit。
+     任一判据不过立即 `git checkout` 回退（第 8 轮已示范该纪律）。
+5. **诊断 oracle 已注册**：`fastgatk-hc-gvcf-stream-overlap-diagnostic`（第 11 轮）。
+   它是 diagnostic 形态（永远 exit 0）；**修复落地后必须把它的比较改成硬断言
+   （streamed == non-streamed == GATK）并加 `FASTGATK_REQUIRE_GATK_ORACLE=1`**，
+   否则该缺陷会一直以「绿色但错误」的形式存在。
 6. 补齐静默 skip 的 32 个候选测试（补 `FASTGATK_REQUIRE_GATK_ORACLE=1`）与 tool audit 口径，
-   使百分比与证据同源。
-7. 只有当每个核心选项都有匹配范围的当前证据时，才讨论「1:1 完成」。
+   使百分比与证据同源（见「待处理的口径问题」）。
+7. **委派注意**：子代理必须显式用 `provider=deepseek-official`
+   （写 `deepseek` 会直接失败；`subagent` 工具不暴露 provider，需经 `workflow` 覆盖）。
+   且 **agent 结论必须先用插桩/实验独立复核再作为行动依据**（第 5 轮已因违反此条而靶子出错）。
+8. 只有当每个核心选项都有匹配范围的当前证据时，才讨论「1:1 完成」。
 
