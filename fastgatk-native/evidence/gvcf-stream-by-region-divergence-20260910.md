@@ -94,37 +94,84 @@ third_party/jdk17/bin/java -Xmx1g -jar \
 比非流式少 28 条。也就是说：**该契约在当前实现上并非普遍成立，而是依赖夹具**。
 本次发现的用例应补进该 oracle，作为回归守卫。
 
-## 根因假设（未验证，供第 2 轮定位）
+## 根因分析（第 2 轮进展）
 
-1. **注释 read batch 取错范围**：流式路径把 tile 范围的 read batch（27 条）交给了
-   locus 级注释重算，而非与该 locus 重叠的 reads（8 条），于是 `RAW_MQandDP` 反映的是
-   tile 统计；`SB` 退化为全 0，可能同源于所传 reads 缺少该 locus 的链/碱基计数。
-   这与 `IMPLEMENTATION_STATUS.md` 记录的「流式 gVCF 输出路径已将实际 read batch 传给
-   注释重算，而非使用空 read 指针」改动直接相关——该改动可能传入了**非空但范围错误**的 batch。
-2. **参考块边界由 tile 作用域决定**：流式写入器在 tile 内把相邻 `<NON_REF>` 块合并，
-   而非流式写入器按 locus 级 active 状态切块；tile 边界与 active 状态不一致时块边界丢失。
+### 已排除：`RegionGvcfStitcher::can_merge` 过宽
 
-两者都位于 Host 路径（两个后端输出完全相同，排除 kernel 差异）。
+初版假设是跨 tile 拼接器合并了本应独立的参考块。**该假设已被数值证据证伪**：
+`RegionGvcfStitcher::merge()`（`fastgatk-native/src/hc_call.cpp:5864`）对 PL 取逐元素最小值。
+若 tile=500 的那一条 28 块合并记录真是拼接器产生的，其值应为
+`PL=0,26,494`、`GQ=26`、`MIN_DP=12`（对 29 个块的逐元素最小值）。
+
+实测 tile=500 该记录为：
+
+```text
+10020230  ...  END=10020428  ...  GT:DP:GQ:MIN_DP:PL   0/0:26:0:21:0,0,0
+```
+
+即 `PL=0,0,0`、`GQ=0`、`MIN_DP=21` —— 与拼接器合并的签名不符。**拼接器不是本例的成因**，
+虽其 `can_merge` 只比较 `pl.size()` 而不比较 PL 值这一点仍值得单独复核（见「未证明」）。
+
+### 已确认：退化的参考置信度来自 tile 自身
+
+`PL=0,0,0 / GQ=0` 意味着这些 locus **没有参考置信度似然值**，而不是"被合并"。
+配合：`--stream-by-region 300` 时该窗口完全落在单个 tile 内部，输出与 GATK 的 29 块结构
+**逐条相同**；只有 tile 边界切过该窗口时才退化。因此成因是
+**tile 边界处的参考置信度构造**，不是跨 tile 合并。
+
+### 候选机制（尚未证实到具体代码路径）
+
+参考块有两个构造器：
+
+| 构造器 | 位置 | 输入 | 被谁调用 |
+| --- | --- | --- | --- |
+| `build_reference_blocks`（精确） | `calling_pipeline.cpp:3295` | `rcm_loci` + `reference_confidence_observations` + `corrected_reads`（locus 级） | `calling_pipeline.cpp:15214`（`assembly_region_independent_pass` 分支） |
+| `build_profile_local_reference_blocks`（近似） | `calling_pipeline.cpp:13111` | `activity.profile_regions` + `active_reads`（分区级） | `calling_pipeline.cpp:15206`（无 calling region 时）与 `15672`（partition-merge 路径） |
+
+近似构造器使用**分区级**的 profile regions 与 `active_reads`，若它按分区而非按 locus 推导
+参考置信度，则正好同时解释两类症状：
+
+- 一个 profile region 覆盖整段 → 单块、`PL=0,0,0`；
+- 注释反映分区读取集合 → `RAW_MQandDP=97200,27`（分区 27 条）与 `SB=0,0,0,0`。
+
+**尚未证明**流式路径实际走到上述哪一个调用点。已尝试用调试开关定位：
+`FASTGATK_DEBUG_GVCF_EMISSION=1` 会打印 `[FASTGATK_GVCF_BLOCK_INPUT] stage=...`
+与 `[FASTGATK_GVCF_EMISSION] pos=... symbolic-pl=unavailable`；在本夹具上
+**流式与非流式都只出现 `stage=direct`**，未触发 `stage=merged`，因此该实验对定位无结论。
+注意 `symbolic-pl=unavailable` 与观察到的 `PL=0,0,0` 可能同源，值得优先追。
+
+### 与状态文档旧记录的冲突
+
+`IMPLEMENTATION_STATUS.md` 曾记录「流式 gVCF 输出路径已将实际 read batch 传给注释重算，
+而非使用空 read 指针」，并据此视为已修正。本次结果表明：该改动**可能传入了非空但范围错误的
+read batch（分区级而非 locus 级）**，因此"不再用空指针"并不等于"数值正确"。
 
 ## 已证明 / 未证明
 
 **已证明**
 
+- 非流式 native 与该区间上的 GATK 4.6.2.0 **全部 48 条数据行逐字段相同**（`diff` 无输出），
+  包括 10020231–10020428 的 29 块碎片结构。这是本报告的基准：非流式路径是正确的一方。
 - 在 `fixtures/chr20/mnp.bam` + `20:10019901-10020710` 上，`--stream-by-region N`
   （N < 区间长度）与非流式输出不一致：记录数最多少 28 条；tile=300 时字段
-  `RAW_MQandDP`/`SB` 不同。
-- 非流式 native 与该区间上的 GATK 4.6.2.0 在记录数与 20:10020680 行上一致。
-- OpenMP 与 Serial 的流式偏离完全相同（Host 路径问题）。
+  `RAW_MQandDP`/`SB` 不同；tile=500 时出现 `PL=0,0,0 / GQ=0` 的退化块。
+- 偏离只在 tile 边界切过该窗口时出现（tile=300 完全落在窗口外 → 与 GATK 逐条相同）。
+- OpenMP 与 Serial 的流式偏离完全相同（Host 路径问题，非 kernel）。
 - 覆盖范围本身未丢失：tile=500 时 28 条被合并进 `10020230–10020428` 单块，
   10 条变异记录逐一保留。
+- **已证伪**：拼接器 `can_merge` 过宽不是本例成因（数值签名不符，见上文）。
 
 **未证明**
 
+- 未定位到具体代码行；`build_profile_local_reference_blocks` 与
+  `build_reference_blocks` 的取舍只是候选机制，未证实流式路径走到哪一个调用点。
+- `RegionGvcfStitcher::can_merge` 只比较 `pl.size()` 而不比较 PL 值：本例未触发，
+  但在其他夹具上仍可能造成不正确的块合并，需单独验证。
 - 未在该区间之外确定偏离边界（哪些夹具会触发、是否所有多重叠 indel 窗口都触发）。
-- 未定位到具体代码行；上述根因仅为假设。
-- 未验证 `--stream-by-contig`、`--stream-by-region` 与 `--max-alternate-alleles`、
-  read-overlap margin 等选项组合。
-- 未验证下游影响（如 GenotypeGVCFs 对块粒度的敏感度）。
+- 未验证 `--stream-by-contig`、以及与 `--max-alternate-alleles`、read-overlap margin
+  等选项的组合。
+- 未验证下游影响（如 GenotypeGVCFs 对块粒度与 `PL=0,0,0` 块的敏感度）。
+- **修复尚未开始**：本报告不含任何代码改动。
 
 ## 复现脚本
 

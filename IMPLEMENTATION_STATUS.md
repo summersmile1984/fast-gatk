@@ -200,8 +200,32 @@ pinned GATK 4.6.2.0 不一致：
 - 现有测试 `fastgatk-hc-region-streaming-contract` 断言 tile=500 的 key 集合与非流式相同，
   但该断言在本次夹具上不成立 —— 说明该契约当前**依赖夹具**，需补回归守卫。
 
-完整证据、最小复现命令与根因假设见
+完整证据、最小复现命令与根因分析见
 `fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md`。
+
+### 第 2 轮定位进展（修复**尚未开始**）
+
+已把基准钉死：**非流式 native 与 GATK 在该区间上全部 48 条数据行逐字段相同**
+（含 29 块碎片结构），因此非流式是对的、流式是偏离方。
+
+- **已证伪**的假设：跨 tile 拼接器 `RegionGvcfStitcher::can_merge` 过宽。按
+  `merge()` 的签名（PL 逐元素最小值）应得 `PL=0,26,494 / GQ=26 / MIN_DP=12`，
+  实测为 `PL=0,0,0 / GQ=0 / MIN_DP=21`，不符。注：`can_merge` 只比较 `pl.size()`
+  而不比较 PL 值，这一隐患需单独复核。
+- **已确认**：`PL=0,0,0 / GQ=0` 说明该段**没有参考置信度似然值**（不是"被合并"），
+  且只在 tile 边界切过窗口时出现 —— tile=300（窗口完全在单个 tile 内）与 GATK 逐条相同。
+- **候选机制（未证实到调用点）**：参考块有两个构造器 —— 精确的
+  `build_reference_blocks`（`calling_pipeline.cpp:3295`，用 locus 级
+  `rcm_loci`/`reference_confidence_observations`/`corrected_reads`）与近似的
+  `build_profile_local_reference_blocks`（`calling_pipeline.cpp:13111`，用分区级
+  `activity.profile_regions`/`active_reads`）。后者若按分区而非按 locus 推导参考置信度，
+  可同时解释块退化与 `RAW_MQandDP=97200,27`/`SB=0,0,0,0`。
+- 调试开关 `FASTGATK_DEBUG_GVCF_EMISSION=1` 在本夹具上流式/非流式都只出现
+  `stage=direct`，未触发 `stage=merged`，该实验对定位无结论。
+- 遗留线索：调试输出中的 `symbolic-pl=unavailable` 与 `PL=0,0,0` 可能同源，优先追查。
+
+**这同时暴露了一个方法学教训**：状态文档曾把「流式路径已传实际 read batch（非空指针）」
+当作已修正的证据，但"非空"不等于"范围正确"。修复必须由 oracle 判定，不能由改动描述判定。
 
 ### 并行原则（本仓库硬约束）
 
