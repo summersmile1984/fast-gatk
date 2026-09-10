@@ -85,40 +85,48 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 两项均已通过。前者覆盖多 ALT、锚定 indel、过滤 feature、两个 filtered-feature 兼容开关、空 pileup 与 gVCF。
 
-## 最近验证状态
+## 最近验证状态（当前二进制的实测证据）
 
-| 验证项 | OpenMP | Serial | 备注 |
+证据目录 `.diag/regression/`（含各次全量日志与自动生成的证据块）。
+
+| 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 四倍体多 ALT / max ALT / max genotype oracle | 通过 | 本轮改动前通过 | 最新 Host 注入改动后仍需复跑 Serial。 |
-| chr20 MNP + gVCF `*` + max ALT oracle | 通过 | 本轮改动前通过 | 新增的重叠 given-allele 用例已在 OpenMP 通过。 |
-| 通用 HC `--alleles` oracle | 通过 | 待本轮复跑 | 含多 ALT、indel、filtered feature、gVCF。 |
-| HC/Mutect2 完整回归 | 最近一次改动前 72/72 通过 | 未作为本轮证据 | 最新 Host 注入、gVCF 修改后必须重跑。 |
+| 全量回归 | **280/280 通过**（1002s） | **280/280 通过**（1000s） | 双后端并行执行 |
+| HC/Mutect2 子集 | **72/72 通过**（261s） | **72/72 通过**（268s） | `omp-hc-mutect2.log` / `serial-hc-mutect2.log` |
+| `verify_hc_alleles_gatk_oracle.py` | 通过（86s） | 通过（112s） | 原「待本轮复跑」项已结清 |
+| `verify_hc_complex_multiallelic_oracle.py` | 通过（45s） | 通过（33s） | 四倍体 / max-ALT / max-genotype-count |
+| `verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py` | 通过（47s） | 通过（53s） | MNP + gVCF `*` + max-ALT |
 
-> 注意：表中“本轮改动前通过”不是最新实现的完成证据，只说明相同方向的历史基线。最终结论以最新二进制的完整回归为准。
+上述结论对应的二进制：`fastgatk-native/build/fastgatk-hc-call`（17:03）与
+`fastgatk-native/build-serial/fastgatk-hc-call`（17:08）。两者都比当时**全部**源文件新
+（最新源改动为 `fastgatk-native/src/calling_pipeline.cpp` 17:03），因此本轮 Host 注入与
+gVCF 改动确实被这轮回归覆盖。
+
+已核销的历史条目：`fastgatk-mutect2-gvcf-reference-blocks-gatk-contract` 曾被
+`LastTestsFailed.log`（11:58）记为失败，实为陈旧记录；当前单跑 7.65s 通过。
+
+> 注意：本节的绿色只对本节记录的二进制与 git 版本有效。任何生产代码改动都必须重新取得
+> 证据，不得沿用本节数字。
 
 ## 未完成事项
 
 ### 近期必须完成
 
-1. 完成最新改动后的 Serial 编译与下列 oracle：
+1. ~~完成最新改动后的 Serial 编译与点名 oracle~~
+   **已完成（2026-09-10）**：`fastgatk-native/build-serial/fastgatk-hc-call` 已比全部源文件新；
+   三个点名 oracle 在 OpenMP 与 Serial 双后端全部通过（见「最近验证状态」）。
+
+2. ~~运行最新二进制的完整 HC/Mutect2 回归~~
+   **已完成（2026-09-10）**：双后端 HC/Mutect2 子集 72/72；并额外取得全量 280/280 的双后端通过证据。
+   原文要求的命令现由 `run_regression.sh` 统一封装：
 
    ```bash
-   python3 fastgatk-native/scripts/verify_hc_alleles_gatk_oracle.py
-   python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
-     --native fastgatk-native/build-serial/fastgatk-hc-call
-   python3 fastgatk-native/scripts/verify_hc_complex_multiallelic_oracle.py \
-     --native fastgatk-native/build-serial/fastgatk-hc-call
+   fastgatk-native/scripts/run_regression.sh -R 'fastgatk-(hc|mutect2)'
+   fastgatk-native/scripts/run_regression.sh          # 双后端全量
    ```
 
-2. 运行最新二进制的完整 HC/Mutect2 回归，不能使用“修改前 72/72”代替：
-
-   ```bash
-   third_party/toolchains/cmake-4.3.4-linux-x86_64/bin/ctest \
-     --test-dir fastgatk-native/build --output-on-failure \
-     -R 'fastgatk-(hc|mutect2)'
-   ```
-
-3. 对 gVCF 流式/分区路径扩大 oracle 覆盖，特别是多个重叠 indel、符号等位基因、注释 read-overlap margin 与重分块的组合。
+3. 对 gVCF 流式/分区路径扩大 oracle 覆盖，特别是多个重叠 indel、符号等位基因、注释
+   read-overlap margin 与重分块的组合。**进行中**，见「本轮并行工作」。
 
 ### 仍需审计的核心一致性边界
 
@@ -132,10 +140,71 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 - 长尾小工具和不影响 HC / Mutect2 / BQSR 加速库核心价值的工具面。
 - 这些工具不是“已完成”；只是依据项目目标被明确排在核心一致性之后。
 
+## 本轮并行工作（2026-09-10）
+
+三路审计并行进行，全部为「只读审计 + 新增 oracle」模式，**不改生产代码**，
+产出统一为差异清单（最小复现 + GATK/Native 差异行 + 首个差异字段 + 源码级假设）：
+
+| 轨道 | 范围 | 产出 |
+| --- | --- | --- |
+| Track A | gVCF 流式/分区：重叠 indel、符号等位基因 × max-ALT、read-overlap margin、重分块组合 | `.diag/track-a-gvcf-streaming-findings.md` |
+| Track B | `--alleles` / GenotypeGivenAlleles 复杂注入：重复序列 indel、跨 AssemblyRegion、相邻/重叠 feature、排名并列 | `.diag/track-b-alleles-findings.md` |
+| Track C | Mutect2 独立复核：共享 calling pipeline 改动后是否回归、正常样本重放、联合 AssemblyResultSet、somatic gVCF、TLOD 精度 | `.diag/track-c-mutect2-recheck-findings.md` |
+
+并行原则（本仓库的硬约束）：**oracle/夹具/审计可并行；生产代码改动必须单线串行**，
+因为核心路径的全部修复都落在同一批文件（`calling_pipeline.cpp`、`kmer_graph.cpp`、
+`hc_call.cpp`、`mutect2_tool.cpp`），并行编辑必然互相覆盖。所有 oracle 都使用
+`tempfile.TemporaryDirectory`，因此测试进程可安全并发。
+
+## 工程基线
+
+本轮补齐的四项工程前提（此前缺失）：
+
+1. **版本控制**：本仓库此前不是 git 仓库，导致只能写「本轮改动前通过」这类不可验证基线。
+   现已建立基线提交 `180c2bf`（569 文件 / 16MB），跟踪源码、脚本、文档与小型夹具；
+   忽略 `third_party/`、`gatk-source/`、`gatk-rs-source/`、根目录 `testdata/`、`fixtures/`、
+   各构建树、`work/`、`.ab4/`、`.diag/` 等大体积内容与产物。规则见 `.gitignore`。
+   注意：`fastgatk-native/tests/fixtures/` 下的小型夹具**必须入库**（被
+   `verify_overlapping_quality_correction.py` 等引用），因此忽略规则只锚定仓库根目录。
+
+2. **回归入口**：`fastgatk-native/scripts/run_regression.sh` 一条命令跑双后端，
+   存档日志到 `.diag/regression/<时间戳>/` 并生成可直接粘贴的证据块。
+   它同时做陈旧性检查（源码比二进制新则告警）、工具链前置检查，并在
+   **过滤器未命中任何测试时判为「无证据」而非通过**（ctest 本身此时返回 0，会伪造绿色）。
+
+3. **权威构建目录**：只有两个后端是权威的 ——
+   `fastgatk-native/build`（OpenMP）与 `fastgatk-native/build-serial`（Serial）。
+   仓库根目录存在一份 **孤儿 in-source 构建配置**（`CMakeCache.txt`、`Makefile`、
+   `CMakeFiles/`、`CTestTestfile.cmake`，9 月 4 日配置），它只注册 30 个 hc/mutect2 测试、
+   且没有任何二进制产物，并已把生成物散落到 `fastgatk-core/`、`fastgatk-kernels/`、
+   `fastgatk-runtime/`。**不要用它**；引用回归结果时务必写明是哪一份构建目录。
+
+4. **工具链解析**：`java` 不在 PATH 上；oracle 依赖 vendored 的
+   `third_party/jdk17/bin/java` 与
+   `third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar`。
+   历史脚本的解析方式不一致（部分认 `JAVA` 环境变量、部分硬编码）。现已提供
+   `fastgatk-native/scripts/oracle_toolchain.py`：优先级为「显式参数 > `JAVA`/`GATK_JAR`
+   环境变量 > vendored 默认路径」，缺失时给出明确错误。**新写的 oracle 请使用它**，
+   存量脚本的批量迁移属后续工作。
+
+### 待处理的口径问题
+
+- `progress_score.json` 的 `global_score` 为 0.757、`hc_mutect2_bqsr` 为 0.915，但
+  `tool_audit_expected_entries` 声明 48 条而 `tool_audits` 实际只有 2 条（Mutect2 0.833、
+  FilterMutectCalls 0.912）。本文件的 78% / 93% 与该分数目前**没有同源证据链**，
+  在补齐 tool audit 之前，两个数字都只能当作项目管理估计。
+- **静默 skip 风险**：117 个 `verify_*.py` 在缺少 GATK/oracle 输入时会打印
+  `{"status":"skip"}` 并返回 0；注册的 267 个测试中只有 134 个设置了
+  `FASTGATK_REQUIRE_GATK_ORACLE=1`。因此「全绿」可能包含静默跳过。已启动一次全量
+  verbose 复跑统计实际 skip 数，结果与处置追加到本节。
+
 ## 下一步执行顺序
 
-1. 结束并确认 Serial 构建，完成 Serial oracle。
-2. 跑完整 HC/Mutect2 回归；若有失败，先以 GATK 输出和源码定位到具体边界。
-3. 将通过或失败的命令、fixture、GATK 版本和差异行追加到本文件。
-4. 只有当每个核心选项都有匹配范围的当前证据时，才讨论“1:1 完成”。
+1. ~~结束并确认 Serial 构建，完成 Serial oracle。~~ 已完成，见「最近验证状态」。
+2. ~~跑完整 HC/Mutect2 回归。~~ 已完成；并已取得全量双后端 280/280 证据。
+3. 汇总三路审计的差异清单，按影响核心输出正确性的程度排序。
+4. **单线串行**落地修复：一次一个改动 → 双后端增量构建 → 定向 oracle + 72 子集 →
+   全量回归 → commit（有 git 后「改动前/后」才可验证）。
+5. 补齐静默 skip 审计与 tool audit 口径，使百分比与证据同源。
+6. 只有当每个核心选项都有匹配范围的当前证据时，才讨论「1:1 完成」。
 
