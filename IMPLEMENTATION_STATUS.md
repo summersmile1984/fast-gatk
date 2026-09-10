@@ -213,7 +213,10 @@ pinned GATK 4.6.2.0 不一致：
 1. **参考块粒度改变**：非流式/GATK 把 10020230–10020428 拆成 29 个小 `<NON_REF>` 块，
    流式合并成 1 块（tile=100/500 时少 28 条记录）。
 2. **注解读数错误**：10020680 处 `RAW_MQandDP` `28800,8 → 97200,27`、`SB`
-   `0,0,3,3 → 0,0,0,0`。
+   `0,0,3,3 → 0,0,0,0`。已确认该缺陷**是「分块相关」的**：默认 pad=100 下
+   tile=200/300/600 取错误值，tile=405/500/700/810 取正确值；`--assembly-region-padding`
+   也会翻转结果（tile=500：pad=100 正确、pad=300 错误）。即**流式路径的注释不满足分块不变性**，
+   而非流式路径按构造满足。
 3. **凭空产生 phasing（新）**：10020228/10020229 处，非流式/GATK 输出未定相 `GT=0/1`，
    流式输出已定相 `0|1`/`1|0` 并新增 `PGT/PID/PS` —— 属输出语义改变，不只是数值偏差。
 
@@ -233,9 +236,13 @@ pinned GATK 4.6.2.0 不一致：
 与非流式相同，前提不成立（各 tile 产出的块本身就是退化的 `PL=0,0,0`）。从坐标看拼接器必然参与
 （记录跨 tile=500 的 core 边界 10020401），但它只是"把两个已退化的块接起来"的机制。
 
-**仍未定位到具体代码**：候选为 `build_reference_blocks`（精确）vs
-`build_profile_local_reference_blocks`（近似，`calling_pipeline.cpp:13111/15206/15672`），
-以及 `run_region_streaming` 的 `input_halo_intervals`（`hc_call.cpp:6463`）的窗口口径。
+**仍未定位到具体代码（但已缩小到可疑调用点）**：`run_region_streaming` 的每 tile 渲染
+—— `hc_call.cpp:6666` 的 `calling::run(decoded.reads, references, tile_options)` 与
+`hc_call.cpp:6674` 的 `gvcf(..., &decoded.reads, tile_options.informative_read_overlap_margin, ...)`。
+`decoded.reads` 是 tile 的 halo 读取批，`tile_options` 携带该 tile 的 `interval_start/end`；
+注释证据集似由二者共同决定，故随分块变化。**不能简单归因于 batch 过大**：tile=810 的 batch 更大，
+却给出正确的 `28800,8`。参考块构造器的取舍（`build_reference_blocks` vs
+`build_profile_local_reference_blocks`）仍是候选之一。
 `FASTGATK_DEBUG_GVCF_EMISSION=1` 显示 `symbolic-pl=unavailable` 在**两种模式下都出现**，
 不是判别依据（先前把它当作线索，一并更正）。D1（phasing）与 D2（注释作用域）是否同源未判定。
 
