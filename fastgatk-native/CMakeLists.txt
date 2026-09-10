@@ -1443,6 +1443,16 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_alleles_overlap_gate_oracle.py")
     set_tests_properties(fastgatk-hc-alleles-overlap-gate-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Gate for the spanning-deletion allele-frequency PRIOR: GATK's
+    # AlleleFrequencyCalculator picks each allele's Dirichlet pseudocount from
+    # its length, so the symbolic '*' deletion (1 bp) takes the SNP prior on a
+    # 1 bp REF record.  Using the indel prior unconditionally changed QUAL/QD
+    # for a supported SNP on a pileup that also carries an assembled deletion.
+    add_test(NAME fastgatk-hc-span-del-qual-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_span_del_qual_oracle.py")
+    set_tests_properties(fastgatk-hc-span-del-qual-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).

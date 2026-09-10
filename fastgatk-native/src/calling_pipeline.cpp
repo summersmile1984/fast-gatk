@@ -17308,7 +17308,19 @@ Result run(const io::ReadBatch& reads,
                 const auto concrete_pseudocount =
                     (concrete_indel ? options.indel_heterozygosity : options.heterozygosity) *
                     ref_pseudocount;
-                const auto spanning_pseudocount = options.indel_heterozygosity *
+                // AlleleFrequencyCalculator derives every allele's Dirichlet
+                // pseudocount from its length: `a.length() == refLength ?
+                // snpPseudocount : indelPseudocount`
+                // (AlleleFrequencyCalculator.java:175-176, refLength =
+                // vc.getReference().length()).  The symbolic spanning deletion
+                // is a 1 bp allele (`Allele.SPAN_DEL.length() == 1`), so it
+                // takes the SNP prior on a 1 bp REF record and the indel prior
+                // otherwise.  Using the indel prior unconditionally changed
+                // P(no variant) for REF/* genotypes and therefore QUAL/QD.
+                const auto spanning_pseudocount =
+                    (candidate_reference(result.candidates[candidate]).size() == 1
+                         ? options.heterozygosity
+                         : options.indel_heterozygosity) *
                     ref_pseudocount;
                 if (!(concrete_pseudocount > 0.0) || !std::isfinite(concrete_pseudocount) ||
                     !(spanning_pseudocount > 0.0) || !std::isfinite(spanning_pseudocount))
