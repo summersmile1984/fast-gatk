@@ -57,6 +57,37 @@ D1（凭空 phasing）与 D3（参考块粒度）的流式相关性见
 把 D3 钉到 tile 内部的逐 locus RCM 取值（tile=500 在 10020230 算出
 `depth=8 informative=0 gq=0 pl=0,0,0`，而非流式为 `depth=12 informative=12 gq=36 pl=0,36,494`）。
 
+## 第 3 轮：D2 的 trace 级证据（仍未到行级根因）
+
+用已有的位置门控 `FASTGATK_DEBUG_ANNOTATION_POSITION=<0-based pos>` 对同一夹具跑两个非流式窗口，
+得到注释边界（`calculate_variant_annotations`）的逐证据 trace。
+
+**跨接删除位点的锚点（0-based 10020678 / 1-based 10020679）**：
+
+| 窗口 | 该候选的注释 pass | ref_f/ref_r/alt_f/alt_r | rank sums |
+| --- | --- | --- | --- |
+| `20:10019901-10020710` | candidate=4，identity 映射（source 100..105 → physical 100..105） | `3/1/0/2` | `-6.96e-17 / 0.623 / -0.253` |
+| `20:10020381-10020710` | candidate=4，**先出现一次全零 pass** | `0/0/0/0` | `nan / nan / nan` |
+| `20:10020381-10020710` | 之后 candidate=0，identity 映射（source 48..53 → physical 48..53） | `3/1/0/2` | 同左 |
+
+即：**在偏移窗口下，跨接删除记录拿到了一次「零证据」的注释**（链计数全 0、rank sum 为 nan），
+这与输出的 `SB=0,0,0,0` 直接吻合；而同一 implement 在原始窗口下拿到的是真实证据。
+
+**同一窗口下另一个候选（0-based 10020679 / 1-based 10020680）**：原始窗口的 render-time pass
+走 **外部 ordinal 映射**（`likelihood_source_records_are_external = true`，source 100..105 →
+physical 235,236,237,238,239,**241**，注意 240 被跳过），并把原本判为 REF 的读改判为 ALT
+（`alt_f/alt_r = 3/3`，与输出的 `SB=0,0,3,3` 吻合）；偏移窗口下该候选的两次 pass 均为全零。
+
+**已排除**：`likelihood_source_records_are_external` 并非「从未传 true」的死参数 ——
+`calculate_output_variant_annotations`（`calling_pipeline.cpp:13816`）明确按第 9 个位置参数传 `true`，
+所以 render-time 重算确实走外部 ordinal 解析。
+
+**仍未证明**：全零 pass 是「in-run 期间算出并被沿用」还是「render-time 重算时证据查找失败」，
+以及 `RAW_MQandDP` 的 `depth`（原始窗口 8 / 偏移窗口 27）具体由哪一个累加循环决定。
+下一步最省的实验：在 `calling_pipeline.cpp:4017` 的 `debug_annotations` 判定里同时打印
+`likelihood_source_records_are_external`、`reads.records()`、`mapping_count` 与该 pass 的调用来源
+（in-run vs render-time），即可把 8→27 定位到具体循环。
+
 ## 最小复现
 
 参考/输入夹具：`fixtures/chr20/ref20mnp.fasta`、`fixtures/chr20/mnp.bam`（仓库内已有）。
