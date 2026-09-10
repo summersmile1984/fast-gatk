@@ -4552,8 +4552,24 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
                 const auto annotation_qual = calls[best] == nullptr ? 0.0 : calls[best]->qual;
                 const auto annotations_from_owner = [&]()
                     -> std::optional<fastgatk::calling::GenotypeCall::Annotations> {
-                    for (const auto& owner : result.assembly_region_likelihood_results) {
-                        if (owner == nullptr) continue;
+                    // Same twin-owner rule as the diploid path (see
+                    // owner_has_pairhmm_context above): an owner that never
+                    // requested PairHMM for a published allele keeps the
+                    // UINT32_MAX context sentinel, so annotating from it empties
+                    // the context-mapping evidence and drops the MQ gate onto
+                    // the raw-overlap predicate - which makes RAW_MQandDP/SB
+                    // depend on the -L window start.  This branch renders
+                    // arbitrary (non-diploid) ploidy and had the identical
+                    // latent defect.
+                    std::vector<const fastgatk::calling::Result*> ordered_owners;
+                    ordered_owners.reserve(result.assembly_region_likelihood_results.size());
+                    for (const auto& owner : result.assembly_region_likelihood_results)
+                        if (owner != nullptr && owner_has_pairhmm_context(*owner, group.candidates))
+                            ordered_owners.push_back(owner.get());
+                    for (const auto& owner : result.assembly_region_likelihood_results)
+                        if (owner != nullptr && !owner_has_pairhmm_context(*owner, group.candidates))
+                            ordered_owners.push_back(owner.get());
+                    for (const auto* owner : ordered_owners) {
                         if (const auto owned = fastgatk::calling::calculate_output_variant_annotations(
                                 *annotation_reads, *owner, group.candidates, annotation_qual,
                                 informative_read_overlap_margin, include_spanning_deletion,
