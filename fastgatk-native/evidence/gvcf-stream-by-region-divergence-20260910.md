@@ -82,11 +82,55 @@ physical 235,236,237,238,239,**241**，注意 240 被跳过），并把原本判
 `calculate_output_variant_annotations`（`calling_pipeline.cpp:13816`）明确按第 9 个位置参数传 `true`，
 所以 render-time 重算确实走外部 ordinal 解析。
 
-**仍未证明**：全零 pass 是「in-run 期间算出并被沿用」还是「render-time 重算时证据查找失败」，
-以及 `RAW_MQandDP` 的 `depth`（原始窗口 8 / 偏移窗口 27）具体由哪一个累加循环决定。
-下一步最省的实验：在 `calling_pipeline.cpp:4017` 的 `debug_annotations` 判定里同时打印
-`likelihood_source_records_are_external`、`reads.records()`、`mapping_count` 与该 pass 的调用来源
-（in-run vs render-time），即可把 8→27 定位到具体循环。
+**仍未证明**：全零 pass 是「in-run 期间算出并被沿用」还是「render-time 重算时证据查找失败」。
+
+## 第 4 轮：机制已定位到具体布尔量（决定性证据）
+
+按上一节写明的实验，临时在 `calling_pipeline.cpp` 的 `debug_annotations` 块内加一行
+`[FASTGATK_ANNOTATION_GATES]` 打印（**已还原，仓库未留改动**），重建 OpenMP HC 后对两个窗口取 trace。
+对该分歧行（0-based 10020679 / 1-based 10020680，candidate=5）：
+
+| 字段 | `20:10019901-10020710` | `20:10020381-10020710` |
+| --- | --- | --- |
+| `have_context_mapping_evidence` | **1** | **0** |
+| `mapping_count` / `mapping_square_sum` | 8 / 28800 | **27 / 97200** |
+| `strand_total` | 4（in-run）/ 6（render） | **0 / 0** |
+| `reads_records` / `likelihood_source_count` | 113 / 113（in-run） | 116 / 116（in-run） |
+| 输出 `RAW_MQandDP` / `SB` | `28800,8` / `0,0,3,3` ✓ 同 GATK | `97200,27` / `0,0,0,0` ✗ |
+
+**机制**：`calculate_variant_annotations`（`calling_pipeline.cpp:4293-4305`）里 MQ 证据的门是
+
+```cpp
+const bool mapping_evidence = have_context_mapping_evidence
+    ? context_mapping_evidence[record] != 0
+    : (read_overlaps_annotation_interval(...) && annotation_read_survives);
+```
+
+- 原始窗口：`have_context_mapping_evidence = 1` → 走 context 分支 → 计数 8（= GATK）。
+- 偏移窗口：`have_context_mapping_evidence = 0` → 落到几何回退分支 →
+  `read_overlaps_annotation_interval` 放行了 **27** 条读（应 8 条），
+  同时 `strand_total` 归零（`retained_for_hc_allele_annotations` 那条链没有产出任何 BestAllele 证据）。
+
+**关键旁证**：同一位置、同一窗口下的 `candidate=1` 却有
+`have_context_mapping_evidence = 1`、`mapping_count = 8`（正确）。所以缺失是**逐候选的**，
+不是全局的 —— context 映射证据在偏移窗口下没有为跨接删除候选生成/保留。
+
+### 已证伪
+
+- **几何谓词带窗口依赖**：`read_overlaps_annotation_interval` 与
+  `read_overlaps_hc_genotyping_interval`（`calling_pipeline.cpp:6694` / `6725`）都只依赖
+  读的 `position`/`reference_end` 与候选的 `position`/REF 长度/margin，**不含任何窗口参数**。
+  窗口依赖来自 `have_context_mapping_evidence` 这个逐候选布尔量，而非几何判定本身。
+
+### 下一步（已缩小到一处）
+
+找 `have_context_mapping_evidence` 为何在偏移窗口下为 0：它由
+`likelihood_result->likelihood_candidate_read_realignments` 中是否存在
+`context_ordinal` 匹配且 `qualified` 的重叠 context 决定（`calling_pipeline.cpp:4111-4152`）。
+需查该字段在偏移窗口下为何对跨接删除候选为空（注意 render 阶段外部 ordinal 映射下
+`reads_records=133` 与 `likelihood_source_count=116` **不相等**，原始窗口 render 阶段是
+250 与 113，也不相等，故该不等不是判别量）。修复方向：让该候选的 context 证据在两种窗口下
+一致生成，而不是让 MQ 落到会放行 27 条读的几何回退分支。
 
 ## 最小复现
 
