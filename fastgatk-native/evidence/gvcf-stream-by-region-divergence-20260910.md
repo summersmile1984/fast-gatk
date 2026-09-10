@@ -148,14 +148,59 @@ have_context_mapping_evidence = true;                                          /
 （`read_overlaps_annotation_interval`）→ 放行 27 条读（应 8 条）
 → `RAW_MQandDP = 97200,27`；同时 strand 证据归零 → `SB = 0,0,0,0`。**
 
-### 下一步（一处）
+### 第 5 轮：语义已定案 + 验收判据（GATK 侧已独立复核）
 
-查 `likelihood_candidate_read_context_ordinals` 为何在偏移窗口下对跨接删除候选写成哨兵：
-该字段与 `pairhmm.candidate_read_realignments` 一起在
-`calling_pipeline.cpp:16977` 由 PairHMM 结果赋给 `result`。需要确定是
-「该候选在偏移窗口下确实没有被 PairHMM 收集」还是「context ordinal 的分配随候选集合变化而漏写」。
-修复方向：让该候选在两种窗口下都拿到真实 context（首选），
-或在哨兵情形下不要让 MQ 落到会放行 27 条读的回退分支。
+把「native 该用哪个读集合」升级为已定案的语义问题，并给出可机器判定的验收判据。
+
+**GATK 的规则**（引自 pinned Java 源码，详见
+`fastgatk-native/evidence/2026-09-10-parallel-audit/gatk-retain-evidence-semantics.md`）：
+`HaplotypeCallerGenotypingEngine.java:194/197` 的 `retainEvidence(target::overlaps)`，
+其中 `target = new SimpleInterval(mergedVC).expandWithinContig(informativeReadOverlapMargin=2)`
+→ 本题为 `[10020678, 10020683]`；作用对象是
+`realignReadsToTheirBestHaplotype/changeEvidence` **之后**的读集合
+（`HaplotypeCallerEngine.java:959-966`），且同一集合被复用于注释
+（`HaplotypeCallerGenotypingEngine.java:598-601`）。
+
+**我独立复核了关键经验事实**（用 pinned jar 的 `--debug-genotyper-output`，两个窗口各跑一次）：
+
+```text
+Event at: [VC HC0 @ 20:10020680-10020681 Q. of type=MIXED alleles=[CA*, *, AT] attr={} GT=[] filters= with 8 reads and 20 disqualified
+```
+
+**两个窗口输出完全相同（同样 8 条 retained / 20 条 disqualified）**，且
+`alleles=[CA*, *, AT]` 证实该记录含 `*`。因此：
+
+- GATK 的 retained 集合**与 `-L` 窗口起点无关**，正确值恒为 **8**。
+- native 在窗口 A 的 8 是**命中 context 分支**得来的正确值；窗口 B 的 27 是
+  **几何回退分支**引入的错误值。结论：**(a) context 映射population 才是 GATK 的模型，
+  (b) 几何回退是缺陷。**
+
+**验收判据（可机器判定）**：该行在两个窗口下都必须是
+`RAW_MQandDP=28800,8` 且 `SB=0,0,3,3`；同时窗口 A 的 48 行必须与 GATK 保持逐字节相同。
+另注意 Track D 报告指出窗口 `10020421/10020431` 还存在第三种错误状态（`SB=1,2,6,16`），
+修复后应一并复核。
+
+**推荐修法（未落地）**：根缺陷是哨兵值本身 —— 跨接删除候选从未进入 `candidate_reads`，
+故 `candidate_read_context_ordinals` 保持 `missing_context`（`calling_pipeline.cpp:10548`）。
+推荐在 `calling_pipeline.cpp:9152-9153` 构造 `pairhmm_event_candidates` 时，
+为已装配候选补上**同 locus 的符号兄弟等位基因**（同 tid/position/reference），
+使其获得 context ordinal。该轨道论证 impact 小（`request_indices` 按 (read_id, haplotype)
+去重 @9315-9322；`marginalization_row_ids` 按 (group_ordinal, locus_id, source_record) 键控
+@11519-11532），但**未经编译与测量**。
+
+**其余四个候选修法已被逐一否决**（同一报告）：
+(i) 把回退换用 `read_overlaps_hc_genotyping_interval` —— 只是把源 CIGAR 区间平移 1bp，
+仍会放行约 27 条，两个窗口都修不好；
+(ii) 哨兵时令 `mapping_count=0` —— 能做到窗口无关但**值错**（GATK 是 8）且治不了 SB；
+(iv) 在 `hc_call.cpp:4530` 只保留非空重算 —— **是空操作**，因为窗口 B 的重算结果并不空
+（它就是 `97200,27`）；
+(iii) 上游配对修复是正确方向，推荐修法即其收敛形式。
+
+**为何本轮仍未落地**：`calling_pipeline.cpp:9150-9151` 的**原作者注释明确反对**放宽这个集合
+（"attaching them here would widen the public candidate set without adding a state to any
+haplotype"）。这与推荐修法直接冲突，而推荐修法未经编译；它会改变**所有** HaplotypeCaller 运行的
+候选配对，属于核心语义改动。在无法完整跑完双后端门禁并迭代的情况下盲改，风险高于收益 ——
+因此本轮把语义与验收判据钉死，把补丁留给下一轮按判据实施与验证。
 
 ## 最小复现
 
