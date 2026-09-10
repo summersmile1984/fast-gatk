@@ -208,21 +208,36 @@ pinned GATK 4.6.2.0 不一致：
 已把基准钉死：**非流式 native 与 GATK 在该区间上全部 48 条数据行逐字段相同**
 （含 29 块碎片结构），因此非流式是对的、流式是偏离方。
 
-- **已证伪**的假设：跨 tile 拼接器 `RegionGvcfStitcher::can_merge` 过宽。按
-  `merge()` 的签名（PL 逐元素最小值）应得 `PL=0,26,494 / GQ=26 / MIN_DP=12`，
-  实测为 `PL=0,0,0 / GQ=0 / MIN_DP=21`，不符。注：`can_merge` 只比较 `pl.size()`
-  而不比较 PL 值，这一隐患需单独复核。
-- **已确认**：`PL=0,0,0 / GQ=0` 说明该段**没有参考置信度似然值**（不是"被合并"），
-  且只在 tile 边界切过窗口时出现 —— tile=300（窗口完全在单个 tile 内）与 GATK 逐条相同。
-- **候选机制（未证实到调用点）**：参考块有两个构造器 —— 精确的
-  `build_reference_blocks`（`calling_pipeline.cpp:3295`，用 locus 级
-  `rcm_loci`/`reference_confidence_observations`/`corrected_reads`）与近似的
-  `build_profile_local_reference_blocks`（`calling_pipeline.cpp:13111`，用分区级
-  `activity.profile_regions`/`active_reads`）。后者若按分区而非按 locus 推导参考置信度，
-  可同时解释块退化与 `RAW_MQandDP=97200,27`/`SB=0,0,0,0`。
-- 调试开关 `FASTGATK_DEBUG_GVCF_EMISSION=1` 在本夹具上流式/非流式都只出现
-  `stage=direct`，未触发 `stage=merged`，该实验对定位无结论。
-- 遗留线索：调试输出中的 `symbolic-pl=unavailable` 与 `PL=0,0,0` 可能同源，优先追查。
+三类偏离（第 3 类为本轮新发现）：
+
+1. **参考块粒度改变**：非流式/GATK 把 10020230–10020428 拆成 29 个小 `<NON_REF>` 块，
+   流式合并成 1 块（tile=100/500 时少 28 条记录）。
+2. **注解读数错误**：10020680 处 `RAW_MQandDP` `28800,8 → 97200,27`、`SB`
+   `0,0,3,3 → 0,0,0,0`。
+3. **凭空产生 phasing（新）**：10020228/10020229 处，非流式/GATK 输出未定相 `GT=0/1`，
+   流式输出已定相 `0|1`/`1|0` 并新增 `PGT/PID/PS` —— 属输出语义改变，不只是数值偏差。
+
+**只与非流式等价的条件**：tile × `--assembly-region-padding` 扫描（差异行数，越低越好）
+
+| tile | pad=100 | pad=200 | pad=300 |
+| ---: | ---: | ---: | ---: |
+| 300 | 1 | 1 | 1 |
+| 405 | 43 | 43 | 3 |
+| 500 | 43（仅 20 条记录） | 3 | 3 |
+| 810（=区间长度，单 tile） | **0（逐字节相同）** | 1 | 1 |
+
+结论：**默认 pad=100 下只有单 tile 才逐字节相同；加大 padding 不是修复**
+（它修回 tile=500 的块结构，却弄坏原本逐字节相同的单 tile 情形）。
+
+**一处自我更正**：先前记录的「拼接器 `can_merge` 已被证伪」作废 —— 该推理假设各 tile 产出的块
+与非流式相同，前提不成立（各 tile 产出的块本身就是退化的 `PL=0,0,0`）。从坐标看拼接器必然参与
+（记录跨 tile=500 的 core 边界 10020401），但它只是"把两个已退化的块接起来"的机制。
+
+**仍未定位到具体代码**：候选为 `build_reference_blocks`（精确）vs
+`build_profile_local_reference_blocks`（近似，`calling_pipeline.cpp:13111/15206/15672`），
+以及 `run_region_streaming` 的 `input_halo_intervals`（`hc_call.cpp:6463`）的窗口口径。
+`FASTGATK_DEBUG_GVCF_EMISSION=1` 显示 `symbolic-pl=unavailable` 在**两种模式下都出现**，
+不是判别依据（先前把它当作线索，一并更正）。D1（phasing）与 D2（注释作用域）是否同源未判定。
 
 **这同时暴露了一个方法学教训**：状态文档曾把「流式路径已传实际 read batch（非空指针）」
 当作已修正的证据，但"非空"不等于"范围正确"。修复必须由 oracle 判定，不能由改动描述判定。
