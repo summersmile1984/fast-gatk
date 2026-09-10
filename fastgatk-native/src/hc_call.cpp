@@ -3685,6 +3685,44 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
     return out.str();
 }
 
+// GATK annotates a record from the AssemblyRegion whose retained PairHMM read
+// set produced it.  A partitioned native Result can list the same allele in
+// more than one AssemblyRegion owner, and an owner that never requested
+// PairHMM for that allele keeps the UINT32_MAX context-ordinal sentinel.
+// Annotating from such an owner empties `context_mapping_evidence` (its own
+// likelihood rows are all -inf) and drops the MQ gate onto the raw-overlap
+// predicate, so the evidence - and therefore the published annotations -
+// depend on the `-L` window start.  Resolve every published allele to its
+// identical-allele twin inside the owner and require that twin to carry a real
+// PairHMM context ordinal, so both the likelihood-row lookups and the
+// context-ordinal lookup are served by the twin.
+bool owner_has_pairhmm_context(
+    const fastgatk::calling::Result& owner,
+    const std::vector<const fastgatk::calling::AssemblyCandidate*>& alleles) {
+    if (alleles.empty()) return false;
+    for (const auto* allele : alleles) {
+        if (allele == nullptr) return false;
+        std::size_t twin = std::numeric_limits<std::size_t>::max();
+        for (std::size_t index = 0; index < owner.candidates.size(); ++index) {
+            const auto& candidate = owner.candidates[index];
+            if (candidate.tid == allele->tid && candidate.position == allele->position &&
+                candidate.reference == allele->reference &&
+                candidate.alternate == allele->alternate &&
+                candidate.reference_allele == allele->reference_allele &&
+                candidate.alternate_allele == allele->alternate_allele) {
+                twin = index;
+                break;
+            }
+        }
+        if (twin == std::numeric_limits<std::size_t>::max()) return false;
+        if (twin >= owner.likelihood_candidate_read_context_ordinals.size()) return false;
+        if (owner.likelihood_candidate_read_context_ordinals[twin] ==
+            std::numeric_limits<std::uint32_t>::max())
+            return false;
+    }
+    return true;
+}
+
 std::string gvcf(const fastgatk::io::HtsReader& reader,
                  fastgatk::calling::Result& result,
                  int sample_ploidy,
@@ -4831,8 +4869,21 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
             const auto annotation_qual = calls[best] == nullptr ? 0.0 : calls[best]->qual;
             const auto annotations_from_owner = [&]()
                 -> std::optional<fastgatk::calling::GenotypeCall::Annotations> {
-                for (const auto& owner : result.assembly_region_likelihood_results) {
-                    if (owner == nullptr) continue;
+                // Owners that hold the identical-allele twin with a real
+                // PairHMM context come first; owners that merely carry the
+                // allele with the UINT32_MAX context sentinel keep their
+                // historical first-match order as a fallback.  Selecting the
+                // twin owner is what makes RAW_MQandDP/SB independent of the
+                // `-L` window start.
+                std::vector<const fastgatk::calling::Result*> ordered_owners;
+                ordered_owners.reserve(result.assembly_region_likelihood_results.size());
+                for (const auto& owner : result.assembly_region_likelihood_results)
+                    if (owner != nullptr && owner_has_pairhmm_context(*owner, group.candidates))
+                        ordered_owners.push_back(owner.get());
+                for (const auto& owner : result.assembly_region_likelihood_results)
+                    if (owner != nullptr && !owner_has_pairhmm_context(*owner, group.candidates))
+                        ordered_owners.push_back(owner.get());
+                for (const auto* owner : ordered_owners) {
                     if (const auto owned = fastgatk::calling::calculate_output_variant_annotations(
                             *annotation_reads, *owner, group.candidates, annotation_qual,
                             informative_read_overlap_margin, include_spanning_deletion,
