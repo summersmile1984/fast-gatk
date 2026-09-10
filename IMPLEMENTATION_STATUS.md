@@ -422,3 +422,56 @@ Track B 的**退出码分歧**（某 `--alleles` 记录经 Event 最小化后 AL
    且 **agent 结论必须先用插桩/实验独立复核再作为行动依据**（第 5 轮已因违反此条而靶子出错）。
 8. 只有当每个核心选项都有匹配范围的当前证据时，才讨论「1:1 完成」。
 
+
+## 当前状态与下一步（第 8 轮更新，取代上面更早的「下一步执行顺序」）
+
+### 已落地并上锁
+
+| 项 | 状态 | 守护 |
+| --- | --- | --- |
+| D2（`-L` 窗口依赖的 `RAW_MQandDP`/`SB`）双倍体路径 | **已修复** | `fastgatk-hc-window-invariance-gatk-oracle`（strict，12 窗口） |
+| D2 同类第二实例：非双倍体（`sample_ploidy != 2`）分支 | **已修复** | `fastgatk-hc-ploidy-window-invariance-gatk-oracle`（strict，7 窗口，ploidy 3） |
+| 双后端全量 | **283/283**（OpenMP 1039s / Serial 1024s） | `.diag/regression/round7-full.log` |
+
+改动位置：仅 `fastgatk-native/src/hc_call.cpp`。机制：记录被从「从未为该等位基因请求
+PairHMM、context ordinal 为哨兵 `UINT32_MAX`、likelihood 行为 `-inf`」的 AssemblyRegion owner
+注释；修复为优先选用携带同 Allele 且 context 非哨兵的 **twin owner**（`owner_has_pairhmm_context`）。
+
+### 分类收敛：D1/D3 不是缺陷
+
+判别实验证明 pinned GATK 自己在相应窗口下就产生同样的 phased 行与同样的退化块，
+native 逐字节相同 —— 属 `--stream-by-region` 的**范围/语义问题**（GATK 输出本身依赖 `-L`，
+流式按 tile 分别求值再拼接，原理上无法等价）。待办：显式定义其语义并记录为已文档化分歧；
+`fastgatk-hc-region-streaming-contract` 的「流式 key 集合 == 非流式」断言原理性不可满足，需改写。
+
+### 缺陷形态普查（已建立可判定判据）
+
+**判据**：哨兵候选 ⇔ 从未进入 PairHMM 请求表 ⇒ 其 likelihood 行为 `-inf`。
+因此**消费 likelihood 行的探针在该 owner 上必然失败（安全）**；
+**只做下标越界检查的探针会「成功」并静默降级（易感）** —— 已知实例为
+`calculate_output_variant_annotations` 的 `has_rows`（`calling_pipeline.cpp:13811-13815`）。
+
+| 范围 | 站点数 | 易感 | 备注 |
+| --- | ---: | --- | --- |
+| HC（`hc_call.cpp`） | 15 | **仅剩 1 处**：`:3521` ordinary-VCF `annotations_from_owner` | 可达性未测得（该 guard 在当前夹具上不激活，需先造 multi-ALT ordinary-VCF 夹具）；另有 R-A2/R-A3 残差（已修站点偏好组内部的 first-success 递归） |
+| Mutect2（`mutect2_tool.cpp`） | 14 | **6 处理论易感**（最重：`somatic_annotation_counts` @4116，影响 F1R2/F2R1/SB/MBQ/MFRL/MMQ/MPOS 并传播进 FilterMutectCalls） | **未能在任何 Mutect2 夹具上复现**（44/44 行与 GATK 一致、590 owners、跨 5 个 `-L` 起点与 `--force-active` 不变）——**属潜伏，非已证缺陷** |
+| `filter_mutect_tool.cpp` | 0 | — | 无 owner 循环 |
+
+报告：`fastgatk-native/evidence/2026-09-11-wave0/`（`round-g1`/`round-g2`/`round-g3`）。
+
+### 下一步（按价值/成本）
+
+1. **Track B 两项**（唯一剩下的已证真 bug）：`--alleles` 重叠 feature 丢行；
+   退出码分歧（**必须加 region 感知门控** —— 文件级 eager 移植会在「空等位记录落在 `-L` 之外」
+   时过度中止，制造出 GATK 没有的新分歧）。
+2. **补 `hc_call.cpp:3521`**：先造能激活其 guard 的夹具（multi-ALT 的 ordinary VCF），否则无法验证。
+3. **消掉 R-A2/R-A3 残差**（已修站点偏好组内部的 first-success 递归）。
+4. **契约层**：定义 `--stream-by-region` 语义并改写那条原理性不可满足的断言（不碰生产代码，可并行）。
+5. **Mutect2 易感站点**：仅在出现 Mutect2 分歧时优先查这 6 处；当前无证据支持改动。
+
+### 顺带记录（G3 发现，与本形态无关）
+
+`fastgatk-mutect2 --stream-by-region` 在 1 Mb contig 上对 100000/50000/20000/5000 全部 tile 尺寸
+均以 `RESOURCE_EXHAUSTED: single-base Mutect2 tile exceeds safe memory budget`（exit 2）中止；
+10 kb 窗口（size 1000）下流式与非流式一致。即 **Mutect2 的区域流式在 contig 规模上不可用**，
+这是一条待评估的容量/边界问题（未定性为缺陷）。
