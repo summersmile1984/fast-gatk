@@ -1422,6 +1422,16 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_window_invariance_gatk_oracle.py")
     set_tests_properties(fastgatk-hc-window-invariance-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Same defect family as the gate above, but in the arbitrary-ploidy gVCF
+    # branch, where the identical owner-selection bug was found live after the
+    # diploid fix landed.  Without this, that second instance would have no
+    # regression guard at all.  Runs pinned GATK at --sample-ploidy 3 across 7
+    # windows (~35 s).
+    add_test(NAME fastgatk-hc-ploidy-window-invariance-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_ploidy_window_invariance_gatk_oracle.py")
+    set_tests_properties(fastgatk-hc-ploidy-window-invariance-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).
