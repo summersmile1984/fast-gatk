@@ -91,7 +91,7 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（重建后复跑） | **280/280 通过**（975s） | **280/280 通过**（968s） | 二进制重建后的当前证据，见下方「关于二进制的更正」 |
+| 全量回归（第 10 轮复验） | **280/280 通过**（1019s） | **280/280 通过**（1017s） | 对 commit `03b02b7`、二进制由 pristine 源重建后的复验；证据目录 `.diag/regression/20260911-010134/` |
 | HC/Mutect2 子集 | **72/72 通过**（261s） | **72/72 通过**（268s） | `omp-hc-mutect2.log` / `serial-hc-mutect2.log` |
 | `verify_hc_alleles_gatk_oracle.py` | 通过（86s） | 通过（112s） | 原「待本轮复跑」项已结清 |
 | `verify_hc_complex_multiallelic_oracle.py` | 通过（45s） | 通过（33s） | 四倍体 / max-ALT / max-genotype-count |
