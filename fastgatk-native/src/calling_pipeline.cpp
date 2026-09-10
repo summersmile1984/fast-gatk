@@ -13757,6 +13757,23 @@ void accumulate_independent_region_telemetry(Result& merged, const Result& part)
         merged.pairhmm_skip_reason = part.pairhmm_skip_reason;
 }
 
+// GATK MathUtils.log10OneMinusPow10 (via NaturalLogUtils.log1mexp): the
+// log10 of `1 - 10^log10_value` computed without cancelling away the tiny
+// complement.  GenotypingEngine uses this to turn an
+// AlleleFrequencyCalculator `log10ProbOnlyRefAlleleExists` posterior into the
+// complementary `log10ProbVariantPresent` site confidence that a monomorphic
+// locus reports as its QUAL.
+double log10_one_minus_pow10(const double log10_value) {
+    if (log10_value > 0.0) return std::numeric_limits<double>::quiet_NaN();
+    if (log10_value == 0.0) return -std::numeric_limits<double>::infinity();
+    constexpr double kLog10 = 2.30258509299404568402;
+    constexpr double kLog2 = 0.69314718055994530942;
+    const double natural = log10_value * kLog10;
+    const double log1mexp = natural > -kLog2
+        ? std::log(-std::expm1(natural)) : std::log1p(-std::exp(natural));
+    return log1mexp / kLog10;
+}
+
 }  // namespace
 
 std::optional<GenotypeCall::Annotations> calculate_output_variant_annotations(
@@ -17305,8 +17322,40 @@ Result run(const io::ReadBatch& reads,
                     {}, {}, 2);
                 if (candidate < confidence_qual.size() &&
                     spanning_af.samples_with_likelihoods != 0 &&
-                    std::isfinite(spanning_af.qual))
-                    confidence_qual[candidate] = spanning_af.qual;
+                    std::isfinite(spanning_af.qual)) {
+                    // GenotypingEngine picks the site-confidence branch from this
+                    // same locus AF result: `log10ProbOnlyRefAlleleExists` (the
+                    // kernel's `qual`) when any alternate allele is plausible,
+                    // and the complementary `log10ProbVariantPresent` when every
+                    // alternate allele fails that test
+                    // (GenotypingEngine.calculateGenotypes,
+                    //  `!outputAlternativeAlleles.siteIsMonomorphic`).
+                    // A forced GenotypeGivenAlleles allele is retained in the
+                    // output even when it is not plausible, so a forced event
+                    // that an already-assembled deletion spans stays
+                    // monomorphic and must keep the complementary QUAL that the
+                    // forced-allele policy above just computed.  Overwriting it
+                    // with the polymorphic-branch value (~0 on a reference-only
+                    // pileup) dropped the forced row below
+                    // --standard-confidence-for-calling, which is the
+                    // overlapping-feature emission defect.
+                    bool loci_monomorphic = true;
+                    const double plausibility_log10 = -0.1 * options.standard_confidence_for_calling;
+                    for (int allele = 1;
+                         allele < static_cast<int>(spanning_af.log10_p_allele_absent.size());
+                         ++allele)
+                        loci_monomorphic = loci_monomorphic &&
+                            !(spanning_af.log10_p_allele_absent[static_cast<std::size_t>(allele)] +
+                              1.0e-10 < plausibility_log10);
+                    const double complement = loci_monomorphic
+                        ? log10_one_minus_pow10(spanning_af.log10_p_no_variant)
+                        : std::numeric_limits<double>::quiet_NaN();
+                    if (result.candidates[candidate].forced_by_alleles_feature &&
+                        std::isfinite(complement))
+                        confidence_qual[candidate] = -10.0 * complement;
+                    else
+                        confidence_qual[candidate] = spanning_af.qual;
+                }
             }
         }
     }
