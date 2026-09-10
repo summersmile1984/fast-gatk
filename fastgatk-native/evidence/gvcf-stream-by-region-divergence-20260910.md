@@ -500,6 +500,80 @@ auto result = fastgatk::calling::run(decoded.reads, references, tile_options);  
 而非使用空 read 指针」，并据此视为已修正。本次结果表明：该改动**可能传入了非空但范围错误的
 read batch（分区级而非 locus 级）**，因此"不再用空指针"并不等于"数值正确"。
 
+## Wave 0（第 13 轮，四条并行研究线）：三条更正 + 根因再收敛
+
+报告全文在 `fastgatk-native/evidence/2026-09-11-wave0/`。
+**这一轮有三次「取消既有结论」，其中一次取消的是本报告此前的框架。**
+
+### 更正 1（推翻本报告框架）：GATK 并非全局窗口不变
+
+本报告先前写「GATK 恒为 `28800,8`、native 随窗口变化」——那是**只测了两个窗口**得出的过度推广。
+O1 扫了 12 个窗口后确认：**pinned GATK 在窗口起点 `10020421` 与 `10020431` 时自己就输出
+`RAW_MQandDP=97200,27` 与 `SB=1,2,6,16`**。正确表述是：
+
+- 不存在「GATK 的全局正确值」，**只能逐窗口钉 GATK 期望**；
+- native 的真实缺陷是**在特定窗口（`10020381/10020391/10020401/10020411`）偏离该窗口的 GATK 值**，
+  而不是「native 窗口相关、GATK 不相关」。
+
+### 更正 2（推翻 Track D 的一条结论）：所谓「第三种错误状态」不存在
+
+Track D 曾报告窗口 `10020421/10020431` 存在「第三种错误状态 `SB=1,2,6,16`」。
+O1 实测：**那里的 GATK 自己就是 `97200,27` / `1,2,6,16`，native 逐字段一致**——不是缺陷。
+那两个窗口的真实残留差异是 **D3 的参考块粒度**（GATK 53 行 vs native 12；51 vs 9）。
+
+### 更正 3（推翻 agent 的 D1 机制假设）：不存在跨 owner 的 haplotype_map 合并
+
+R3 独立复核后判定 **PARTIALLY CONFIRMED / 机制被证伪**：
+`haplotype_map` 是在 context 循环**内部**重建的，**不存在**先前 agent 声称的「把各 owner 的
+`somatic_candidate_haplotype_indices` 并进同一编号空间」。真正翻转的量是
+`total_available_haplotypes`（`hc_call.cpp:4150-4153`），它被 `always_apart`（`4197-4202`）消费。
+
+### 新根因（D3 已定位，且**非流式也复现**）
+
+R2 把 D3 钉到：`--stream-by-region` 把**每个 tile 的 halo 区间**当作 tile 的 intervals，
+而不是用户给的 `-L`（`hc_call.cpp:6658-6665`，halo 来自 `input_halo_intervals` `6457-6480`）
+→ 改变 ActivityProfile/BandPassProfile 的分区 → EventMap group 的 active span 变短
+→ `build_profile_local_reference_blocks` 在该 group 未覆盖的位点找不到 event owner
+→ 走 no-variation flank 分支（`calling_pipeline.cpp:13527-13540`），该分支**不接收 PairHMM
+realignment projection**（`13334-13477`）→ `informative=0`（`3150-3180`）→ 全零 indel 模型胜出
+（`3184-3195`）→ `GQ=0/PL=0,0,0` → 29 块塌成 1 块。
+
+**决定性证据**：非流式跑 `-L 20:10019901-10020500`（正好是 tile=500 中拥有 `10020230` 的那个
+tile 的 halo 窗口）产出**与流式逐字节相同**的退化输出，包括
+`10020230 A <NON_REF> ... END=10020428 ... 0/0:26:0:21:0,0,0`。
+
+### 汇总结论（重要）
+
+**D1、D2、D3 全都可以在「完全不用流式」的条件下复现**（D2 用偏移 `-L`；D3 用 halo 等价的 `-L`；
+D1 由 R3 直接复现）。因此 **「流式路径有 bug」这个分类是错的**：真正的类别是
+**Host 路径对窗口/分区切分的敏感性**，流式只是通过选择窗口把它触发出来。
+
+### O1：验收门禁已就绪并已由主会话复核
+
+`fastgatk-native/scripts/verify_hc_window_invariance_gatk_oracle.py`（12 个窗口，
+逐窗口比对 GATK 并单独门控 `POS 10020680` 的 `RAW_MQandDP`/`SB`）。
+**主会话已实测**：strict 模式 **exit 1（设计上就该失败，8 处 violation）**；
+`--expect-divergence` 模式 **exit 0 / status=diagnostic**，输出含 44 处 `97200,27`（真实数据，非空跑）。
+注册建议在 `fastgatk-native/CMakeLists.txt` 的 `fixtures/chr20` 条件块内，
+**须在修复落地后**才注册 strict 形态。
+
+### R1：退出码语义（含一个「移植反而制造新分歧」的警告）
+
+GATK 的 `Event.makeMinimalRepresentation`（`Event.java:44-62`）**只裁剪共享后缀**（不动 `start`），
+仅当**双等位、两等位均 ≥2bp、且短者是长者的完整后缀**时抛出空等位；多等位走 `trimAlleles`
+的「保留一个碱基」规则因而不会崩。该调用在 `HaplotypeCallerEngine.callRegion` →
+`splitVariantContextToEvents` 里是**按 active region 惰性求值**的：**记录落在 `-L` 之外或
+inactive region 时 GATK 不会崩**（实测两侧都 exit 0）。
+GATK 的 exit 3 是 `Main.java:81` 的**兜底常量**（any uncaught non-user exception），
+**不是空等位专用**；native 的唯一错误通道返回 **2**（`hc_call.cpp:7006-7009`），
+故建议**硬中止但用 exit 2**，并把 3-vs-2 记为已文档化分歧。
+建议补丁位置 `hc_call.cpp:2265`，且必须加 `record->n_allele == 2` 门控。
+
+> **警告（新分歧风险）**：上述补丁是**文件级 eager**，而 GATK 是**按 active region 惰性**的。
+> 直接移植会在「空等位记录落在 `-L` 之外/inactive region」时**过度中止**，
+> 从而在这些输入上**制造出一个 GATK 没有的新分歧**。落地方案需带 region 感知门控，
+> 或明确接受并记录该分歧。
+
 ## 已证明 / 未证明
 
 **已证明**
