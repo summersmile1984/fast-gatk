@@ -122,15 +122,40 @@ const bool mapping_evidence = have_context_mapping_evidence
   读的 `position`/`reference_end` 与候选的 `position`/REF 长度/margin，**不含任何窗口参数**。
   窗口依赖来自 `have_context_mapping_evidence` 这个逐候选布尔量，而非几何判定本身。
 
-### 下一步（已缩小到一处）
+### 已进一步定位：哨兵值 `context_ordinal == UINT32_MAX`
 
-找 `have_context_mapping_evidence` 为何在偏移窗口下为 0：它由
-`likelihood_result->likelihood_candidate_read_realignments` 中是否存在
-`context_ordinal` 匹配且 `qualified` 的重叠 context 决定（`calling_pipeline.cpp:4111-4152`）。
-需查该字段在偏移窗口下为何对跨接删除候选为空（注意 render 阶段外部 ordinal 映射下
-`reads_records=133` 与 `likelihood_source_count=116` **不相等**，原始窗口 render 阶段是
-250 与 113，也不相等，故该不等不是判别量）。修复方向：让该候选的 context 证据在两种窗口下
-一致生成，而不是让 MQ 落到会放行 27 条读的几何回退分支。
+`have_context_mapping_evidence` 的置位点在 `calling_pipeline.cpp:4152`，位于
+`for (const auto index : likelihood_indices)` 循环**内部**；而该循环在
+`calling_pipeline.cpp:4129` 会对哨兵值直接 `continue`：
+
+```cpp
+const auto context_ordinal =
+    likelihood_result->likelihood_candidate_read_context_ordinals[index];
+if (context_ordinal == std::numeric_limits<std::uint32_t>::max()) continue;   // 4129
+...
+have_context_mapping_evidence = true;                                          // 4152
+```
+
+由于**同一窗口、同一位置**的 `candidate=1` 有 `have_context_mapping_evidence = 1`，
+说明外层的 `if`（4112-4114，要求 `likelihood_candidate_read_context_ordinals` 与
+`likelihood_candidate_read_realignments` 均非空）是通过的。因此偏移窗口下
+`candidate=5` 的情形只能是：**该候选的
+`likelihood_candidate_read_context_ordinals[candidate_index]` 是哨兵 `UINT32_MAX`**，
+即 PairHMM 证据收集阶段没有为这个跨接删除候选记录读 context。
+
+于是链路是：**PairHMM 阶段未给该候选分配 read context（哨兵值）
+→ `have_context_mapping_evidence = 0` → MQ 证据门落到几何回退分支
+（`read_overlaps_annotation_interval`）→ 放行 27 条读（应 8 条）
+→ `RAW_MQandDP = 97200,27`；同时 strand 证据归零 → `SB = 0,0,0,0`。**
+
+### 下一步（一处）
+
+查 `likelihood_candidate_read_context_ordinals` 为何在偏移窗口下对跨接删除候选写成哨兵：
+该字段与 `pairhmm.candidate_read_realignments` 一起在
+`calling_pipeline.cpp:16977` 由 PairHMM 结果赋给 `result`。需要确定是
+「该候选在偏移窗口下确实没有被 PairHMM 收集」还是「context ordinal 的分配随候选集合变化而漏写」。
+修复方向：让该候选在两种窗口下都拿到真实 context（首选），
+或在哨兵情形下不要让 MQ 落到会放行 27 条读的回退分支。
 
 ## 最小复现
 
