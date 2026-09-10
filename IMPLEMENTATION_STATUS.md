@@ -237,7 +237,7 @@ pinned GATK 4.6.2.0 不一致：
 完整证据、最小复现命令与根因分析见
 `fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md`。
 
-### 第 2 轮定位进展（修复**尚未开始**）
+### 第 2 轮定位进展（第 4–8 轮已收敛；方案 1 被否决，修复仍未落地）
 
 已把基准钉死：**非流式 native 与 GATK 在该区间上全部 48 条数据行逐字段相同**
 （含 29 块碎片结构），因此非流式是对的、流式是偏离方。
@@ -270,18 +270,39 @@ pinned GATK 4.6.2.0 不一致：
 与非流式相同，前提不成立（各 tile 产出的块本身就是退化的 `PL=0,0,0`）。从坐标看拼接器必然参与
 （记录跨 tile=500 的 core 边界 10020401），但它只是"把两个已退化的块接起来"的机制。
 
-**仍未定位到具体代码（但已缩小到可疑调用点）**：`run_region_streaming` 的每 tile 渲染
-—— `hc_call.cpp:6666` 的 `calling::run(decoded.reads, references, tile_options)` 与
-`hc_call.cpp:6674` 的 `gvcf(..., &decoded.reads, tile_options.informative_read_overlap_margin, ...)`。
-`decoded.reads` 是 tile 的 halo 读取批，`tile_options` 携带该 tile 的 `interval_start/end`；
-注释证据集似由二者共同决定，故随分块变化。**不能简单归因于 batch 过大**：tile=810 的 batch 更大，
-却给出正确的 `28800,8`。参考块构造器的取舍（`build_reference_blocks` vs
-`build_profile_local_reference_blocks`）仍是候选之一。
-`FASTGATK_DEBUG_GVCF_EMISSION=1` 显示 `symbolic-pl=unavailable` 在**两种模式下都出现**，
-不是判别依据（先前把它当作线索，一并更正）。D1（phasing）与 D2（注释作用域）是否同源未判定。
+**已定位到具体代码（第 4–8 轮，取代下方旧表述）**：
 
-**这同时暴露了一个方法学教训**：状态文档曾把「流式路径已传实际 read batch（非空指针）」
-当作已修正的证据，但"非空"不等于"范围正确"。修复必须由 oracle 判定，不能由改动描述判定。
+- D2 的真实性质是 **`-L` 窗口依赖**，**不是流式缺陷**：不加任何 `--stream-by-region`，
+  仅把 `-L` 起点改为 `20:10020381` 即复现错误的 `RAW_MQandDP=97200,27` / `SB=0,0,0,0`；
+  GATK 在两个窗口下都恒为 `28800,8` / `0,0,3,3`（已用 pinned jar 的
+  `--debug-genotyper-output` 独立复核：两窗口均为
+  `Event ... alleles=[CA*, *, AT] ... with 8 reads and 20 disqualified`）。
+- 机制链（插桩实测）：窗口 B 在 0-based `10020679` 处 `result.candidates` 里有**两份完全相同的
+  `CA→AT` 候选** —— 一份已配对（context ordinal 0），一份哨兵（`UINT32_MAX`）。
+  渲染采用哨兵那份 → `have_context_mapping_evidence=0` → MQ 证据门落到几何回退分支
+  → 放行 27 条读（应 8 条），同时 strand 证据归零。
+- 重复候选的**产生点已证实**是 `calling_pipeline.cpp:13738` 的无去重 append（partition merge）：
+  窗口 B 的重复位置正是 `10020679`，窗口 A 的重复在其它位置、不含该位点。
+- **方案 1（在 merge 处成组去重）已实施并被验收判据否决**：补丁使窗口 A 从 0 行差异变成
+  **4 行差异**（回归），且窗口 B **未被修复**。已 `git checkout` 回退并复验基线。
+  两条硬信息：① 其它位置的重复候选是**承重**的，删除会改变输出；
+  ② 删掉 `10020679` 的重复并未让渲染改用已配对的那份 ⇒ 渲染的选择不由 merge 先后决定，
+  需插桩确认两份候选在 merge 前后的相对顺序与各自 ordinal。
+- **下一步（唯一推荐方向）**：**方案 2** —— 渲染/注释处优先采用已配对孪生。
+  注意第 6 轮已记录的限制：**只换 context ordinal 治不了 `SB`**（strand 读的是该候选自己的
+  likelihood 行，重复候选那几行为 `-inf`），故方案 2 必须让 **strand 路径一并采用孪生的
+  likelihood 行**，属中等改动而非小修。
+- 验收判据（可机器判定）：两个窗口下该行都须为 `RAW_MQandDP=28800,8` 且 `SB=0,0,3,3`，
+  且窗口 A 的 48 行保持与 GATK 逐字节相同；另需复核 `10020421/10020431` 的第三种错误状态。
+
+**投入产出提示**：D2 自第 4 轮起已消耗 5 轮，结论是「小修不够」。若继续不划算，
+Track B 的**退出码分歧**（某 `--alleles` 记录经 Event 最小化后 ALT 为空时，GATK 以 exit 3
+中止而 native exit 0 静默成功）形状最收敛、验收只需比对退出码，是更划算的替换目标。
+
+**一处方法学教训**：状态文档曾把「流式路径已传实际 read batch（非空指针）」当作已修正的证据，
+但"非空"不等于"范围正确"。修复必须由 oracle 判定，不能由改动描述判定。
+同样地，第 5 轮我引用的 agent 推荐修法（靶子为 `*` 等位基因）未经独立验证即被采纳进计划，
+第 6 轮证明靶子错了 —— **agent 的结论必须先用插桩/实验独立复核再作为行动依据**。
 
 ### 并行原则（本仓库硬约束）
 
