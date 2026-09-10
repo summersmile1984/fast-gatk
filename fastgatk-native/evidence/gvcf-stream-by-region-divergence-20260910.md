@@ -196,11 +196,63 @@ Event at: [VC HC0 @ 20:10020680-10020681 Q. of type=MIXED alleles=[CA*, *, AT] a
 （它就是 `97200,27`）；
 (iii) 上游配对修复是正确方向，推荐修法即其收敛形式。
 
-**为何本轮仍未落地**：`calling_pipeline.cpp:9150-9151` 的**原作者注释明确反对**放宽这个集合
-（"attaching them here would widen the public candidate set without adding a state to any
-haplotype"）。这与推荐修法直接冲突，而推荐修法未经编译；它会改变**所有** HaplotypeCaller 运行的
-候选配对，属于核心语义改动。在无法完整跑完双后端门禁并迭代的情况下盲改，风险高于收益 ——
-因此本轮把语义与验收判据钉死，把补丁留给下一轮按判据实施与验证。
+### 第 6 轮：根因更正 —— 未配对的是**重复候选**，不是 `*` 等位基因
+
+上一轮引用的推荐修法（「为已装配候选补上同 locus 的**符号兄弟等位基因**」）建立在
+「未配对的候选是 `*`（跨接删除）」这一假设上。本轮用临时插桩打印**候选 → 等位基因 →
+context ordinal** 的映射（**已还原，仓库无改动**），该假设被直接推翻：
+
+```text
+-L 20:10019901-10020710
+  [FASTGATK_ANNOTATION_CANDIDATES] index=5 ref=CA alt=AT context_ordinal=0
+
+-L 20:10020381-10020710
+  [FASTGATK_ANNOTATION_CANDIDATES] index=1 ref=CA alt=AT context_ordinal=0
+  [FASTGATK_ANNOTATION_CANDIDATES] index=5 ref=CA alt=AT context_ordinal=4294967295 SENTINEL
+```
+
+即：
+
+- **窗口 A** 在该位置只有一个候选：`index=5`，`CA→AT`，ordinal **有效**（0）。
+- **窗口 B** 在该位置有**两个完全相同的候选**：`index=1`（`CA→AT`，ordinal 0，已配对）与
+  `index=5`（`CA→AT`，ordinal **SENTINEL**，未配对）。
+
+因此真正的根因是：**窗口 B 产生了同一 `(tid, position, REF, ALT)` 的重复候选**，
+其中未配对的那一份（index=5）被渲染/注释采用；而窗口 A 没有重复，故一切正确。
+`*` 等位基因与 `have_context_mapping_evidence` 无关。
+
+**关键约束**：早先的 gates 打印显示该调用的 `grouped_candidates=1`，
+即**该候选所在的输出组里只有它自己** —— 已配对的孪生候选（index=1）**不在组内**。
+所以任何「在 `likelihood_indices` 内寻找兄弟」的写法都不会生效，
+必须跨 `result.candidates` 查找同一 `(tid, position, REF, ALT)` 的已配对孪生。
+
+**修复空间的重新评估**：
+
+1. 让渲染采用已配对的孪生（而不是未配对的重复）——最接近 GATK 语义
+   （GATK 对同一 VC 只用一套读集合），但需要改输出组的选择/去重逻辑。
+2. 仅复用孪生的 context ordinal —— 能修 `RAW_MQandDP`；但**治不了 `SB`**：
+   strand 路径读的是**该候选自己**的 likelihood 行，而重复候选那几行是 `-inf`
+   （早先实测：窗口 B 下 index=5 的 `strand_total=0`，index=1 的是 4）。
+   因此这只是部分修复，输出行仍然错。
+3. 上游让重复候选根本不产生 —— 需先定位重复是在哪一步（合并/汇总）产生的。
+
+**结论**：上一轮的推荐修法**作废**（靶子错了）。下一步应先定位重复候选的产生点，
+再决定是「阻止重复」还是「渲染时优先已配对孪生」。验收判据不变：
+两个窗口下该行都须为 `RAW_MQandDP=28800,8` 且 `SB=0,0,3,3`，且窗口 A 的 48 行保持逐字节相同。
+
+**重复候选的可疑产生点（未证实，需先验证）**：`calling_pipeline.cpp:13738` 是一处
+**无去重的候选追加**（partition merge）：
+
+```cpp
+merged.candidates.insert(merged.candidates.end(),
+    part.candidates.begin(), part.candidates.end());
+```
+
+同一函数内 `graph_haplotype_event_maps`、`likelihoods`、`candidate_prior_*` 等也是纯 append。
+若两个 partition 各自装配出同一 `(tid, position, REF, ALT)`，这里就会产生完全重复的候选，
+且只有其中一个进入 PairHMM 配对 —— 与观测一致。**但本轮未证明该 merge 路径就是
+窗口 B 那个重复的来源**（窗口 B 比窗口 A 更短，若分区由区间长度驱动则窗口 B 更不该分区），
+因此下一步应先插桩打印该重复候选的来源/`candidate` 的 provenance，再确定修复点。
 
 ## 最小复现
 
