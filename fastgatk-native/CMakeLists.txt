@@ -1453,6 +1453,15 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_span_del_qual_oracle.py")
     set_tests_properties(fastgatk-hc-span-del-qual-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Same allele-length-prior class as the gate above, but on the gVCF
+    # reference-confidence path: a gVCF record carrying the symbolic spanning
+    # deletion '*' must use the SNP pseudocount on a 1 bp REF (htsjdk
+    # Allele.SPAN_DEL.length() == 1), not the indel one.
+    add_test(NAME fastgatk-hc-gvcf-symbolic-prior-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_gvcf_symbolic_prior_gatk_oracle.py")
+    set_tests_properties(fastgatk-hc-gvcf-symbolic-prior-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).

@@ -4819,8 +4819,22 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
                 }
                 if (include_spanning_deletion) {
                     const auto spanning = group.candidates.size() + 1U;
+                    // AlleleFrequencyCalculator selects every allele's
+                    // pseudocount from its length:
+                    // `a.length() == refLength ? snpPseudocount : indelPseudocount`
+                    // (AlleleFrequencyCalculator.java:175-176, refLength =
+                    // vc.getReference().length()).  htsjdk's symbolic spanning
+                    // deletion is a 1 bp allele (`Allele.SPAN_DEL.length() ==
+                    // 1`), so on a 1 bp REF record it takes the SNP prior and
+                    // only a longer REF gives it the indel prior.  The
+                    // ordinary-VCF writer already derives it this way; the
+                    // unconditional indel prior here changed P(no variant) for
+                    // REF/* genotypes and therefore the reference-confidence
+                    // QUAL of any gVCF record that carries `*`.
                     prior_pseudocounts[spanning] =
-                        result.genotype_indel_heterozygosity * ref_pseudocount;
+                        (group.reference.size() == 1
+                             ? result.genotype_snp_heterozygosity
+                             : result.genotype_indel_heterozygosity) * ref_pseudocount;
                 }
                 // See the arbitrary-ploidy writer: symbolic <NON_REF> has
                 // zero HTSJDK allele length and therefore uses GATK's indel
