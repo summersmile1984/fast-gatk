@@ -248,11 +248,50 @@ merged.candidates.insert(merged.candidates.end(),
     part.candidates.begin(), part.candidates.end());
 ```
 
-同一函数内 `graph_haplotype_event_maps`、`likelihoods`、`candidate_prior_*` 等也是纯 append。
-若两个 partition 各自装配出同一 `(tid, position, REF, ALT)`，这里就会产生完全重复的候选，
-且只有其中一个进入 PairHMM 配对 —— 与观测一致。**但本轮未证明该 merge 路径就是
-窗口 B 那个重复的来源**（窗口 B 比窗口 A 更短，若分区由区间长度驱动则窗口 B 更不该分区），
-因此下一步应先插桩打印该重复候选的来源/`candidate` 的 provenance，再确定修复点。
+### 第 7 轮：产生点**已证实**就是这处无去重追加
+
+上一节把它列为「可疑」，本轮用临时插桩直接判定（**已还原，仓库无改动**）。在该 append
+之前遍历 `part.candidates × merged.candidates`，对 `(tid, position, reference,
+alternate, reference_allele, alternate_allele)` 全同者打点：
+
+| 窗口 | 该窗口内的重复位置 |
+| --- | --- |
+| `20:10019901-10020710` | `10020227`、`10020228`、`10020428`、`10020430`、`10020433`、`10020437` |
+| `20:10020381-10020710` | **`10020678`（AC→TA）**、**`10020679`（CA→AT）** |
+
+关键点：
+
+- 窗口 B 的重复位置 **`10020679`（CA→AT）正是那个分歧行**
+  （1-based `POS=10020680`，ALT `AT,*,<NON_REF>`）。
+- 窗口 A 的重复发生在**其它**位置（`10020227`/`10020228`/`10020428`/…），
+  **不含** `10020679` —— 这正是窗口 A 该行正确、窗口 B 该行错误的原因。
+
+因此：**重复候选确实由 `calling_pipeline.cpp:13738` 这处 append 产生**，
+它只在该位置产生的那一份未进入 PairHMM 配对（哨兵），并被渲染采用。
+
+### 修复约束（关键，避免下一轮踩坑）
+
+该函数是**成组按位置追加**的，紧随其后还有多个**与候选一一对应的并行数组**：
+
+```cpp
+merged.reference_confidence_regions.insert(...part.reference_confidence_regions...);
+merged.likelihoods.insert(...part.likelihoods...);
+merged.candidate_prior_het.insert(...part.candidate_prior_het...);
+merged.candidate_prior_hom_alt.insert(...part.candidate_prior_hom_alt...);
+```
+
+而 likelihood 行是**按候选下标索引**的。所以**不能只对 `merged.candidates` 去重**——
+必须让这些并行数组同步跳过同一批条目，否则下标全部错位，会引入比原缺陷更严重的问题。
+这是本轮没有直接动手改这一行的主要原因。
+
+**下一步（两选一，均需先确认再动）**：
+1. 在 merge 处做**成组去重**（候选与其并行数组一起跳过重复项），并确认保留的那一份是
+   已配对的那个（本案例中 `merged` 里较早的那份 index=1 已配对，`part` 里较晚的那份
+   index=5 是哨兵，故「跳过 incoming 重复」方向正确）；
+2. 不改 merge，而在渲染/注释处**优先采用已配对孪生**（需跨 `result.candidates` 查找，
+   因为已配对的孪生不在输出组内）。
+两者都必须过本轮定的验收判据：两个窗口下该行 `RAW_MQandDP=28800,8` 且 `SB=0,0,3,3`，
+且窗口 A 的 48 行保持与 GATK 逐字节相同。
 
 ## 最小复现
 
