@@ -168,21 +168,55 @@ Mutect2 的测试结果**并没有覆盖本轮共享 calling pipeline 改动**�
 
 ### 执行状态与阻塞
 
-三路审计以子代理并行启动，但**全部失败于子代理提供方的配额上限**
-（`minimax-cn` 返回 `429 rate_limit_error: 已达到 Token Plan 用量上限`，见各子代理
-session 记录；三次尝试均在 turn 1 即失败）。因此第 1 轮改为由主会话接管单线执行，
-并行度受此限制。子代理已完成的部分产物（三个脚本）被保留并复用：
+首次尝试时三路审计的子代理**全部失败于提供方配额**（`minimax-cn` 返回
+`429 rate_limit_error: 已达到 Token Plan 用量上限`；三次尝试均在 turn 1 即失败）。
+第 3 轮改用 **`deepseek-official` / `deepseek-v4-flash`** 重新并行下发，
+三路全部完成。**结论：本仓库的子代理委派必须显式指定 `deepseek-official`**；
+`subagent` 工具不暴露 provider 参数，需经 `workflow` 的 provider/model 覆盖来指定
+（注意 provider 名是 `deepseek-official`，写成 `deepseek` 会直接失败）。
 
-- `verify_gvcf_stream_overlapping_indels_gatk_oracle.py`（Track A）→ 已跑通，
-  并据此**独立复现**出 P1 偏离（见下）。
-- `verify_mutect2_recheck_normal_replay.py`、`verify_mutect2_recheck_assembly_resultset_joint.py`
-  （Track C）→ 尚未执行。
+| 轨道 | 状态 | 报告 |
+| --- | --- | --- |
+| Track A（gVCF 流式/分区） | **完成** | `fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md` |
+| Track B（`--alleles` 复杂注入） | **完成，发现 5 处分歧** | `fastgatk-native/evidence/2026-09-10-parallel-audit/track-b-alleles-findings.md` |
+| Track C（Mutect2 独立复核） | **完成** | `fastgatk-native/evidence/2026-09-10-parallel-audit/track-c-mutect2-recheck-findings.md` |
+| Track D（流式根因定位，第 3 轮新增） | **完成** | `fastgatk-native/evidence/2026-09-10-parallel-audit/track-d-streaming-rootcause.md` |
 
-| 轨道 | 状态 |
-| --- | --- |
-| Track A | **已产出 P1 结论**（`--stream-by-region` 偏离 GATK 与非流式路径），证据已归档 |
-| Track B（`--alleles` 复杂注入） | **未开始**（子代理无产物，配额阻塞） |
-| Track C（Mutect2 独立复核） | **部分完成**：已发现 mutect2 二进制陈旧并重建复跑（280/280）；两个复核脚本未执行 |
+### 第 3 轮关键更正：D2 不是流式缺陷，而是 `-L` 窗口依赖缺陷
+
+Track D 发现并经主会话**复核确认**：不加任何 `--stream-by-region`，
+仅把 `-L` 起点改到 `20:10020381`，native 就复现出错误的
+`RAW_MQandDP=97200,27` / `SB=0,0,0,0`：
+
+| `-L` 窗口（均为非流式） | GATK | native | 数据行差异 |
+| --- | --- | --- | --- |
+| `20:10019901-10020710` | `28800,8` / `0,0,3,3` | 同 GATK（48 条） | **0 行** |
+| `20:10020381-10020710` | `28800,8` / `0,0,3,3`（13 条） | `97200,27` / `0,0,0,0`（13 条） | **2 行** |
+
+即 **GATK 的该注释与 `-L` 窗口起点无关，native 的有关**。含义有两点：
+
+1. 先前「非流式正确、流式偏离」的框架**只对首个窗口成立**，不能外推（已更正两份文档）。
+2. 这是一个**比流式问题更广的 parity 缺陷**：普通非流式 HaplotypeCaller 只要换 `-L` 窗口
+   （如 scatter 分区）就会复现。**修复优先级应高于流式路径本身。**
+
+### Track B / Track C 要点
+
+- **Track B：`--alleles` 注入边界不是 1:1**（5 处分歧）。已证最小反例两例：
+  ① 重叠 feature event —— GATK 输出 2 行（`chr1 900` 与 `chr1 904`），native 只输出 `900`，
+  且用 `--drop-alleles` 对照证明两行确为 `--alleles` 驱动；native 调试轨迹显示两个强制事件
+  都注入到 `calling_class=1`，其中一个在 `EVENTMAP_REGION` 与 `EVENTMAP_CALL` 之间丢失。
+  ② **退出码分歧** —— 某 `--alleles` 记录经 Event 最小化后 ALT 为空，GATK 以 exit 3 中止
+  （`IllegalArgumentException: Null alleles are not supported`），native 却 exit 0 输出空 VCF。
+  另有 2 处观察项经 `--drop-alleles` 对照判定**并非** `--alleles` 分歧（gVCF indel `END`
+  与 `--max-genotype-count 2`，后者 GATK 自身也会崩）。
+- **Track C：未观察到 Mutect2 回归**。`ctest -R 'fastgatk-mutect2'` 双后端 **30/30**
+  （144.8s / 142.2s）；`verify_mutect2_recheck_normal_replay.py` 双后端通过。
+  另有两处**对既有记录的更正**：① 先前记录的 Δ3.5@69368 **已不可复现**（GATK 与 native
+  同为一个值，旧 AS_SB_TABLE 缺陷已消失）；② 引擎 parity 头号数字不是 1.4e-14，现测为
+  max **4.69e-13**（双后端一致，仍远低于其 <1e-8 门限）；③ `FASTGATK_TLOD_FULL` 并非环境通道，
+  实际门控是 `FASTGATK_DEBUG_TLOD=1`。
+  交回的 `verify_mutect2_recheck_assembly_resultset_joint.py` 原稿有缺陷（matched normal
+  未接入且断言本身对 GATK 也不成立），已由该轨道改写。
 
 ### Track A 结论：`--stream-by-region` 偏离（P1）
 
@@ -312,11 +346,16 @@ pinned GATK 4.6.2.0 不一致：
 2. ~~跑完整 HC/Mutect2 回归。~~ 已完成；并已取得全量双后端 280/280 证据。
 3. 第 1 轮差异清单已完成第一条（Track A 的 `--stream-by-region` P1）；
    Track B / Track C 的剩余部分见「执行状态与阻塞」。
-4. **单线串行**落地修复，优先修 Track A 的 P1（`--stream-by-region` 的注释 read batch
-   与参考块边界）：一次一个改动 → 双后端增量构建 → 定向 oracle + 72 子集 → 全量回归 →
-   commit（有 git 后「改动前/后」才可验证）。修复后把
-   `verify_gvcf_stream_overlapping_indels_gatk_oracle.py` 的断言由 diagnostic 改为
-   「流式 == 非流式 == GATK」并注册进 CTest。
+4. **单线串行**落地修复，按下列优先级（每步：改 → 双后端增量构建 → 定向 oracle + 72 子集 →
+   全量回归 → commit）：
+   - **优先级 1：`-L` 窗口依赖的 annotation evidence**（`*`/spanning-deletion 记录的
+     `RAW_MQandDP`/`SB`）。这是**非流式路径**就会复现的 GATK parity 缺陷，影响面比流式更广。
+   - **优先级 2：流式路径 D1（凭空 phasing）与 D3（参考块粒度）**，Track D 已分别定位到
+     `gvcf()` 的 phasing 块（`hc_call.cpp:4085-4195`）与 tile 内逐 locus RCM 取值。
+   - **优先级 3：Track B 的 `--alleles` 注入缺失与退出码分歧**（含 GATK 会中止而 native 静默
+     成功的那一例）。
+   修复后把对应 oracle 的断言由 diagnostic 改为真断言并注册进 CTest，
+   注册需在主会话统一改 `fastgatk-native/CMakeLists.txt`（避免并行冲突）。
 5. 补齐 Track B（`--alleles` 复杂注入）与 Track C 的两个复核脚本；子代理配额恢复前由主会话
    执行，或等配额恢复后重新并行下发。
 6. 补齐静默 skip 的 32 个候选测试（补 `FASTGATK_REQUIRE_GATK_ORACLE=1`）与 tool audit 口径，

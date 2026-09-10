@@ -21,6 +21,42 @@
 流式是偏离方。第 2 轮另已确认 **只有在 tile 覆盖整个输入区间时才逐字节相同**，
 且加大 `--assembly-region-padding` **不是修复**（见「已验证」一节）。
 
+## 重要更正（第 3 轮）：D2 不是流式缺陷，而是 `-L` 窗口依赖缺陷
+
+本报告先前的定位框架是「非流式正确、流式偏离」。**该框架对 D2 是错的**，由独立审计发现、
+并经我复核确认：
+
+```bash
+# 完全不加 --stream-by-region
+fastgatk-hc-call -R fixtures/chr20/ref20mnp.fasta -I fixtures/chr20/mnp.bam \
+  -L 20:10020381-10020710 --emit-ref-confidence GVCF --max-mnp-distance 1 --threads 1 \
+  --add-output-vcf-command-line false -O n.g.vcf
+```
+
+在该窗口下，**没有任何流式**，native 仍然给出错误的
+`RAW_MQandDP=97200,27` / `SB=0,0,0,0`。关键对照（同一夹具，两条 `-L`）：
+
+| `-L` 窗口 | GATK | native | GATK vs native 数据行差异 |
+| --- | --- | --- | --- |
+| `20:10019901-10020710` | `28800,8` / `0,0,3,3`（48 条） | `28800,8` / `0,0,3,3`（48 条） | **0 行（逐字段相同）** |
+| `20:10020381-10020710` | `28800,8` / `0,0,3,3`（13 条） | `97200,27` / `0,0,0,0`（13 条） | **2 行** |
+
+即：**GATK 的该注释与 `-L` 窗口起点无关，native 的却有关**。因此
+
+- D2 的真实性质是 **`-L` 窗口依赖**（interval-dependent annotation evidence），
+  而非流式路径特有的错误；流式只是通过选择 tile 窗口**触发**了它。
+- 这是一个**比流式问题更广的 GATK parity 缺陷**：普通非流式 HaplotypeCaller 只要用不同的
+  `-L` 窗口（例如 scatter 分区）就会复现。本报告原标题中的「与 GATK 不一致」对 D2 而言，
+  根因不在 streaming。
+- 我先前「非流式是正确的一方」这一判断**只对 `20:10019901-10020710` 这一个窗口成立**，
+  不能外推。
+
+D1（凭空 phasing）与 D3（参考块粒度）的流式相关性见
+`fastgatk-native/evidence/2026-09-10-parallel-audit/track-d-streaming-rootcause.md`：
+该审计把 D1 钉到 `gvcf()` 的 phasing 块（`hc_call.cpp:4085-4195`），
+把 D3 钉到 tile 内部的逐 locus RCM 取值（tile=500 在 10020230 算出
+`depth=8 informative=0 gq=0 pl=0,0,0`，而非流式为 `depth=12 informative=12 gq=36 pl=0,36,494`）。
+
 ## 最小复现
 
 参考/输入夹具：`fixtures/chr20/ref20mnp.fasta`、`fixtures/chr20/mnp.bam`（仓库内已有）。
