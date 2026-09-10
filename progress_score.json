@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-09-05",
+  "method": "weighted-gates-v1",
+  "score_is_expert_estimate": true,
+  "tool_audit_schema_version": 1,
+  "tool_audit_expected_entries": 48,
+  "gate_weights": {
+    "api_cli": 0.2,
+    "oracle": 0.3,
+    "format_sidecar": 0.15,
+    "resource_io": 0.15,
+    "e2e_perf": 0.2
+  },
+  "workflow_weights": {
+    "runtime_io_compat": 0.2,
+    "kokkos_core": 0.2,
+    "hc_mutect2_bqsr": 0.3,
+    "long_tail_tools": 0.2,
+    "gpu_slurm_cluster": 0.1
+  },
+  "workflows": {
+    "runtime_io_compat": {
+      "gates": {
+        "api_cli": 1.0,
+        "oracle": 0.75,
+        "format_sidecar": 0.9,
+        "resource_io": 0.65,
+        "e2e_perf": 0.6
+      },
+      "score": 0.7775,
+      "evidence": [
+        "fastgatk-native/dispatcher/verify_dispatcher.py",
+        "fastgatk-native/scripts/verify_all.sh",
+        "fastgatk-native/scripts/verify_kokkos_backend_matrix.py"
+      ],
+      "blocking_boundary": "remote/cloud object-store semantics and production multi-shard retry"
+    },
+    "kokkos_core": {
+      "gates": {
+        "api_cli": 1.0,
+        "oracle": 0.75,
+        "format_sidecar": 0.8,
+        "resource_io": 0.6,
+        "e2e_perf": 0.5
+      },
+      "score": 0.735,
+      "evidence": [
+        "fastgatk-native/scripts/verify_kokkos_backend_matrix.py",
+        "fastgatk-kernels/tests/api_smoke.cpp",
+        "PAIRHMM_SIMD_BENCHMARK.md"
+      ],
+      "blocking_boundary": "CUDA/HIP/SYCL correctness and device-memory backpressure are not proven"
+    },
+    "hc_mutect2_bqsr": {
+      "gates": {
+        "api_cli": 1.0,
+        "oracle": 1.0,
+        "format_sidecar": 1.0,
+        "resource_io": 0.7,
+        "e2e_perf": 0.8
+      },
+      "score": 0.915,
+      "evidence": [
+        "fastgatk-native/scripts/verify_wgs_benchmark_a6_oracle.py",
+        "fastgatk-native/scripts/verify_hc_chr17_69k_70k_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_dream_synthetic_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_hcc1143_chr20_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_dream_synthetic_joint_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_hcc1143_joint_oracle.py",
+        "fastgatk-native/scripts/verify_hc_broad_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_bqsr.py",
+        "fastgatk-native/scripts/benchmark_end_to_end.py",
+        "fastgatk-native/scripts/verify_cnv_somatic_e2e_hcc1143_oracle.py"
+      ],
+      "blocking_boundary": "full read-threading/assembly and Mutect2 release-specific posterior parity"
+    },
+    "long_tail_tools": {
+      "gates": {
+        "api_cli": 0.85,
+        "oracle": 1.0,
+        "format_sidecar": 0.9,
+        "resource_io": 0.7,
+        "e2e_perf": 0.9
+      },
+      "score": 0.89,
+      "evidence": [
+        "fastgatk-native/scripts/verify_model_segments_mcmc_oracle.py",
+        "fastgatk-native/scripts/verify_flow_pairhmm_real_data_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_dream_synthetic_joint_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_hcc1143_joint_oracle.py",
+        "fastgatk-native/dispatcher/tool_registry.json",
+        "fastgatk-native/dispatcher/tool_registry.json",
+        "fastgatk-native/scripts/verify_all.sh"
+      ],
+      "blocking_boundary": "most long-tail entries remain explicit Java fallback prototypes"
+    },
+    "gpu_slurm_cluster": {
+      "gates": {
+        "api_cli": 0.05,
+        "oracle": 0.0,
+        "format_sidecar": 0.05,
+        "resource_io": 0.0,
+        "e2e_perf": 0.025
+      },
+      "score": 0.022500000000000003,
+      "evidence": [
+        "GATK_CPU_SIMD_GPU_DETAIL.md",
+        "FAST_GATK_RUNTIME_SPEC.md"
+      ],
+      "blocking_boundary": "no real GPU or multi-node SLURM/Nextflow production run has been captured"
+    }
+  },
+  "registry_snapshot": {
+    "entries": 48,
+    "prototype": 0,
+    "contract_compatible": 47,
+    "adapter": 1,
+    "contract_compatible_fraction": 0.9791666666666666
+  },
+  "global_score": 0.75725,
+  "global_percent_rounded": 76,
+  "tool_audits": [
+    {
+      "audit_status": "pass",
+      "evidence_paths": [
+        "fastgatk-native/scripts/verify_mutect2.py",
+        "fastgatk-native/scripts/verify_mutect2_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_somatic_likelihood_oracle.py",
+        "fastgatk-native/scripts/verify_somatic_posterior_normal_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_force_active_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_normal_lod_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_gvcf_reference_blocks_gatk_contract.py",
+        "fastgatk-native/scripts/verify_mutect2_bp_resolution_gatk_contract.py",
+        "fastgatk-native/scripts/verify_mutect2_gvcf_eventmap_gatk_contract.py",
+        "fastgatk-native/scripts/verify_mutect2_reference_confidence_eventmap_full_gatk_contract.py",
+        "fastgatk-native/scripts/verify_mutect2_gvcf_matched_normal_gatk_contract.py",
+        "fastgatk-native/scripts/verify_mutect2_gvcf_multitumor_gatk_contract.py",
+        "fastgatk-native/scripts/verify_pairhmm_default_indel_quality_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_dream_synthetic_oracle.py",
+        "fastgatk-native/scripts/verify_mutect2_hcc1143_chr20_oracle.py"
+      ],
+      "fallback_reason": "Native prototype reuses the HC/Kokkos kernel path for tumor/normal, emits TLOD/AF from biallelic or all-alleles-vs-without-ALT Dirichlet variational evidence plus a Kokkos somatic-germline-artifact-orientation posterior (PSOMATIC/PGERMLINE/PARTIFACT/OBP/CONTAM), groups concrete sibling ALTs into one multi-ALT locus record with Number=A vectors and REF+ALT AD/FAD, writes common Mutect2-shaped INFO (AS_SB_TABLE/DP/ECNT/ECNTH/MBQ/MFRL/MMQ/MPOS/POPAF) and GATK-shaped GT/AD/AF/DP/F1R2/F2R1/FAD/SB tumor fields, germline filtering, stats and F1R2 sidecars, and writes VCF/Tabix output. Mutect2 has an explicit somatic candidate-emission boundary: pileup candidates without a retained PairHMM ALT owner are restored and accept separate GATK --initial-tumor-lod (default 2, activity seed) and --tumor-lod-to-emit (default 3, final emission); until activity-region parity is complete, native applies their stricter value at output and records both plus the effective threshold, while raw -L selectors constrain halo-derived candidates to the requested core interval; fallback counts and candidate summaries are recorded. --af-of-alleles-not-in-resource (aliases --population-af/-default-af) controls the POPAF fallback, using 5e-8 tumor-only and 1e-6 tumor-normal by default. --mitochondria-mode accepts bare/optional boolean syntax and applies GATK mitochondrial defaults (both LOD thresholds 0, population AF 4e-3, pruning -4*ln(10), recover all dangling branches) unless explicitly overridden; effective values are recorded in stats/manifest. --dont-use-soft-clipped-bases is shared with HaplotypeCaller and gates terminal/internal soft-clip-derived assembly evidence while preserving explicit CIGAR I/D events. An explicit .tar.gz --f1r2-tar-gz path emits the standard .ref_histogram/.alt_histogram/.alt_table archive; explicit .tsv keeps the legacy sidecar.",
+      "fixture_digest": {
+        "algorithm": "sha256",
+        "evidence_bytes": [
+          "fastgatk-native/scripts/verify_mutect2.py",
+          "fastgatk-native/scripts/verify_mutect2_gatk_oracle.py",
+          "fastgatk-native/scripts/verify_somatic_likelihood_oracle.py",
+          "fastgatk-native/scripts/verify_somatic_posterior_normal_oracle.py",
+          "fastgatk-native/scripts/verify_mutect2_force_active_gatk_oracle.py",
+          "fastgatk-native/scripts/verify_mutect2_normal_lod_gatk_oracle.py",
+          "fastgatk-native/scripts/verify_mutect2_gvcf_reference_blocks_gatk_contract.py",
+          "fastgatk-native/scripts/verify_mutect2_bp_resolution_gatk_contract.py",
+          "fastgatk-native/scripts/verify_mutect2_gvcf_eventmap_gatk_contract.py",
+          "fastgatk-native/scripts/verify_mutect2_reference_confidence_eventmap_full_gatk_contract.py",
+          "fastgatk-native/scripts/verify_mutect2_gvcf_matched_normal_gatk_contract.py",
+          "fastgatk-native/scripts/verify_mutect2_gvcf_multitumor_gatk_contract.py",
+          "fastgatk-native/scripts/verify_pairhmm_default_indel_quality_gatk_oracle.py",
+          "fastgatk-native/scripts/verify_mutect2_dream_synthetic_oracle.py",
+          "fastgatk-native/scripts/verify_mutect2_hcc1143_chr20_oracle.py"
+        ],
+        "manifest": "fastgatk-native/tests/pinned_fixture_digests.sha256",
+        "manifest_sha256": "41523494d6d741af25d252b362bfd8b6aa63a2c238c137e8cd6020601eaef5ce",
+        "sha256": "cd911647dd03b21a913282372889fa180eb4b4d8fcfa29ce42b319ff9306db29"
+      },
+      "gate_scores": {
+        "api_cli": 1.0,
+        "e2e_perf": 0.35,
+        "format_sidecar": 1.0,
+        "oracle": 1.0,
+        "resource_io": 0.75
+      },
+      "name": "Mutect2",
+      "score": 0.8325,
+      "status": "contract-compatible"
+    },
+    {
+      "audit_status": "pass",
+      "evidence_paths": [
+        "fastgatk-native/scripts/verify_filter_mutect_calls.py",
+        "fastgatk-native/scripts/verify_filter_mutect_calls_contamination_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_calls_germline_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_orientation_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_normal_artifact_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_contamination_joint_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_orientation_joint_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_variant_index_alias_gatk_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_dream_synthetic_joint_oracle.py",
+        "fastgatk-native/scripts/verify_filter_mutect_hcc1143_joint_oracle.py"
+      ],
+      "fallback_reason": "Rust/GATK hard-filter boundary emits AS_FilterStatus (Number=A,Type=String), applies per-ALT MBQ/MMQ/MPOS, strict zero-strand, <= unique-read, natural-log TLOD multiallelic, presence-based PON, and all-sample ALT-AD NRatio semantics. Number=A TLOD/posterior vectors are reduced by concrete ALT (max TLOD, min somatic posterior, max germline/artifact posterior), while contamination/minimum-AF use all tumor ALT fractions; scalar legacy annotations broadcast and missing vector elements retain position. Full ErrorProbabilities joint posterior remains explicit fallback.",
+      "fixture_digest": {
+        "algorithm": "sha256",
+        "evidence_bytes": [
+          "fastgatk-native/scripts/verify_filter_mutect_calls.py",
+          "fastgatk-native/scripts/verify_filter_mutect_calls_contamination_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_calls_germline_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_orientation_gatk_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_normal_artifact_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_contamination_joint_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_orientation_joint_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_variant_index_alias_gatk_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_dream_synthetic_joint_oracle.py",
+          "fastgatk-native/scripts/verify_filter_mutect_hcc1143_joint_oracle.py"
+        ],
+        "manifest": "fastgatk-native/tests/pinned_fixture_digests.sha256",
+        "manifest_sha256": "41523494d6d741af25d252b362bfd8b6aa63a2c238c137e8cd6020601eaef5ce",
+        "sha256": "e1b89ce712efa93e6419a5b5490612db6975616fe58aed14883ff5b2c991716a"
+      },
+      "gate_scores": {
+        "api_cli": 1.0,
+        "e2e_perf": 0.75,
+        "format_sidecar": 1.0,
+        "oracle": 1.0,
+        "resource_io": 0.75
+      },
+      "name": "FilterMutectCalls",
+      "score": 0.9125,
+      "status": "contract-compatible"
+    }
+  ]
+}

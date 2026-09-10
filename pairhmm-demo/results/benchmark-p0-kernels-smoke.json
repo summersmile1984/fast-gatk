@@ -1,0 +1,107 @@
+{
+  "input": {
+    "records": 128,
+    "read_len": 64,
+    "hap_len": 80,
+    "independent_iterations": 2,
+    "matrix_iterations": 2,
+    "repeats": 3,
+    "seed": 42,
+    "warmup_iterations": 1,
+    "affinity": "physical logical CPUs 0..cores-1",
+    "kokkos_version": "5.2.0"
+  },
+  "methodology": {
+    "statistic": "median",
+    "order": "alternating baseline/Kokkos",
+    "kokkos_kernel_rate_excludes": "input packing and host/device deep copies",
+    "kokkos_amortized_rate_includes": "one preparation per benchmark invocation",
+    "gkl_rate_correction": "reported diagonal record rate multiplied by actual n*n/block work"
+  },
+  "rows": [
+    {
+      "workload": "independent",
+      "cores": 4,
+      "variant": "scalar",
+      "simd_width": 1,
+      "gatk_java_pairs_per_second": 54986.3135629,
+      "kokkos_kernel_pairs_per_second": 241362.111994,
+      "kokkos_amortized_pairs_per_second": 183756.89536982868,
+      "kokkos_over_java": 4.389494336948062,
+      "prepare_seconds": 0.000332498,
+      "checksum": -2373.44462884
+    },
+    {
+      "workload": "matrix8",
+      "records": 128,
+      "computed_pairs": 1024,
+      "cores": 4,
+      "variant": "scalar",
+      "simd_width": 1,
+      "gkl_reported_diagonal_pairs_per_second": 112352.104473,
+      "gkl_actual_matrix_pairs_per_second": 898816.835784,
+      "gkl_work_multiplier": 8.0,
+      "kokkos_kernel_pairs_per_second": 210256.492388,
+      "kokkos_amortized_pairs_per_second": 192608.75199873903,
+      "kokkos_over_gkl_actual": 0.23392585009225172,
+      "prepare_seconds": 0.00089247,
+      "checksum": -74121.1627052
+    },
+    {
+      "workload": "independent",
+      "cores": 4,
+      "variant": "avx2",
+      "simd_width": 4,
+      "gatk_java_pairs_per_second": 39199.965455,
+      "kokkos_kernel_pairs_per_second": 881190.708945,
+      "kokkos_amortized_pairs_per_second": 353228.66174630186,
+      "kokkos_over_java": 22.4793746299744,
+      "prepare_seconds": 0.000434227,
+      "checksum": -2373.44462884
+    },
+    {
+      "workload": "matrix8",
+      "records": 128,
+      "computed_pairs": 1024,
+      "cores": 4,
+      "variant": "avx2",
+      "simd_width": 4,
+      "gkl_reported_diagonal_pairs_per_second": 124961.986661,
+      "gkl_actual_matrix_pairs_per_second": 999695.893288,
+      "gkl_work_multiplier": 8.0,
+      "kokkos_kernel_pairs_per_second": 964141.288127,
+      "kokkos_amortized_pairs_per_second": 747942.883166428,
+      "kokkos_over_gkl_actual": 0.9644345791558061,
+      "prepare_seconds": 0.000614007,
+      "checksum": -74121.1627052
+    },
+    {
+      "workload": "independent",
+      "cores": 4,
+      "variant": "avx512",
+      "simd_width": 8,
+      "gatk_java_pairs_per_second": 47925.8048633,
+      "kokkos_kernel_pairs_per_second": 1439601.41036,
+      "kokkos_amortized_pairs_per_second": 502025.75235226523,
+      "kokkos_over_java": 30.038126943641572,
+      "prepare_seconds": 0.000332107,
+      "checksum": -2373.44462884
+    },
+    {
+      "workload": "matrix8",
+      "records": 128,
+      "computed_pairs": 1024,
+      "cores": 4,
+      "variant": "avx512",
+      "simd_width": 8,
+      "gkl_reported_diagonal_pairs_per_second": 126375.506057,
+      "gkl_actual_matrix_pairs_per_second": 1011004.048456,
+      "gkl_work_multiplier": 8.0,
+      "kokkos_kernel_pairs_per_second": 1547236.80731,
+      "kokkos_amortized_pairs_per_second": 989072.8697505007,
+      "kokkos_over_gkl_actual": 1.5303962527874462,
+      "prepare_seconds": 0.000746976,
+      "checksum": -74121.1627052
+    }
+  ]
+}

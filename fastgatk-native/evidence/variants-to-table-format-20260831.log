@@ -1,0 +1,30 @@
+Fast-GATK VariantsToTable numeric-boundary evidence (2026-08-31)
+
+Source changes:
+- fastgatk-core/include/fastgatk/io/java_numeric.hpp provides the shared Java-style
+  shortest decimal serializer (fixed/scientific cut-over, explicit .0 and signed zero).
+- fastgatk-native/src/variants_to_table_tool.cpp retains raw INFO tokens for text VCF
+  records (including long decimals, exponent spelling, literal `.` and flags), and uses
+  the shared Float formatter for typed FORMAT values and QUAL; HTSlib missing/vector-end
+  handling remains explicit.
+- fastgatk-native/CMakeLists.txt exposes fastgatk-core/include to the standalone
+  VariantsToTable target.
+
+Commands and results:
+- cmake --build build --target fastgatk-variants-to-table -> pass
+- cmake --build build-serial --target fastgatk-variants-to-table -> pass
+- verify_variants_to_table.py (OpenMP) -> pass, GATK 4.6.2.0 oracle enabled
+- FASTGATK_SERIAL=1 verify_variants_to_table.py -> pass, GATK 4.6.2.0 oracle enabled
+- ctest -R 'fastgatk-variants-to-table-contract' (final guard build) -> 1/1 passed per backend
+  (OpenMP 56.91 s, Serial 60.55 s); literal `.` and INFO flag oracle included
+- benchmark_variants_to_table.py (OpenMP, 10,000 records) -> p50 0.02538 s,
+  p95 0.02689 s, 393,981 records/s
+- FASTGATK_NATIVE_BUILD=build-serial benchmark_variants_to_table.py (10,000 records)
+  -> p50 0.02484 s, p95 0.02555 s, 402,555 records/s
+- Full CTest after the change: OpenMP 81/81 (1131.48 s), Serial 81/81 (1129.00 s)
+
+Boundary:
+- Text VCF INFO values with long-decimal/exponent spelling are byte-exact against the
+  pinned table oracle; typed FORMAT/QUAL values use the shared deterministic serializer.
+  Full raw-token identity for every Java/htsjdk floating-point edge and typed BCF values
+  (which necessarily follow HTSlib's decoded representation) remains explicit fallback.

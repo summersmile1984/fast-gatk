@@ -1,0 +1,28 @@
+Fast-GATK GetPileupSummaries per-record CIGAR evidence (2026-08-31)
+
+Source changes:
+- fastgatk-core/include/fastgatk/io/hts_reader.hpp: ReadBatch::cigar_record_layout_valid(record)
+- fastgatk-core/src/hts_reader.cpp: record-local reference_end/project_read_offset validation
+- fastgatk-native/src/get_pileup_summaries_tool.cpp: GoodCigarReadFilter uses the shared record-local API
+- fastgatk-native/scripts/verify_get_pileup_summaries.py: zero-length-CIGAR mixed batch
+- fastgatk-native/tests/hts_reader_projection_test.cpp: aggregate-vs-record-local projection regression
+
+Commands and results:
+- FASTGATK_EXPECTED_EXECUTION_SPACE=OpenMP python3 scripts/verify_get_pileup_summaries.py -> pass (sites=2, reads_used=2, bases_used=4)
+- FASTGATK_EXPECTED_EXECUTION_SPACE=Serial python3 scripts/verify_get_pileup_summaries.py -> pass (sites=2, reads_used=2, bases_used=4)
+- ctest -R 'fastgatk-(get-pileup-summaries-contract|hts-reader-indel-quality)' (OpenMP) -> 2/2 passed
+- ctest -R 'fastgatk-(get-pileup-summaries-contract|hts-reader-indel-quality)' (Serial) -> 2/2 passed
+- ctest --test-dir fastgatk-native/build --output-on-failure -> 81/81 passed, 1010.49 s
+- ctest --test-dir fastgatk-native/build-serial --output-on-failure -> 81/81 passed, 988.40 s
+- GATK/native empty-site oracle (OpenMP and Serial) -> byte-exact table/header, status=pass
+- ctest --test-dir fastgatk-native/build --output-on-failure (after empty-site fix) -> 81/81 passed, 1131.88 s
+- ctest --test-dir fastgatk-native/build-serial --output-on-failure (after empty-site fix) -> 81/81 passed, 1137.76 s
+- FASTGATK_EXPECTED_EXECUTION_SPACE=OpenMP python3 scripts/verify_get_pileup_summaries.py -> pass after no-sample gate
+- FASTGATK_EXPECTED_EXECUTION_SPACE=Serial python3 scripts/verify_get_pileup_summaries.py -> pass after no-sample gate
+- ctest -R 'fastgatk-get-pileup-summaries-contract' (OpenMP) -> 1/1 passed
+- ctest -R 'fastgatk-get-pileup-summaries-contract' (Serial) -> 1/1 passed
+- GATK/native table oracle (OpenMP and Serial) -> byte-exact table/header plus no-sample fail-closed, status=pass
+
+Semantic gate:
+- A valid 10M read and a zero-length 0M read are decoded in one batch. The valid read contributes one base at chr1:2; the malformed read is rejected by GoodCigarReadFilter. reads_seen=2 and reads_used=1 in the manifest.
+- A SAM with no @RG SM is rejected with BAD_INPUT rather than producing SAMPLE=UNKNOWN, preventing a silently invalid contamination table.

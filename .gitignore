@@ -1,0 +1,62 @@
+# ============================================================================
+# fast-gatk baseline ignore rules
+# 只跟踪源码 / 脚本 / 文档 / 小型夹具；第三方、数据、构建树与运行产物一律忽略。
+# 见 IMPLEMENTATION_STATUS.md「工程基线」一节。
+# ============================================================================
+
+# ---- 第三方与上游源码（体积大，非本项目产出） ----
+third_party/
+gatk-source/
+gatk-rs-source/
+kokkos-modules-demo/
+
+# ---- 大数据 / 测试数据（仅忽略仓库根目录的下载/生成数据集；
+#      注意：fastgatk-native/tests/fixtures/ 下的小型夹具必须入库，故只锚定根目录） ----
+/testdata/
+/fixtures/
+/reference.fa
+/reference.fa.fai
+/reference.dict
+*.deb
+
+# ---- CMake 构建树与 in-source 生成物（任意深度） ----
+fastgatk-native/build/
+fastgatk-native/build-serial/
+fastgatk/build-serial/
+pairhmm-demo/build-*/
+build/
+build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+cmake_packages/
+CTestTestfile.cmake
+CTestCostData.txt
+Makefile
+Testing/
+compile_commands.json
+
+# ---- 运行暂存区 / 生成输出 / 诊断 ----
+work/
+.ab4/
+.diag/
+.tmp-jar/
+.nextflow/
+.nextflow.log*
+perf.data
+*.o
+*.a
+*.so
+
+# ---- 仓库根目录的临时产物（图 dump、一次性索引与输出） ----
+/*.dot
+/*.bai
+/*.vcf
+/*.vcf.gz
+/*.vcf.gz.tbi
+/c4.*
+/.all_ctests.txt
+
+# ---- Python ----
+__pycache__/
+*.pyc

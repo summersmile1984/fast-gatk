@@ -1,0 +1,18 @@
+Fast-GATK CalculateContamination output-boundary evidence (2026-08-31)
+
+Source changes:
+- fastgatk-native/src/calculate_contamination_tool.cpp: Java HashMap-compatible contig bucket/head-insert ordering for segmentation; Java DoubleStream compensated sums.
+- fastgatk-core/include/fastgatk/io/java_numeric.hpp: Java Double.toString-compatible fixed/scientific serializer shared by the contamination and pileup table writers.
+- fastgatk-native/scripts/verify_calculate_contamination_gatk_oracle.py: preserves file order and asserts native/GATK segment coordinate order.
+
+Commands and results:
+- cmake --build build --target fastgatk-calculate-contamination -> pass
+- cmake --build build-serial --target fastgatk-calculate-contamination -> pass
+- verify_calculate_contamination.py (OpenMP/Serial) -> pass
+- verify_calculate_contamination_gatk_oracle.py (OpenMP/Serial) -> pass on four GATK 4.6.2.0 fixtures
+- ctest -R 'fastgatk-calculate-contamination-contract' (OpenMP/Serial) -> 1/1 passed per backend
+- ctest -R 'fastgatk-(get-pileup-summaries|calculate-contamination|gather-pileup-summaries)-contract' -> 3/3 passed per backend
+- Oracle: segment coordinates and emitted file order exact; contamination/error raw bits exact on all four fixtures; MAF delta <= 5.1e-14.
+
+Remaining boundary:
+- Java/C++ libm and optimizer evaluation order still produce ULP-level MAF/report differences, so the full tool's bit_identical_to_gatk remains false.

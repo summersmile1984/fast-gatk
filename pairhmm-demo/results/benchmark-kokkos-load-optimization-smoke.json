@@ -1,0 +1,78 @@
+{
+  "input": {
+    "records": 512,
+    "read_len": 150,
+    "hap_len": 160,
+    "iterations": 5,
+    "repeats": 3,
+    "seed": 42,
+    "warmup_iterations": 1,
+    "affinity": "physical logical CPUs 0..cores-1",
+    "kokkos_version": "5.2.0"
+  },
+  "methodology": {
+    "statistic": "median",
+    "order": "alternating baseline/Kokkos",
+    "kokkos_kernel_rate_excludes": "input packing and host/device deep copies",
+    "kokkos_amortized_rate_includes": "one preparation per benchmark invocation",
+    "gkl_rate_correction": "reported diagonal record rate multiplied by actual n*n/block work"
+  },
+  "rows": [
+    {
+      "workload": "independent",
+      "cores": 1,
+      "variant": "avx2",
+      "simd_width": 4,
+      "gatk_java_pairs_per_second": 11035.3097409,
+      "kokkos_kernel_pairs_per_second": 40514.4986831,
+      "kokkos_amortized_pairs_per_second": 32675.154046439384,
+      "kokkos_over_java": 3.6713512927454794,
+      "prepare_seconds": 0.015159735,
+      "checksum": -22478.5810851
+    },
+    {
+      "workload": "matrix8",
+      "records": 512,
+      "computed_pairs": 4096,
+      "cores": 1,
+      "variant": "avx2",
+      "simd_width": 4,
+      "gkl_reported_diagonal_pairs_per_second": 8639.38617593,
+      "gkl_actual_matrix_pairs_per_second": 69115.08940744,
+      "gkl_work_multiplier": 8.0,
+      "kokkos_kernel_pairs_per_second": 42048.6081911,
+      "kokkos_amortized_pairs_per_second": 40713.30489453324,
+      "kokkos_over_gkl_actual": 0.6083853547988555,
+      "prepare_seconds": 0.015974302,
+      "checksum": -696320.164399
+    },
+    {
+      "workload": "independent",
+      "cores": 1,
+      "variant": "avx512",
+      "simd_width": 8,
+      "gatk_java_pairs_per_second": 11067.0016164,
+      "kokkos_kernel_pairs_per_second": 53693.8877898,
+      "kokkos_amortized_pairs_per_second": 40219.57373536149,
+      "kokkos_over_java": 4.851710485903602,
+      "prepare_seconds": 0.01597292,
+      "checksum": -22478.5810851
+    },
+    {
+      "workload": "matrix8",
+      "records": 512,
+      "computed_pairs": 4096,
+      "cores": 1,
+      "variant": "avx512",
+      "simd_width": 8,
+      "gkl_reported_diagonal_pairs_per_second": 8758.47471382,
+      "gkl_actual_matrix_pairs_per_second": 70067.79771056,
+      "gkl_work_multiplier": 8.0,
+      "kokkos_kernel_pairs_per_second": 54367.6688895,
+      "kokkos_amortized_pairs_per_second": 52271.17462532989,
+      "kokkos_over_gkl_actual": 0.7759294664017417,
+      "prepare_seconds": 0.015108476,
+      "checksum": -696320.164399
+    }
+  ]
+}

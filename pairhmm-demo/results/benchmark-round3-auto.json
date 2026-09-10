@@ -1,0 +1,30 @@
+{
+  "input": {
+    "pairs": 512,
+    "read_len": 150,
+    "hap_len": 160,
+    "iterations": 10,
+    "seed": 42,
+    "native_backend": "auto"
+  },
+  "rows": [
+    {
+      "cores": 1,
+      "gatk_java_pairs_per_second": 10897.8352719,
+      "native_backend": "auto",
+      "native_pairs_per_second": 14179.5275859,
+      "native_auto_pairs_per_second": 14179.5275859,
+      "speedup": 1.3011324939423359,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 16,
+      "gatk_java_pairs_per_second": 15119.3435937,
+      "native_backend": "auto",
+      "native_pairs_per_second": 124435.543847,
+      "native_auto_pairs_per_second": 124435.543847,
+      "speedup": 8.230221310589858,
+      "checksum": -22478.5810851
+    }
+  ]
+}

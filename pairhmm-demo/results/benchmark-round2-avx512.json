@@ -1,0 +1,57 @@
+{
+  "input": {
+    "pairs": 512,
+    "read_len": 150,
+    "hap_len": 160,
+    "iterations": 10,
+    "seed": 42,
+    "native_backend": "avx512"
+  },
+  "rows": [
+    {
+      "cores": 1,
+      "gatk_java_pairs_per_second": 10927.2069066,
+      "native_backend": "avx512",
+      "native_pairs_per_second": 10881.0149307,
+      "native_avx512_pairs_per_second": 10881.0149307,
+      "speedup": 0.9957727554447513,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 2,
+      "gatk_java_pairs_per_second": 9192.62047453,
+      "native_backend": "avx512",
+      "native_pairs_per_second": 20948.6627284,
+      "native_avx512_pairs_per_second": 20948.6627284,
+      "speedup": 2.278856479111965,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 4,
+      "gatk_java_pairs_per_second": 12893.2771874,
+      "native_backend": "avx512",
+      "native_pairs_per_second": 32816.1539518,
+      "native_avx512_pairs_per_second": 32816.1539518,
+      "speedup": 2.545214337272583,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 8,
+      "gatk_java_pairs_per_second": 14658.9662926,
+      "native_backend": "avx512",
+      "native_pairs_per_second": 45961.4994882,
+      "native_avx512_pairs_per_second": 45961.4994882,
+      "speedup": 3.1353847584329224,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 16,
+      "gatk_java_pairs_per_second": 14317.3142441,
+      "native_backend": "avx512",
+      "native_pairs_per_second": 43013.5917153,
+      "native_avx512_pairs_per_second": 43013.5917153,
+      "speedup": 3.0043059041625355,
+      "checksum": -22478.5810851
+    }
+  ]
+}

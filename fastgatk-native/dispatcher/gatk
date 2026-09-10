@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Drop-in launcher name for existing `gatk Tool ...` process definitions.
+# Keep all parsing, registry validation, remote staging and explicit fallback
+# behavior in the single dispatcher entry point.
+dispatcher_dir=$(cd "$(dirname "$0")" && pwd)
+exec "$dispatcher_dir/fastgatk" "$@"

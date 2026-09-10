@@ -1,0 +1,103 @@
+FAST-GATK Mutect2 sample metadata boundary evidence (2026-08-31)
+
+Latest regression closure:
+  After preserving mate coordinates while aggregating repeated -I shards, the
+  shared overlap-quality stage briefly changed Mutect2 conflicting-mate bases
+  to zero.  GATK Mutect2 calls cleanOverlappingReadPairs with
+  setConflictingToZero=false; the native shared caller now selects that mode
+  for somatic_mode and keeps conflict telemetry without changing qualities.
+  The pinned chr17 broad oracle is restored to an exact 6/6 site set on both
+  OpenMP and Serial backends (GT 6/6, DP 5/6, AD 5/6; shared TLOD max absolute
+  delta 3.500717, mean 0.743978; bit-identical=false).
+
+Scope:
+  Match GATK 4.6.2.0 when tumor input has no @RG SM sample metadata.
+
+Oracle reproduction:
+  A 40-base synthetic FASTA/SAM with @RG lines removed was run through:
+    third_party/jdk17/bin/java -jar third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 ...
+  GATK exits non-zero during engine initialization with:
+    java.lang.IllegalArgumentException: samples cannot be empty
+
+Native implementation:
+  fastgatk-native/src/mutect2_tool.cpp now probes the tumor header before
+  aggregate decoding and before indexed --stream-by-region metadata setup.
+  Empty HeaderSummary.samples raises:
+    BAD_INPUT: tumor input header has no @RG SM sample (GATK requires a sample)
+  This prevents all reads from being mixed and labeled with synthetic TUMOR.
+
+Verification:
+  FASTGATK_MUTECT2_BINARY=build/fastgatk-mutect2 python3 scripts/verify_mutect2.py
+    PASS (default first @RG/SM, explicit missing sample, no-sample native + Java oracle,
+    synthetic multi-ALT, streaming, sidecars and read-filter contracts)
+  FASTGATK_MUTECT2_BINARY=build-serial/fastgatk-mutect2 FASTGATK_SERIAL=1 python3 scripts/verify_mutect2.py
+    PASS (same contract on Serial backend)
+  FASTGATK_MUTECT2_BINARY=build/fastgatk-mutect2 FASTGATK_REQUIRE_GATK_ORACLE=1 \
+    python3 scripts/verify_mutect2_gatk_oracle.py
+    PASS: GATK/native site set 6/6, GT 6/6, DP 5/6, AD 5/6, F1R2 archive member count exact;
+    posterior remains non-bit-identical by design (max shared TLOD delta 5.908758).
+  FASTGATK_MUTECT2_BINARY=build-serial/fastgatk-mutect2 FASTGATK_SERIAL=1 FASTGATK_REQUIRE_GATK_ORACLE=1 \
+    python3 scripts/verify_mutect2_gatk_oracle.py
+    PASS with the same semantic counts.
+  The same verifier now constructs one multi-sample SAM and invokes native with
+    -I combined-samples.sam --tumor-sample TUMOR --normal-sample NORMAL
+    (no --normal-input alias).
+    PASS: tumor_reads=40, normal_reads=8, VCF columns TUMOR/NORMAL, manifest
+    tumor_normal=true and sample_name_filtering=true on both backends.
+  It also repeats -I with a renamed second tumor shard and checks a mismatched
+  sequence dictionary:
+    PASS: two shards produce tumor_reads=80; incompatible @SQ length fails
+    before decode with the explicit incompatible-sequence-dictionary error.
+  A paired shard invocation (`-I tumor.sam -I normal.sam` with both sample
+  selectors) also passes with tumor_reads=40 and normal_reads=8.  
+  Aggregate repeated -I now applies the same stable coordinate merge used by
+  region streaming (argv order is the tie-break), so overlap/fragment stages
+  see GATK-like sorted input across shard boundaries.
+  The stream contract additionally exercises a single indexed BAM with both
+  `--tumor-sample` and `--normal-sample` (no `--normal-input`); the VCF header
+  carries both selected sample columns, covering the same-file streaming
+  branch.
+  Repeated indexed `-I` is now accepted by `--stream-by-region`: each bounded
+  core/halo tile validates all shard indexes and uses a stable coordinate merge.
+  Duplicated indexed fixture shards produce exactly 2x the single-shard
+  filtered read count and remain coordinate ordered with no duplicate loci.
+  ctest --test-dir build -R fastgatk-mutect2-contract --output-on-failure
+    1/1 passed in 9.63 s.
+  ctest --test-dir build-serial -R fastgatk-mutect2-contract --output-on-failure
+    1/1 passed in 10.28 s.
+  The same verifier now runs GATK's common --sites-only-vcf-output true on
+  the two-sample input.  Both OpenMP and Serial outputs preserve the tumor
+  read/evidence counts and site INFO, emit an 8-column #CHROM header/body,
+  retain BGZF/Tabix plus F1R2/stats, and record sites_only_vcf_output=true in
+  stats and OutputManifest.
+  The pinned GATK 4.6.2.0 oracle verifier also runs Java and native site-only
+  commands: both accept the boolean, Java/native headers have no sample list,
+  native site keys equal its ordinary VCF, and every emitted record has eight
+  columns on both backends.
+
+  The same synthetic contract now repeats --normal-sample NORMAL and
+  --normal-sample OTHER_NORMAL on a single multi-sample input.  PASS on both
+  OpenMP and Serial: aggregate normal_reads=12, stats and manifest expose
+  normal_samples=[NORMAL,OTHER_NORMAL], and the VCF header/body carries
+  TUMOR/NORMAL/OTHER_NORMAL with one independent FORMAT payload per normal.
+  Somatic inference still consumes the deterministic aggregate normal evidence;
+  release-specific joint normal posterior calibration remains explicit fallback.
+
+Compatibility boundary:
+  Tumor sample selection, no-sample failure mode, output indexing and sidecars
+  are covered. Release-specific somatic priors/posterior calibration,
+  complete FilterMutectCalls and whole-tool bit identity remain prototype/
+  explicit Java fallback.
+
+2026-08-31 output-index switch contract:
+  `--create-output-variant-index false` was exercised on the combined
+  tumor/normal fixture in both OpenMP and Serial builds.  The compressed VCF
+  and all caller/posterior/F1R2/stats records remain complete and unchanged;
+  the sibling `.tbi` is intentionally absent.  Stats and OutputManifest record
+  `create_output_variant_index=false` and `vcf_index=false`.  The Mutect2
+  verifier and targeted CTest passed on both backends, and the dispatcher
+  registry contract now accepts the optional-boolean spelling.  This boundary
+  also exercises enabled indexing for an uncompressed VCF: native writes a
+  Tribble LinearIndex v3 sibling `.idx` (and no `.tbi`), and bundled GATK
+  SelectVariants reads that index for a chr1 interval query.  This closes the
+  prior uncompressed-output index gap for ordinary VCF text.

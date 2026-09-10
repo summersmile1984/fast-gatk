@@ -1,0 +1,14 @@
+# Fast-GATK pinned fixture corpus v1 (SHA-256 of exact file bytes).
+# Paths are repository-relative and intentionally small enough for a local gate.
+afff2396bb69b112f687ccff7158df1a0afeb659c13918f59818caf0a538928b  gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam
+f99887e7820355f7a6584f932c60e0bc4b3470030d7cac4704e4879176d84dd3  gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta
+1b7b66c9c06383fd7a55c425c7631f9c023142c93e873c961e692171a1c7ab39  gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.dict
+9246a6c4418c6a7a4f3b31062930a608f77d764d6eeb4d327edc4a8270a967e2  gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam.bai
+fcfd686eef176fd1bc80da6e26963651543cc8e584273ca999db7c8b29785e94  gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.cram
+e73db5dc4295e151a44de57106180f49be075e3e8fc7c6b75ec34dc922a9d6a0  gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.cram.crai
+de45c1172776169dd314a976ee0b031d6032bb85b27e7776832b932d744db89a  gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta.fai
+90e537b5d13a8248dcbc9e3c5e892088dd9a375e8ebc67bf87e111263cd1e156  fastgatk-native/tests/flow_reader_fixture.sam
+40d53f8f5ba8ef031a24edaa98e02d57c347e483e57631e458389bcacacf973f  fastgatk-native/tests/flow_reader_reference.fa
+6238b407daedafa4f8b884cad8be8a23e870f51515e79e058d69607e907acc3f  fastgatk-native/tests/flow_hmer_remap.sam
+77acc3c6961fffa7b216e80c03bf256228e9ca8c7b0af2fd03b19b13d98297a5  fastgatk-native/tests/flow_hmer_remap_reference.fa
+85feac80b529dc67f860a6b5559ad91a12842e69cbbbbf12e4c608f353aa4007  fastgatk-native/tests/fixtures/overlap_quality.sam

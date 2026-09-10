@@ -1,0 +1,17 @@
+Fast-GATK GatherPileupSummaries AF formatting evidence (2026-08-31)
+
+Source change:
+- fastgatk-native/src/gather_pileup_summaries_tool.cpp now delegates AF serialization
+  to the shared Java Double.toString-compatible formatter instead of fixed
+  setprecision(15).
+- fastgatk-core/include/fastgatk/io/java_numeric.hpp applies Java's
+  fixed/scientific cut-over, exponent spelling, integral and negative-zero forms;
+  Get/GatherPileupSummaries and CalculateContamination share this boundary.
+
+Oracle and regression:
+- GATK 4.6.2.0/native high-precision AF table oracle (OpenMP) -> pass, table_bytes_exact=true
+- GATK 4.6.2.0/native high-precision AF table oracle (Serial) -> pass, table_bytes_exact=true
+- fastgatk-gather-pileup-summaries-contract (OpenMP) -> 1/1 passed
+- fastgatk-gather-pileup-summaries-contract (Serial) -> 1/1 passed
+- GATK/native oracle includes 0.0/1.0e-4/1.0e-3 formatting cut-over cases -> byte-exact output
+- Previous post-GetPileup-fix full CTest baseline: OpenMP 81/81, Serial 81/81.

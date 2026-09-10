@@ -1,0 +1,46 @@
+{
+  "input": {
+    "pairs": 512,
+    "read_len": 150,
+    "hap_len": 160,
+    "iterations": 10,
+    "seed": 42
+  },
+  "rows": [
+    {
+      "cores": 1,
+      "gatk_java_pairs_per_second": 10930.1784449,
+      "native_avx2_pairs_per_second": 11266.4635903,
+      "speedup": 1.0307666656217227,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 2,
+      "gatk_java_pairs_per_second": 8913.74014882,
+      "native_avx2_pairs_per_second": 21606.2417732,
+      "speedup": 2.423925469272316,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 4,
+      "gatk_java_pairs_per_second": 12699.4493162,
+      "native_avx2_pairs_per_second": 36832.3873513,
+      "speedup": 2.9003137407159,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 8,
+      "gatk_java_pairs_per_second": 15398.7195105,
+      "native_avx2_pairs_per_second": 59252.8806592,
+      "speedup": 3.847909601755974,
+      "checksum": -22478.5810851
+    },
+    {
+      "cores": 16,
+      "gatk_java_pairs_per_second": 13365.7191321,
+      "native_avx2_pairs_per_second": 88749.5259397,
+      "speedup": 6.640086108539663,
+      "checksum": -22478.5810851
+    }
+  ]
+}

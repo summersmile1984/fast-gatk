@@ -1,0 +1,61 @@
+{
+  "input": {
+    "pairs": 1024,
+    "read_len": 150,
+    "hap_len": 160,
+    "iterations": 2,
+    "seed": 42,
+    "warmup_iterations": 1,
+    "host_arch": "x86_64",
+    "host_cpu_flags": [
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "avx512vl",
+      "fma",
+      "sse4_2"
+    ],
+    "requested_native_backend": "auto",
+    "native_backend": "avx512",
+    "isa_selection_policy": "host-flags-and-binary-availability",
+    "native_api": "Kokkos::Experimental::simd<double>"
+  },
+  "rows": [
+    {
+      "cores": 1,
+      "gatk_java_pairs_per_second": 10881.8364493,
+      "native_backend": "avx512",
+      "native_execution_space": "OpenMP",
+      "native_simd_width": 8,
+      "native_prepare_seconds": 0.015645642,
+      "native_pairs_per_second": 58989.6682822,
+      "native_avx512_pairs_per_second": 58989.6682822,
+      "speedup": 5.420929505515096,
+      "checksum": -45008.3389919
+    },
+    {
+      "cores": 2,
+      "gatk_java_pairs_per_second": 21114.9539021,
+      "native_backend": "avx512",
+      "native_execution_space": "OpenMP",
+      "native_simd_width": 8,
+      "native_prepare_seconds": 0.016070349,
+      "native_pairs_per_second": 123752.407447,
+      "native_avx512_pairs_per_second": 123752.407447,
+      "speedup": 5.860889302471655,
+      "checksum": -45008.3389919
+    },
+    {
+      "cores": 4,
+      "gatk_java_pairs_per_second": 34967.8647372,
+      "native_backend": "avx512",
+      "native_execution_space": "OpenMP",
+      "native_simd_width": 8,
+      "native_prepare_seconds": 0.012361749,
+      "native_pairs_per_second": 271409.980148,
+      "native_avx512_pairs_per_second": 271409.980148,
+      "speedup": 7.761697266555281,
+      "checksum": -45008.3389919
+    }
+  ]
+}

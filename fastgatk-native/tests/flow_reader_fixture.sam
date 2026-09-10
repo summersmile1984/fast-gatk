@@ -1,0 +1,4 @@
+@HD	VN:1.6	SO:coordinate
+@SQ	SN:chr1	LN:100
+@RG	ID:flow	PL:ULTIMA	FO:ACGT	mc:12
+flow-read	0	chr1	1	60	2M	*	0	0	AG	II	RG:Z:flow	BI:Z:!5	BD:Z:$%	OA:Z:chr1,1,+,2M,60,0	XM:Z:chr1	tp:B:c,0,1	t0:Z:KK

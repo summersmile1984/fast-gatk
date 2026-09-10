@@ -1,0 +1,73 @@
+{
+  "input": {
+    "pairs": 1024,
+    "read_len": 150,
+    "hap_len": 160,
+    "iterations": 2,
+    "seed": 42,
+    "warmup_iterations": 1,
+    "host_arch": "x86_64",
+    "host_cpu_flags": [
+      "avx2",
+      "avx512bw",
+      "avx512f",
+      "avx512vl",
+      "fma",
+      "sse4_2"
+    ],
+    "requested_native_backend": "auto",
+    "native_backend": "avx512",
+    "isa_selection_policy": "host-flags-and-binary-availability",
+    "native_api": "Kokkos::Experimental::simd<double>"
+  },
+  "rows": [
+    {
+      "cores": 1,
+      "gatk_java_pairs_per_second": 10898.5010893,
+      "native_backend": "avx512",
+      "native_execution_space": "OpenMP",
+      "native_simd_width": 8,
+      "native_prepare_seconds": 0.015386106,
+      "native_pairs_per_second": 58697.71844205,
+      "native_avx512_pairs_per_second": 58697.71844205,
+      "speedup": 5.385852417786022,
+      "checksum": -45008.3389919
+    },
+    {
+      "cores": 2,
+      "gatk_java_pairs_per_second": 12596.784921499999,
+      "native_backend": "avx512",
+      "native_execution_space": "OpenMP",
+      "native_simd_width": 8,
+      "native_prepare_seconds": 0.016040301,
+      "native_pairs_per_second": 114949.70364200001,
+      "native_avx512_pairs_per_second": 114949.70364200001,
+      "speedup": 9.125320814663242,
+      "checksum": -45008.3389919
+    },
+    {
+      "cores": 4,
+      "gatk_java_pairs_per_second": 36939.496966449995,
+      "native_backend": "avx512",
+      "native_execution_space": "OpenMP",
+      "native_simd_width": 8,
+      "native_prepare_seconds": 0.011791037,
+      "native_pairs_per_second": 250502.8349665,
+      "native_avx512_pairs_per_second": 250502.8349665,
+      "speedup": 6.781436011270462,
+      "checksum": -45008.3389919
+    },
+    {
+      "cores": 8,
+      "gatk_java_pairs_per_second": 68468.75957709999,
+      "native_backend": "avx512",
+      "native_execution_space": "OpenMP",
+      "native_simd_width": 8,
+      "native_prepare_seconds": 0.009582622,
+      "native_pairs_per_second": 451073.5070345,
+      "native_avx512_pairs_per_second": 451073.5070345,
+      "speedup": 6.588019263392143,
+      "checksum": -45008.3389919
+    }
+  ]
+}

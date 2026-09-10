@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Relocatable install-tree launcher.  The native registry keeps source-tree
+# paths for development, so an installed wrapper supplies the installed
+# binary directory and registry explicitly without rewriting the registry.
+prefix=$(cd "$(dirname "$0")/.." && pwd)
+export FASTGATK_NATIVE_BUILD="${prefix}/bin"
+export FASTGATK_TOOL_REGISTRY="${prefix}/share/fastgatk/dispatcher/tool_registry.json"
+exec python3 "${prefix}/share/fastgatk/dispatcher/fastgatk.py" "$@"
