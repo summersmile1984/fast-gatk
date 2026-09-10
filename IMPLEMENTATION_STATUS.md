@@ -91,16 +91,31 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归 | **280/280 通过**（1002s） | **280/280 通过**（1000s） | 双后端并行执行 |
+| 全量回归（重建后复跑） | **280/280 通过**（975s） | **280/280 通过**（968s） | 二进制重建后的当前证据，见下方「关于二进制的更正」 |
 | HC/Mutect2 子集 | **72/72 通过**（261s） | **72/72 通过**（268s） | `omp-hc-mutect2.log` / `serial-hc-mutect2.log` |
 | `verify_hc_alleles_gatk_oracle.py` | 通过（86s） | 通过（112s） | 原「待本轮复跑」项已结清 |
 | `verify_hc_complex_multiallelic_oracle.py` | 通过（45s） | 通过（33s） | 四倍体 / max-ALT / max-genotype-count |
 | `verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py` | 通过（47s） | 通过（53s） | MNP + gVCF `*` + max-ALT |
 
-上述结论对应的二进制：`fastgatk-native/build/fastgatk-hc-call`（17:03）与
-`fastgatk-native/build-serial/fastgatk-hc-call`（17:08）。两者都比当时**全部**源文件新
-（最新源改动为 `fastgatk-native/src/calling_pipeline.cpp` 17:03），因此本轮 Host 注入与
-gVCF 改动确实被这轮回归覆盖。
+### 关于二进制的更正（重要）
+
+首轮回归确实在 `fastgatk-hc-call`（17:03 / 17:08，比全部源文件新）上取得 72/72 与 280/280。
+但随后发现 **`fastgatk-mutect2` 是陈旧的**：`fastgatk-native/build/fastgatk-mutect2` 时间戳为
+15:00，而共享的 `fastgatk-native/src/calling_pipeline.cpp` 是 17:03 —— 也就是说，首轮
+Mutect2 的测试结果**并没有覆盖本轮共享 calling pipeline 改动**。
+
+已据此重建两个后端（`fastgatk-mutect2` 重新链接为 18:17，证明该改动确实影响 Mutect2，
+因为共享库变化会触发重链），并**重跑全量**：
+
+- OpenMP 280/280（975s）、Serial 280/280（968s），证据目录
+  `.diag/regression/20260910-181746/`，日志 `omp.log` / `serial.log`。
+
+因此当前可用的结论是：**共享 calling pipeline 改动未使 Mutect2 回归**（在该测试集覆盖范围内）。
+这也是「必须核对二进制新鲜度、不能只看测试是否全绿」的一个实例——
+`run_regression.sh` 现已内置源码比二进制新的告警。
+
+> 注意：本节的绿色只对本节记录的二进制与 git 版本有效。任何生产代码改动都必须重新取得
+> 证据，不得沿用本节数字。
 
 已核销的历史条目：`fastgatk-mutect2-gvcf-reference-blocks-gatk-contract` 曾被
 `LastTestsFailed.log`（11:58）记为失败，实为陈旧记录；当前单跑 7.65s 通过。
@@ -147,14 +162,53 @@ gVCF 改动确实被这轮回归覆盖。
 
 | 轨道 | 范围 | 产出 |
 | --- | --- | --- |
-| Track A | gVCF 流式/分区：重叠 indel、符号等位基因 × max-ALT、read-overlap margin、重分块组合 | `.diag/track-a-gvcf-streaming-findings.md` |
+| Track A | gVCF 流式/分区：重叠 indel、符号等位基因 × max-ALT、read-overlap margin、重分块组合 | **发现 P1 偏离** → `fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md` |
 | Track B | `--alleles` / GenotypeGivenAlleles 复杂注入：重复序列 indel、跨 AssemblyRegion、相邻/重叠 feature、排名并列 | `.diag/track-b-alleles-findings.md` |
 | Track C | Mutect2 独立复核：共享 calling pipeline 改动后是否回归、正常样本重放、联合 AssemblyResultSet、somatic gVCF、TLOD 精度 | `.diag/track-c-mutect2-recheck-findings.md` |
 
-并行原则（本仓库的硬约束）：**oracle/夹具/审计可并行；生产代码改动必须单线串行**，
-因为核心路径的全部修复都落在同一批文件（`calling_pipeline.cpp`、`kmer_graph.cpp`、
-`hc_call.cpp`、`mutect2_tool.cpp`），并行编辑必然互相覆盖。所有 oracle 都使用
-`tempfile.TemporaryDirectory`，因此测试进程可安全并发。
+### 执行状态与阻塞
+
+三路审计以子代理并行启动，但**全部失败于子代理提供方的配额上限**
+（`minimax-cn` 返回 `429 rate_limit_error: 已达到 Token Plan 用量上限`，见各子代理
+session 记录；三次尝试均在 turn 1 即失败）。因此第 1 轮改为由主会话接管单线执行，
+并行度受此限制。子代理已完成的部分产物（三个脚本）被保留并复用：
+
+- `verify_gvcf_stream_overlapping_indels_gatk_oracle.py`（Track A）→ 已跑通，
+  并据此**独立复现**出 P1 偏离（见下）。
+- `verify_mutect2_recheck_normal_replay.py`、`verify_mutect2_recheck_assembly_resultset_joint.py`
+  （Track C）→ 尚未执行。
+
+| 轨道 | 状态 |
+| --- | --- |
+| Track A | **已产出 P1 结论**（`--stream-by-region` 偏离 GATK 与非流式路径），证据已归档 |
+| Track B（`--alleles` 复杂注入） | **未开始**（子代理无产物，配额阻塞） |
+| Track C（Mutect2 独立复核） | **部分完成**：已发现 mutect2 二进制陈旧并重建复跑（280/280）；两个复核脚本未执行 |
+
+### Track A 结论：`--stream-by-region` 偏离（P1）
+
+在 `fixtures/chr20/mnp.bam` + `20:10019901-10020710` 上，`fastgatk-hc-call
+--stream-by-region N`（N < 区间长度）与**同命令去掉该选项**的输出不一致，也与
+pinned GATK 4.6.2.0 不一致：
+
+- **参考块粒度改变**：非流式与 GATK 均为 48 条记录（把 10020230–10020428 拆成 29 个
+  `<NON_REF>` 块）；tile=500 时流式只有 20 条，28 条被合并成单块。
+- **注解读数错误**：20:10020680 行 `RAW_MQandDP` 由 `28800,8` 变为 `97200,27`，
+  `SB` 由 `0,0,3,3` 变为 `0,0,0,0`；而 GATK 与非流式 native 在该行**逐字段相同**。
+  `QUAL/PL/GT/GQ/PGT/PID/PS` 不受影响。
+- tile 扫描显示**只有 tile 覆盖整个区间时才逐字节相同**；OpenMP 与 Serial 偏离一致，
+  指向 Host 路径而非 kernel。
+- 现有测试 `fastgatk-hc-region-streaming-contract` 断言 tile=500 的 key 集合与非流式相同，
+  但该断言在本次夹具上不成立 —— 说明该契约当前**依赖夹具**，需补回归守卫。
+
+完整证据、最小复现命令与根因假设见
+`fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md`。
+
+### 并行原则（本仓库硬约束）
+
+**oracle/夹具/审计可并行；生产代码改动必须单线串行**，因为核心路径的全部修复都落在
+同一批文件（`calling_pipeline.cpp`、`kmer_graph.cpp`、`hc_call.cpp`、`mutect2_tool.cpp`），
+并行编辑必然互相覆盖。所有 oracle 都使用 `tempfile.TemporaryDirectory`，因此测试进程
+可安全并发。
 
 ## 工程基线
 
@@ -193,18 +247,33 @@ gVCF 改动确实被这轮回归覆盖。
   `tool_audit_expected_entries` 声明 48 条而 `tool_audits` 实际只有 2 条（Mutect2 0.833、
   FilterMutectCalls 0.912）。本文件的 78% / 93% 与该分数目前**没有同源证据链**，
   在补齐 tool audit 之前，两个数字都只能当作项目管理估计。
-- **静默 skip 风险**：117 个 `verify_*.py` 在缺少 GATK/oracle 输入时会打印
-  `{"status":"skip"}` 并返回 0；注册的 267 个测试中只有 134 个设置了
-  `FASTGATK_REQUIRE_GATK_ORACLE=1`。因此「全绿」可能包含静默跳过。已启动一次全量
-  verbose 复跑统计实际 skip 数，结果与处置追加到本节。
+- **静默 skip 风险（已实测；当前环境未发生）**：117 个 `verify_*.py` 在缺少 GATK/oracle
+  输入时会打印 `{"status":"skip"}` 并返回 0；注册测试中只有 134 个设置了
+  `FASTGATK_REQUIRE_GATK_ORACLE=1`，因此共有 **32 个「可静默跳过且未设强制」的候选**。
+  已对这 32 个候选做定向 verbose 复跑（`.diag/regression/skip-audit-verbose.log`）：
+  32/32 通过，全部产出了 `status` 字段，**skip 计数为 0**（日志中唯一的 "skip" 字样来自
+  `fastgatk-mutect2-tlod-formula` 的 `multiallelic_loci_skipped: 0` 字段）。
+  结论：本机当前的「全绿」是真实执行结果，不是静默跳过。但这 32 个测试在缺少 bundled
+  GATK/testdata 的机器上会**静默变绿**，属可移植性/CI 隐患，应逐一补上
+  `FASTGATK_REQUIRE_GATK_ORACLE=1`。
+
+  说明：`ctest -O`（output log）**不会**记录通过用例的 stdout，只有 `-V` 才会；因此
+  「统计静默跳过」必须用 `-V`。这是上一轮误判「0 skip」的原因，已修正。
 
 ## 下一步执行顺序
 
 1. ~~结束并确认 Serial 构建，完成 Serial oracle。~~ 已完成，见「最近验证状态」。
 2. ~~跑完整 HC/Mutect2 回归。~~ 已完成；并已取得全量双后端 280/280 证据。
-3. 汇总三路审计的差异清单，按影响核心输出正确性的程度排序。
-4. **单线串行**落地修复：一次一个改动 → 双后端增量构建 → 定向 oracle + 72 子集 →
-   全量回归 → commit（有 git 后「改动前/后」才可验证）。
-5. 补齐静默 skip 审计与 tool audit 口径，使百分比与证据同源。
-6. 只有当每个核心选项都有匹配范围的当前证据时，才讨论「1:1 完成」。
+3. 第 1 轮差异清单已完成第一条（Track A 的 `--stream-by-region` P1）；
+   Track B / Track C 的剩余部分见「执行状态与阻塞」。
+4. **单线串行**落地修复，优先修 Track A 的 P1（`--stream-by-region` 的注释 read batch
+   与参考块边界）：一次一个改动 → 双后端增量构建 → 定向 oracle + 72 子集 → 全量回归 →
+   commit（有 git 后「改动前/后」才可验证）。修复后把
+   `verify_gvcf_stream_overlapping_indels_gatk_oracle.py` 的断言由 diagnostic 改为
+   「流式 == 非流式 == GATK」并注册进 CTest。
+5. 补齐 Track B（`--alleles` 复杂注入）与 Track C 的两个复核脚本；子代理配额恢复前由主会话
+   执行，或等配额恢复后重新并行下发。
+6. 补齐静默 skip 的 32 个候选测试（补 `FASTGATK_REQUIRE_GATK_ORACLE=1`）与 tool audit 口径，
+   使百分比与证据同源。
+7. 只有当每个核心选项都有匹配范围的当前证据时，才讨论「1:1 完成」。
 
