@@ -475,3 +475,47 @@ native 逐字节相同 —— 属 `--stream-by-region` 的**范围/语义问题*
 均以 `RESOURCE_EXHAUSTED: single-base Mutect2 tile exceeds safe memory budget`（exit 2）中止；
 10 kb 窗口（size 1000）下流式与非流式一致。即 **Mutect2 的区域流式在 contig 规模上不可用**，
 这是一条待评估的容量/边界问题（未定性为缺陷）。
+
+## 待办：forced-alleles 多等位/`*` 发射分歧（第 10 轮已完整规格化，**刻意未修**）
+
+**分歧**：`--alleles` 强制等位基因时，GATK 会发射一条含符号 `*` 的多等位行并只打 LowQual 过滤，
+native 完全不发射该行。最小复现（已写成严格门禁，当前**按设计失败**）：
+
+```text
+GATK   : 697 TC>T 98.60 .  |  698 C *,A 0 LowQual  |  700 CA>C 144.77 .
+NATIVE : 697 TC>T 98.60 .                          |  700 CA>C 144.77 .     (缺 698 行)
+```
+
+三条对照（drop-alleles / 仅强制删除 / 仅强制删除+drop-alleles）两侧均逐字节相同 → 归因确定。
+
+**GATK 语义已从 pinned 源码证实**（非采信转述）：
+- `GenotypingEngine.java:167-170`：`... && forcedAlleles.isEmpty()` —— 这是该文件里**唯一**的
+  强制等位基因豁免；`forcedAlleles` 取自 `AssemblyBasedCallerUtils.java:1005-1009`。
+- 不丢弃而是降级：`GenotypingEngine.java:183-186` → `QUAL=0` + `FILTER=LowQual`。
+- 符号 `*` 的保留：`GenotypingEngine.java:304-327` 的 `calculateOutputAlleleSubset`
+  （`isSpuriousSpanningDeletion` 314；`toOutput` 316 含 `forcedAlleles.contains(allele)`）。
+
+**定位**：`calling_pipeline.cpp:17521-17533` 的无条件置信度门
+（trace：`pos=697 ref=C alt=A support=0 qual=0 threshold=30 decision=confidence_suppressed`）。
+native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发射。
+
+**为何刻意未修（5 项必须协同的改动）**：
+1. 发射豁免（依据上述 `forcedAlleles.isEmpty()`）；
+2. **FILTER 列**：LowQual 无任何发射通路，7 处 writer 记录点全部硬编码 `'.'`
+   （`hc_call.cpp:3615/3624/3862/4587/4598/4917/4945`），而 `GenotypeCall` 结构里没有 filter 字段；
+3. **符号 `*` ALT**：ordinary diploid writer 明确关闭（`hc_call.cpp:3238/3248`），只有 gVCF 路径发射；
+4. **Number=G/R 重排**到 GATK 的 `[REF,*,ALT]` 顺序（native 为 `[REF,concrete ALT,*]`）；
+5. **对已发布等位基因划分做注释重算**——实测该候选**完全没有注释**
+   （`FASTGATK_DEBUG_ANNOTATION_POSITION=697` 下 native 不打印 summary，
+   因为 `calculate_variant_annotations` 位于被 `continue` 跳过的发射分支内），
+   而该行需要 10 个精确 INFO 字段（含依赖 `*` 划分的 `ReadPosRankSum=3.523`）。
+
+**结论**：这是**一个成规模的功能缺口**，不是最小修复——因此本轮只交付门禁与规格，不动代码。
+门禁脚本 `fastgatk-native/scripts/verify_hc_forced_alleles_emission_gate_oracle.py` 已入库，
+**尚未注册进 CTest**（strict 形态会故意使套件变红；如需在套件中可见，应以 diagnostic 形态注册）。
+
+**同时记录一条新观察（已测、未修、未被门禁覆盖）**：不带 `--alleles`、用 12 条带真实
+`chr1:698 C>A` 的读加 6 条删除读时，两侧都发射双等位行，但
+`GATK QUAL/QD = 282.04/5.88` vs `NATIVE 291.07/6.06`（其余 ALT/INFO/FORMAT 相同，`chr1:697` 逐字节相同）。
+它与本缺口**不同源**（不是符号 ALT 问题）；「与 native ordinary diploid 路径强制 concrete-only
+导致 AF 排除 `*` 同根」只是**猜测**，需独立夹具与门禁验证。
