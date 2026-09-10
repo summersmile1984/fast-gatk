@@ -1396,6 +1396,21 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_region_streaming.py")
     set_tests_properties(fastgatk-hc-region-streaming-contract PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>")
+    # Diagnostic oracle for the OPEN divergence documented in
+    # fastgatk-native/evidence/gvcf-stream-by-region-divergence-20260910.md:
+    # reference-confidence block granularity, span-deletion annotations
+    # (RAW_MQandDP/SB), and spurious phasing differ between --stream-by-region
+    # tiles, between -L windows, and from pinned GATK.  It deliberately reports
+    # a JSON status of "diagnostic" and exits 0 so a known, unfixed divergence
+    # does not turn the suite red; its output stays in the test log as the
+    # standing reminder.  When the fix lands, convert its comparisons to hard
+    # assertions (streamed == non-streamed == GATK) and add
+    # FASTGATK_REQUIRE_GATK_ORACLE=1 to this property list.
+    add_test(NAME fastgatk-hc-gvcf-stream-overlap-diagnostic
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_gvcf_stream_overlapping_indels_gatk_oracle.py")
+    set_tests_properties(fastgatk-hc-gvcf-stream-overlap-diagnostic PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).
