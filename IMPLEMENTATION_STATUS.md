@@ -539,3 +539,29 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 判据（可复用）：**任何 parity 声称都必须连带 `-L`（以及全部其它输入参数）一起固定**；
 > 「native 与 GATK 1:1」只能表述为「在相同输入下逐字节一致」。
+
+## 测试注册债（第 17 轮发现，待分诊）
+
+对 `fastgatk-native/scripts/verify_*.py` 与 `CMakeLists.txt` 做了一次机械比对：
+**266 个脚本中 248 个已注册，18 个未注册**。这 18 个**多数是历史遗留**（基准/辅助/长期存在），
+并非本会话产生；不应批量注册（有些不是测试，有些可能已在别处注册）。分诊原则：
+
+- **必须注册**：本会话新增的**严格门禁**——已注册 9 道（window-invariance、ploidy-window-invariance、
+  alleles-overlap、span-del-qual、gvcf-symbolic-prior、arbitrary-ploidy-span-del-prior、
+  polyploid-gvcf-span-del-prior、spanning-prior-genotype-gq、**af-zero-format**）。
+- **刻意不注册为 strict**：`verify_hc_forced_alleles_emission_gate_oracle.py`
+  —— 它按设计**必须失败**（记录尚未修复的符号 ALT/LowQual 发射缺口）；
+  若要在套件中可见，应以 diagnostic 形态注册，否则会把套件永久变红。
+- **待判断**：`verify_hc_alleles_deep_boundary.py`、`verify_hc_alleles_deep_limits.py`（Track B 产出）、
+  `verify_mutect2_recheck_normal_replay.py`、`verify_mutect2_recheck_assembly_resultset_joint.py`
+  （Track C 产出，两者在双后端均通过，适合注册）、`verify_hc_multialt_owner_annotation_fixture_oracle.py`
+  （「已到达但无害」的负例守卫，需先确认其退出语义）。
+- **很可能是辅助/基准而非测试**：`verify_native.py`、`verify_kernel_benchmark.py`、
+  `verify_kokkos_backend_matrix.py`、`verify_bam_intervals.py`、
+  `verify_pairhmm_results_oracle.py`、`verify_somatic_*.py`、`verify_fragment_aggregation_gatk_oracle.py`、
+  `verify_reblock_gatk_multisample.py`、`verify_hc_multiallelic_gatk_oracle.py`
+  —— 需逐个确认是「漏注册」还是「本就不属于套件」。
+
+> 教训：本会话有两次新建了严格门禁却忘了注册（AF-format 直到本轮才补上；
+> 另有一批由子代理创建的脚本同样没注册）。**门禁不注册等于没有门禁** ——
+> 每次新增 oracle 后应立刻做一次上面的机械比对。
