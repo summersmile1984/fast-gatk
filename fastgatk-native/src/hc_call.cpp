@@ -680,11 +680,25 @@ std::vector<double> genotype_priors_for_group(
                                    result.candidate_prior_hom_alt[index]);
     }
     if (include_spanning_deletion) {
-        const auto spanning_heterozygosity = result.genotype_indel_heterozygosity;
+        // GenotypePriorCalculator.assumingHW classifies every called,
+        // non-symbolic allele from its length: `allele.length() == refLength ?
+        // SNP : INDEL` (GenotypePriorCalculator.java:139-153) and both SNP
+        // values carry the log10(3) normalization (het = log10(snpHet) -
+        // log10(3), hom-var = 2*log10(snpHet) - log10(3), i.e. NOT twice the
+        // normalized het value).  htsjdk's symbolic spanning deletion is a 1 bp
+        // allele (`Allele.SPAN_DEL.length() == 1`), so on a 1 bp REF record it
+        // is a SNP event; only a longer REF makes it an INDEL event.
+        const bool spanning_is_snp = !candidates.empty() &&
+            candidate_reference(*candidates.front()).size() == 1;
+        const auto spanning_heterozygosity = spanning_is_snp
+            ? result.genotype_snp_heterozygosity
+            : result.genotype_indel_heterozygosity;
         if (!(spanning_heterozygosity > 0.0) || !std::isfinite(spanning_heterozygosity))
             return {};
         const auto log10_spanning_het = std::log10(std::max(spanning_heterozygosity, 1e-300));
-        allele_priors.emplace_back(log10_spanning_het, 2.0 * log10_spanning_het);
+        const auto spanning_snp_normalization = spanning_is_snp ? std::log10(3.0) : 0.0;
+        allele_priors.emplace_back(log10_spanning_het - spanning_snp_normalization,
+                                   2.0 * log10_spanning_het - spanning_snp_normalization);
     }
     if (include_non_ref) {
         const auto other_het = std::max(result.genotype_snp_heterozygosity,
@@ -3356,7 +3370,19 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
                 prior_pseudocounts[alt + 1] = heterozygosity * ref_pseudocount;
             }
             if (has_spanning_deletion)
-                prior_pseudocounts.back() = result.genotype_indel_heterozygosity *
+                // AlleleFrequencyCalculator selects every allele's Dirichlet
+                // pseudocount from its length:
+                // `a.length() == refLength ? snpPseudocount : indelPseudocount`
+                // (AlleleFrequencyCalculator.java:175-176, refLength =
+                // vc.getReference().length()).  htsjdk's symbolic spanning
+                // deletion is a 1 bp allele (`Allele.SPAN_DEL.length() == 1`),
+                // so on a 1 bp REF record it takes the SNP pseudocount and only
+                // a longer REF gives it the indel pseudocount.  The
+                // unconditional indel pseudocount here under-weighted `*` and
+                // therefore changed P(no variant) = the record's QUAL.
+                prior_pseudocounts.back() =
+                    (ref.size() == 1 ? result.genotype_snp_heterozygosity
+                                     : result.genotype_indel_heterozygosity) *
                     ref_pseudocount;
             joint_frequency = fastgatk::kernels::calculate_allele_frequency_kokkos(
                 frequency_pl, 1, static_cast<int>(frequency_allele_count), sample_ploidy,
@@ -4478,8 +4504,23 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
                     }
                     if (include_spanning_deletion || hidden_spanning_deletion) {
                         const auto spanning = group.candidates.size() + 1U;
+                        // AlleleFrequencyCalculator selects every allele's
+                        // Dirichlet pseudocount from its length:
+                        // `a.length() == refLength ? snpPseudocount :
+                        // indelPseudocount` (AlleleFrequencyCalculator.java:175-176,
+                        // refLength = vc.getReference().length()).  htsjdk's
+                        // symbolic spanning deletion is a 1 bp allele
+                        // (`Allele.SPAN_DEL.length() == 1`), so on a 1 bp REF
+                        // record it takes the SNP pseudocount and only a longer
+                        // REF gives it the indel pseudocount.  The unconditional
+                        // indel pseudocount here under-weighted `*` and moved
+                        // P(no variant), i.e. the reference-confidence QUAL, of
+                        // every polyploid gVCF record that carries `*`.
                         prior_pseudocounts[spanning] =
-                            result.genotype_indel_heterozygosity * ref_pseudocount;
+                            (group.reference.size() == 1
+                                 ? result.genotype_snp_heterozygosity
+                                 : result.genotype_indel_heterozygosity) *
+                            ref_pseudocount;
                     }
                     if (sample_ploidy != 1) {
                         // HTSJDK reports Allele.NON_REF_ALLELE.length() as

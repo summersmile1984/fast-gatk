@@ -1462,6 +1462,24 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_gvcf_symbolic_prior_gatk_oracle.py")
     set_tests_properties(fastgatk-hc-gvcf-symbolic-prior-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Same length-based prior rule as the gate above; arbitrary-ploidy ordinary-VCF '*' AF pseudocount (1 bp REF must take the SNP prior).
+    add_test(NAME fastgatk-hc-arbitrary-ploidy-span-del-prior-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_arbitrary_ploidy_span_del_prior_fixture_oracle.py")
+    set_tests_properties(fastgatk-hc-arbitrary-ploidy-span-del-prior-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Same length-based prior rule as the gate above; polyploid / hidden-spanning gVCF '*' AF pseudocount.
+    add_test(NAME fastgatk-hc-polyploid-gvcf-span-del-prior-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_polyploid_gvcf_span_del_prior_fixture_oracle.py")
+    set_tests_properties(fastgatk-hc-polyploid-gvcf-span-del-prior-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Same length-based prior rule as the gate above; '*' genotype prior on a 1 bp REF (needs --genotype-assignment-method USE_POSTERIOR_PROBABILITIES).
+    add_test(NAME fastgatk-hc-spanning-prior-genotype-gq-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_spanning_prior_genotype_gq_fixture_oracle.py")
+    set_tests_properties(fastgatk-hc-spanning-prior-genotype-gq-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).
