@@ -4488,6 +4488,20 @@ int write_vcf_text_line(htsFile* output, const std::string& line) {
                    static_cast<ssize_t>(line.size()) ? 0 : -1;
 }
 
+// GATK's GenotypeGVCFs declares exactly this one filter line for every run of
+// the tool.  GenotypeGVCFsEngine.setupVCFWriter() ends its header construction
+// with `headerLines.add(GATKVCFHeaderLines.getFilterLine(
+// GATKVCFConstants.LOW_QUAL_FILTER_NAME));` (GenotypeGVCFsEngine.java:416) --
+// the last add() before the VCFHeader is built (:418-419) -- and that call is
+// unguarded, so it is present whether or not the input declared any filter.
+// The text is GATKVCFHeaderLines.java:89
+// (`addFilterLine(new VCFFilterHeaderLine(LOW_QUAL_FILTER_NAME, "Low quality"))`)
+// with the id from GATKVCFConstants.java:179 (LOW_QUAL_FILTER_NAME = "LowQual").
+// It is the only filter the engine can apply to an output record
+// (GenotypingEngine.java:184-186).
+constexpr const char* kGatkLowQualFilterLine =
+    "##FILTER=<ID=LowQual,Description=\"Low quality\">";
+
 std::string gatk_compatible_header_text(const std::string& formatted) {
     std::vector<std::string> lines;
     std::size_t begin = 0;
@@ -4547,7 +4561,19 @@ std::string gatk_compatible_header_text(const std::string& formatted) {
         return left_rank < right_rank;
     });
     std::vector<std::string> output;
-    output.reserve(retained.size() + info_lines.size() + 1);
+    output.reserve(retained.size() + info_lines.size() + 2);
+    // The ##FILTER group.  htsjdk writes a VCFHeader in sorted order, so GATK's
+    // group is ordered by the lines' own text (measured: LowQual precedes an
+    // input `q10` declaration); adding GATK's unconditional LowQual declaration
+    // and sorting the group reproduces that order for any input, while leaving
+    // the group's position in the header where the input put its filter lines.
+    std::vector<std::string> filter_lines;
+    for (const auto& line : retained)
+        if (line.rfind("##FILTER=", 0) == 0) filter_lines.push_back(line);
+    if (std::find(filter_lines.begin(), filter_lines.end(), kGatkLowQualFilterLine) ==
+        filter_lines.end())
+        filter_lines.emplace_back(kGatkLowQualFilterLine);
+    std::sort(filter_lines.begin(), filter_lines.end());
     std::vector<std::string> format_lines;
     for (const auto& line : retained)
         if (line.rfind("##FORMAT=", 0) == 0) format_lines.push_back(line);
@@ -4568,8 +4594,16 @@ std::string gatk_compatible_header_text(const std::string& formatted) {
                                                                     const auto& right) {
         return format_id(left) < format_id(right);
     });
+    bool inserted_filter = false;
     bool inserted_format = false;
     for (const auto& line : retained) {
+        if (line.rfind("##FILTER=", 0) == 0) {
+            if (!inserted_filter) {
+                output.insert(output.end(), filter_lines.begin(), filter_lines.end());
+                inserted_filter = true;
+            }
+            continue;
+        }
         if (line.rfind("##FORMAT=", 0) == 0) {
             if (!inserted_format) {
                 output.insert(output.end(), format_lines.begin(), format_lines.end());
@@ -4582,6 +4616,16 @@ std::string gatk_compatible_header_text(const std::string& formatted) {
             inserted_info = true;
         }
         output.push_back(line);
+    }
+    if (!inserted_filter) {
+        // The input declared no filter at all, so the group has no input
+        // position to inherit: it goes where a ##FILTER line would have been in
+        // the input's own ordering, immediately before the first ##FORMAT= line
+        // (or before #CHROM when the input declared no FORMAT line either).
+        const auto anchor = std::find_if(output.begin(), output.end(), [](const auto& line) {
+            return line.rfind("##FORMAT=", 0) == 0 || line.rfind("#CHROM", 0) == 0;
+        });
+        output.insert(anchor, filter_lines.begin(), filter_lines.end());
     }
     if (!inserted_format) {
         const auto chrom = std::find_if(output.begin(), output.end(), [](const auto& line) {

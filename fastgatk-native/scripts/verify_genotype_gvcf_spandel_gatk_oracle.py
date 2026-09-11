@@ -202,6 +202,45 @@ The half of the contract native does not implement -- the engine's own
 ``LowQual`` -- is pinned as REPORTED ONLY by
 ``weak-locus-lowqual-filter-not-implemented``.
 
+The output header's ``##FILTER`` lines
+--------------------------------------
+The FILTER *column* is not the whole contract: GATK's writer **always declares
+the filter it may apply**.  ``GenotypeGVCFsEngine.setupVCFWriter()`` ends its
+header construction with
+
+    headerLines.add(GATKVCFHeaderLines.getFilterLine(GATKVCFConstants.LOW_QUAL_FILTER_NAME));
+                                                    // GenotypeGVCFsEngine.java:416
+
+as the last ``add()`` before ``new VCFHeader(headerLines, ...)``
+(``:418-419``) and before ``vcfWriter.writeHeader(outputHeader)`` (``:420``).
+Nothing guards that call: it is not conditional on the input header, on
+``--include-non-variant-sites``, on ``--keep-combined``, on ``--dbsnp`` or on
+the output mode, and ``setupVCFWriter()`` has exactly one caller
+(``GenotypeGVCFs.java:305``), so the line is emitted for every run of the tool.
+The text is the standard GenotypeGVCFs filter line
+``##FILTER=<ID=LowQual,Description="Low quality">``
+(``GATKVCFHeaderLines.java:89``:
+``addFilterLine(new VCFFilterHeaderLine(LOW_QUAL_FILTER_NAME, "Low quality"))``
+with ``LOW_QUAL_FILTER_NAME = "LowQual"`` at ``GATKVCFConstants.java:179``).
+
+Position: htsjdk's ``VCFHeader`` writer emits its lines in sorted order (key
+before value, ``##fileformat`` pinned first), so the whole ``##FILTER`` group
+appears immediately after ``##fileformat``/``##ALT`` and the lines *inside* the
+group are ordered by their full text -- ``LowQual`` therefore precedes an input
+declaration such as ``q10`` (``'L'`` < ``'q'``) and follows one such as ``AAA``.
+Measured on the fixture of this gate (``.diag/header-filter-probe.log``): with
+no ``##FILTER`` line in the input, GATK's output header carries exactly one, at
+index 2 of 31; with ``##FILTER=<ID=q10,...>`` declared it carries exactly
+``['##FILTER=<ID=LowQual,Description="Low quality">',
+'##FILTER=<ID=q10,Description="Quality below 10">']`` at indices 2-3.
+
+This gate therefore compares the ``##FILTER`` header lines of both outputs
+**byte for byte, in order**, for every gated case.  Every other header
+difference is recorded as an observation and does not gate: native's
+compatibility header deliberately preserves input order and its own INFO rank
+list rather than reproducing htsjdk's fully sorted header, and it never writes
+``##GATKCommandLine`` (see ``header_observations`` in each case's result).
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -260,6 +299,19 @@ HEADER_TWO_SAMPLES = HEADER.replace("\tSTAR\n", "\tS1\tS2\n")
 HEADER_WITH_LOWQUAL_FILTER = HEADER.replace(
     "##FORMAT=<ID=GT", '##FILTER=<ID=LowQual,Description="Low quality">\n'
                        "##FORMAT=<ID=GT")
+
+# The same header with an input filter that is NOT LowQual, so the gate also
+# pins the *order* of the ##FILTER group: GATK's writer emits LowQual
+# unconditionally (GenotypeGVCFsEngine.java:416) and htsjdk sorts the group by
+# full line text, so GATK writes LowQual BEFORE q10 ('L' < 'q') even though q10
+# is the only one the input declared.
+HEADER_WITH_Q10_FILTER = HEADER.replace(
+    "##FORMAT=<ID=GT", '##FILTER=<ID=q10,Description="Quality below 10">\n'
+                       "##FORMAT=<ID=GT")
+
+# GenotypeGVCFsEngine.java:416 + GATKVCFHeaderLines.java:89 +
+# GATKVCFConstants.java:179, byte for byte.
+GATK_LOWQUAL_FILTER_LINE = '##FILTER=<ID=LowQual,Description="Low quality">'
 
 # verify_genotype_gvcf.py:378-381, byte for byte.
 STAR_RECORD = (
@@ -834,6 +886,24 @@ CASES = [
                    GATK_STAR_ONLY_DENSE_NONPASS_ROW],
     },
     {
+        "case": "header-filter-line-with-extra-declared-filter",
+        "why": "THE HEADER CASE.  The input declares `##FILTER=<ID=q10,...>` and "
+               "NOT LowQual.  GATK's output header still carries the standard "
+               "`##FILTER=<ID=LowQual,Description=\"Low quality\">` because "
+               "setupVCFWriter() adds it unconditionally as its last header "
+               "line (GenotypeGVCFsEngine.java:416, text from "
+               "GATKVCFHeaderLines.java:89 + GATKVCFConstants.java:179), and "
+               "htsjdk's sorted VCFHeader emission places it BEFORE q10.  The "
+               "gate compares the whole ##FILTER group byte for byte, so this "
+               "case fails both when the LowQual declaration is missing and "
+               "when it is appended at the wrong place in the group",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "header": HEADER_WITH_Q10_FILTER,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
         "case": "non-pass-variant-input-undeclared-filter",
         "why": "the ORDINARY (non-dense) variant path with a non-PASS source "
                "FILTER, and the source FILTER declared nowhere in the header.  "
@@ -917,6 +987,18 @@ def data_rows(path: pathlib.Path) -> list[str]:
     return rows
 
 
+def header_lines(path: pathlib.Path) -> list[str]:
+    """Every header line of an output, in order, '#CHROM' included."""
+    opener = gzip.open if path.name.endswith(".gz") else open
+    with opener(path, "rt", encoding="utf-8") as stream:
+        return [line.rstrip("\n") for line in stream if line.startswith("#")]
+
+
+def filter_header_lines(lines: list[str]) -> list[str]:
+    """The ##FILTER group, in order -- the surface this gate asserts."""
+    return [line for line in lines if line.startswith("##FILTER=")]
+
+
 def write_reference(work: pathlib.Path) -> pathlib.Path:
     """A 100 bp chr1 whose bases match every fixture REF allele."""
     reference = work / "reference.fa"
@@ -967,6 +1049,19 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
 
     gatk_rows = data_rows(gatk_out) if gatk_out.exists() else []
     native_rows = data_rows(native_out) if native_out.exists() else []
+    gatk_headers = header_lines(gatk_out) if gatk_out.exists() else []
+    native_headers = header_lines(native_out) if native_out.exists() else []
+    gatk_filters = filter_header_lines(gatk_headers)
+    native_filters = filter_header_lines(native_headers)
+    # Everything that is not the asserted ##FILTER group is recorded, not gated.
+    # ##GATKCommandLine is excluded from the diff because it embeds the run's
+    # absolute paths and timestamp and native never emits it (native has no
+    # --add-output-vcf-command-line equivalent on this surface).
+    def observed(lines: list[str]) -> list[str]:
+        return [line for line in lines if not line.startswith(("##GATKCommandLine=",))]
+
+    gatk_observed = observed(gatk_headers)
+    native_observed = observed(native_headers)
 
     result = {
         "case": case["case"],
@@ -979,6 +1074,19 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
         "expect": case["expect"],
         "gatk_rows": gatk_rows,
         "native_rows": native_rows,
+        "gatk_filter_header_lines": gatk_filters,
+        "native_filter_header_lines": native_filters,
+        "header_observations": {
+            "only_in_gatk": [line for line in gatk_observed
+                             if line not in native_observed],
+            "only_in_native": [line for line in native_observed
+                               if line not in gatk_observed],
+            "order_differs": (gatk_observed != native_observed
+                              and [line for line in gatk_observed
+                                   if line not in native_observed] == []
+                              and [line for line in native_observed
+                                   if line not in gatk_observed] == []),
+        },
         "violations": [],
     }
     if index_result.returncode != 0:
@@ -1000,6 +1108,13 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
                 result["violations"].append(
                     f"row {index} is not byte-identical: GATK={gatk_row!r} "
                     f"NATIVE={native_row!r}")
+        # The header contract: GATK declares the filter it may apply
+        # (GenotypeGVCFsEngine.java:416 + GATKVCFHeaderLines.java:89); the
+        # ##FILTER group must match byte for byte, in order.
+        if gatk_filters != native_filters:
+            result["violations"].append(
+                "##FILTER header lines are not byte-identical: "
+                f"GATK={gatk_filters} NATIVE={native_filters}")
     return result
 
 
@@ -1087,6 +1202,17 @@ def main() -> int:
         print(f"    NATIVE rows ({len(result['native_rows'])}):")
         for row in result["native_rows"]:
             print(f"        {row}")
+        print(f"    GATK   ##FILTER header lines: {result['gatk_filter_header_lines']}")
+        print(f"    NATIVE ##FILTER header lines: {result['native_filter_header_lines']}")
+        observation = result["header_observations"]
+        print("    header observations (NOT gated): "
+              f"only_in_gatk={len(observation['only_in_gatk'])} "
+              f"only_in_native={len(observation['only_in_native'])} "
+              f"order_differs={observation['order_differs']}")
+        for line in observation["only_in_gatk"]:
+            print(f"        GATK-only  : {line}")
+        for line in observation["only_in_native"]:
+            print(f"        NATIVE-only: {line}")
         for violation in result["violations"]:
             print(f"    VIOLATION: {violation}")
 
@@ -1100,6 +1226,8 @@ def main() -> int:
         ],
         "violations": violations,
         "rows_compared": "data rows byte-identical (CHROM..sample columns)",
+        "header_compared": "##FILTER header lines byte-identical and in order",
+        "header_observations": "every other header difference is reported, not gated",
     }
     print(json.dumps(payload, sort_keys=True))
 
