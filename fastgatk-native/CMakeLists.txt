@@ -1488,6 +1488,24 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_af_zero_format_gatk_oracle.py")
     set_tests_properties(fastgatk-hc-af-zero-format-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # ordinary-VCF multi-ALT owner-annotation guard (reached, no divergence observed).  Added in the registration-triage round; verified green on both backends.
+    add_test(NAME fastgatk-hc-multialt-owner-annotation-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_multialt_owner_annotation_fixture_oracle.py")
+    set_tests_properties(fastgatk-hc-multialt-owner-annotation-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Mutect2 tumor/normal replay parity on the DREAM chr20 fixture.  Added in the registration-triage round; verified green on both backends.
+    add_test(NAME fastgatk-mutect2-recheck-normal-replay-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_mutect2_recheck_normal_replay.py")
+    set_tests_properties(fastgatk-mutect2-recheck-normal-replay-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_MUTECT2_BINARY=$<TARGET_FILE:fastgatk-mutect2>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Mutect2 joint AssemblyResultSet / matched-normal parity.  Added in the registration-triage round; verified green on both backends.
+    add_test(NAME fastgatk-mutect2-recheck-joint-assembly-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_mutect2_recheck_assembly_resultset_joint.py")
+    set_tests_properties(fastgatk-mutect2-recheck-joint-assembly-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_MUTECT2_BINARY=$<TARGET_FILE:fastgatk-mutect2>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).

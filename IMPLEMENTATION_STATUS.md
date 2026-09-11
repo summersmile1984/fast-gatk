@@ -552,10 +552,14 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 - **刻意不注册为 strict**：`verify_hc_forced_alleles_emission_gate_oracle.py`
   —— 它按设计**必须失败**（记录尚未修复的符号 ALT/LowQual 发射缺口）；
   若要在套件中可见，应以 diagnostic 形态注册，否则会把套件永久变红。
-- **待判断**：`verify_hc_alleles_deep_boundary.py`、`verify_hc_alleles_deep_limits.py`（Track B 产出）、
-  `verify_mutect2_recheck_normal_replay.py`、`verify_mutect2_recheck_assembly_resultset_joint.py`
-  （Track C 产出，两者在双后端均通过，适合注册）、`verify_hc_multialt_owner_annotation_fixture_oracle.py`
-  （「已到达但无害」的负例守卫，需先确认其退出语义）。
+- **已注册（第 18 轮分诊完成）**：`verify_mutect2_recheck_normal_replay.py`、
+  `verify_mutect2_recheck_assembly_resultset_joint.py`、
+  `verify_hc_multialt_owner_annotation_fixture_oracle.py`（三者在双后端实测 exit 0 / status=pass）。
+- **诊断形态、禁止注册为 strict**：`verify_hc_alleles_deep_boundary.py` 与
+  `verify_hc_alleles_deep_limits.py` —— 实测 **exit 1 / status="diverge"**，
+  即这两份脚本仍在记录**尚未修复的 `--alleles` 分歧**（Track B 当初报了 5 处，
+  本会话只修掉了其中的重叠强制事件那一处）。这两份脚本是这些残留分歧的**活证据**，
+  应作为后续 `--alleles` 轨道的起点，而不是被注册成会变红的门禁。
 - **很可能是辅助/基准而非测试**：`verify_native.py`、`verify_kernel_benchmark.py`、
   `verify_kokkos_backend_matrix.py`、`verify_bam_intervals.py`、
   `verify_pairhmm_results_oracle.py`、`verify_somatic_*.py`、`verify_fragment_aggregation_gatk_oracle.py`、
