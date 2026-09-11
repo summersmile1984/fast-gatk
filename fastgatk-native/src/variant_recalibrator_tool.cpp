@@ -211,6 +211,11 @@ struct Entry {
     // positive-vs-negative model score.
     double prior_lod = 0.0;
     double score = std::numeric_limits<double>::quiet_NaN();
+    // Java VariantDatum.worstAnnotation: the annotation dimension whose
+    // per-dimension log10 likelihood separates the positive and negative
+    // models least (VariantRecalibratorEngine.calculateWorstPerformingAnnotation).
+    // -1 means every dimension was null, which GATK writes as culprit=NULL.
+    int worst_annotation = -1;
 };
 
 std::string option_value(const std::string& argument, const char* name) {
@@ -1861,6 +1866,93 @@ double mixture_log10_probability(const GaussianMixture& mixture,
     return maximum + std::log10(sum);
 }
 
+// Java MathUtils.normalDistributionLog10(mean, sd, x).  GATK's VQSR call site
+// (GaussianMixtureModel.evaluateDatumInOneDimension) passes the covariance
+// diagonal gaussian.sigma.get(iii, iii) in the "sd" slot, i.e. a variance; the
+// formula below -- a = -log10(sd * sqrt(2*pi)); b = -(x-mean)^2 / (2*sd^2) /
+// log(10) -- reproduces that call verbatim, including the naming quirk.
+double gatk_normal_distribution_log10(double mean, double sd, double x) {
+    const double root_two_pi = std::sqrt(2.0 * 3.14159265358979323846);
+    const double a = -1.0 * std::log10(sd * root_two_pi);
+    const double b = -1.0 * (((x - mean) * (x - mean)) / (2.0 * sd * sd)) / std::log(10.0);
+    return a + b;
+}
+
+// Java GaussianMixtureModel.evaluateDatumInOneDimension: -- the single-
+// annotation log10 mixture likelihood that
+// VariantRecalibratorEngine.calculateWorstPerformingAnnotation compares
+// between the positive and the negative model in order to pick the `culprit`
+// annotation.  Every mixture component contributes
+// pMixtureLog10 + normalDistributionLog10(mu[iii], sigma[iii][iii], x[iii]),
+// combined by log10sumLog10 (NaN-tolerant, as in the Java helper).
+double mixture_log10_probability_one_dimension(const GaussianMixture& mixture,
+                                               double value, std::size_t dimension) {
+    const auto dimensions = mixture.means.empty() ? 0 : mixture.means.front().size();
+    if (dimensions == 0 || dimension >= dimensions || mixture.weights.empty())
+        return -std::numeric_limits<double>::infinity();
+    const auto components = mixture.weights.size();
+    std::vector<double> terms(components, -std::numeric_limits<double>::infinity());
+    for (std::size_t component = 0; component < components; ++component) {
+        // Java: pVarInGaussianLog10 = gaussian.pMixtureLog10, and the normal
+        // term is added only when that log10 weight is not -infinity.
+        const double mixture_log10 = std::log10(mixture.weights[component]);
+        terms[component] = mixture_log10;
+        if (mixture_log10 == -std::numeric_limits<double>::infinity()) continue;
+        if (component >= mixture.means.size() ||
+            mixture.means[component].size() != dimensions) continue;
+        double sigma = 0.0;
+        if (mixture.full_covariance && component < mixture.covariances.size() &&
+            mixture.covariances[component].size() == dimensions * dimensions)
+            sigma = mixture.covariances[component][dimension * dimensions + dimension];
+        else if (component < mixture.variances.size() &&
+                 dimension < mixture.variances[component].size())
+            sigma = mixture.variances[component][dimension];
+        terms[component] += gatk_normal_distribution_log10(
+            mixture.means[component][dimension], sigma, value);
+    }
+    if (components == 1) return terms[0];
+    // Java nanTolerantLog10SumLog10: a NaN term makes the whole result NaN,
+    // and `NaN < minProb` is false, so that dimension is skipped by the caller.
+    for (const auto term : terms)
+        if (std::isnan(term)) return std::numeric_limits<double>::quiet_NaN();
+    std::size_t maximum_index = 0;
+    for (std::size_t component = 1; component < components; ++component)
+        if (terms[component] > terms[maximum_index]) maximum_index = component;
+    const double maximum = terms[maximum_index];
+    if (!std::isfinite(maximum)) return maximum;
+    double sum = 1.0;
+    for (std::size_t component = 0; component < components; ++component) {
+        if (component == maximum_index || !std::isfinite(terms[component])) continue;
+        sum += std::pow(10.0, terms[component] - maximum);
+    }
+    return maximum + std::log10(sum);
+}
+
+// Java VariantRecalibratorEngine.calculateWorstPerformingAnnotation: keep the
+// dimension with the smallest good-minus-bad one-dimension log10 likelihood.
+// The comparison is Java's strict `prob < minProb` (minProb starts at
+// Double.MAX_VALUE), so ties keep the first dimension in GATK's information
+// order and a null (missing) dimension is skipped entirely.
+void calculate_worst_annotation(std::vector<Entry>& entries, const GaussianMixture& good,
+                                const GaussianMixture& bad) {
+    for (auto& entry : entries) {
+        entry.worst_annotation = -1;
+        double minimum_probability = std::numeric_limits<double>::max();
+        for (std::size_t dimension = 0; dimension < entry.values.size(); ++dimension) {
+            if (dimension < entry.missing.size() && entry.missing[dimension] != 0) continue;
+            const double good_probability =
+                mixture_log10_probability_one_dimension(good, entry.values[dimension], dimension);
+            const double bad_probability =
+                mixture_log10_probability_one_dimension(bad, entry.values[dimension], dimension);
+            const double probability = good_probability - bad_probability;
+            if (probability < minimum_probability) {
+                minimum_probability = probability;
+                entry.worst_annotation = static_cast<int>(dimension);
+            }
+        }
+    }
+}
+
 struct BadVariantSelection {
     std::size_t cutoff_selected = 0;
     std::size_t fallback_selected = 0;
@@ -2565,6 +2657,7 @@ void mark_failing_std_threshold(std::vector<Entry>& entries, double threshold) {
 std::string write_recal_vcf(const Options& options, const std::unordered_map<std::string, double>& scores,
                      const std::unordered_map<std::string, bool>& positive_training,
                      const std::unordered_map<std::string, bool>& negative_training,
+                     const std::unordered_map<std::string, std::string>& culprits,
                      const std::string& model, std::uint64_t input_records,
                      std::uint64_t& scored_records, bool allele_specific) {
     htsFile* input = bcf_open(options.input.c_str(), "r");
@@ -2598,6 +2691,14 @@ std::string write_recal_vcf(const Options& options, const std::unordered_map<std
         bcf_hdr_append(output_header, "##INFO=<ID=NEGATIVE_TRAIN_SITE,Number=0,Type=Flag,Description=This variant was used to build the negative training set of bad variants>");
     bcf_hdr_append(output_header, "##source=fastgatk-variant-recalibrator");
     bcf_hdr_append(output_header, (std::string("##fastgatk_variant_recalibrator_status=prototype-") + model).c_str());
+    // GATK writes an annotation NAME here (VariantDataManager.java:485), so the
+    // value comes from the per-datum worst-annotation selection computed in
+    // main(); the model name is used only for native provenance headers.
+    // "NULL" is GATK's spelling for a datum whose dimensions were all null.
+    const auto culprit_value = [&culprits](const std::string& key) -> std::string {
+        const auto iterator = culprits.find(key);
+        return iterator == culprits.end() ? std::string("NULL") : iterator->second;
+    };
     if (bcf_hdr_sync(output_header) != 0) throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot sync VCF header");
     htsFile* output = bcf_open(options.output.c_str(), suffix(options.output, ".gz") ? "wz" : "w");
     if (!output || bcf_hdr_write(output, output_header) != 0)
@@ -2635,14 +2736,14 @@ std::string write_recal_vcf(const Options& options, const std::unordered_map<std
                 if (bcf_update_info_float(output_header, record, "AS_VQSLOD",
                                           allele_scores.data(), static_cast<int>(allele_scores.size())) != 0)
                     throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update AS_VQSLOD");
-                std::ostringstream culprits;
+                std::ostringstream culprit_list;
                 for (std::size_t index = 0; index < allele_scores.size(); ++index) {
-                    if (index) culprits << ',';
-                    culprits << model;
+                    if (index) culprit_list << ',';
+                    culprit_list << culprit_value(keys[index]);
                 }
-                if (bcf_update_info_string(output_header, record, "AS_culprit", culprits.str().c_str()) != 0)
+                if (bcf_update_info_string(output_header, record, "AS_culprit", culprit_list.str().c_str()) != 0)
                     throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update AS_culprit");
-                bcf_update_info_string(output_header, record, "CULPRIT", model.c_str());
+                bcf_update_info_string(output_header, record, "CULPRIT", culprit_value(keys.front()).c_str());
                 ++scored_records;
             }
         } else {
@@ -2656,7 +2757,8 @@ std::string write_recal_vcf(const Options& options, const std::unordered_map<std
                 std::snprintf(vqslod_buffer, sizeof(vqslod_buffer), "%.4f", iterator->second);
                 if (bcf_update_info_string(output_header, record, "VQSLOD", vqslod_buffer) != 0)
                     throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update VQSLOD");
-                if (bcf_update_info_string(output_header, record, "culprit", model.c_str()) != 0)
+                if (bcf_update_info_string(output_header, record, "culprit",
+                                           culprit_value(keys.front()).c_str()) != 0)
                     throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update culprit");
                 ++scored_records;
             }
@@ -2880,6 +2982,21 @@ int main(int argc, char** argv) {
                 maximum_prior_lod = std::max(maximum_prior_lod, entry.prior_lod);
             }
         }
+        // GATK VariantDataManager writes the NAME of the per-datum worst
+        // annotation dimension as `culprit` (VariantDataManager.java:485),
+        // never a model/provenance name.  The dimension itself comes from
+        // VariantRecalibratorEngine.calculateWorstPerformingAnnotation, which
+        // runs on every datum after the contrastive evaluation.
+        calculate_worst_annotation(entries, good, bad);
+        std::unordered_map<std::string, std::string> culprits;
+        for (const auto& entry : entries) {
+            if (entry.key.empty()) continue;
+            const bool named = entry.worst_annotation >= 0 &&
+                static_cast<std::size_t>(entry.worst_annotation) < options.annotations.size();
+            culprits[entry.key] = named
+                ? options.annotations[static_cast<std::size_t>(entry.worst_annotation)]
+                : "NULL";
+        }
         const std::string model = model_loaded ? "serialized-gmm" : (options.full_covariance
             ? "full-covariance-gmm"
             : (options.max_gaussians > 1 ? "diagonal-gmm" : "diagonal-gaussian"));
@@ -2904,7 +3021,7 @@ int main(int argc, char** argv) {
             }
         std::uint64_t scored_records = 0;
         const auto vcf_index = write_recal_vcf(options, scores, positive_training,
-                                               negative_training, model, input_records,
+                                               negative_training, culprits, model, input_records,
                                                scored_records, options.allele_specific);
         write_tranches(options.tranches_output, entries, options.truth_sensitivity, options.mode,
                        options.output_tranches_for_scatter, options.vqslod_tranches);

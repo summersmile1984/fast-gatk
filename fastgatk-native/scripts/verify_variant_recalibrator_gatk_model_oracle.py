@@ -176,7 +176,19 @@ def main() -> int:
                 gatk_record, native_record
             )
             assert gatk_info.get("culprit") == "MQ", gatk_record
-            assert native_info.get("culprit") == "serialized-gmm", native_record
+            # The previous assertion pinned the native-only provenance string
+            # "serialized-gmm", which occurs 0 times in the pinned
+            # gatk-package-4.6.2.0-local.jar.  GATK's culprit column carries the
+            # annotation NAME selected by
+            # VariantRecalibratorEngine.calculateWorstPerformingAnnotation
+            # (VariantRecalibratorEngine.java:80-93) and written by
+            # VariantDataManager.java:485; replaying GATK's own serialized model
+            # must therefore reproduce GATK's exact value, MQ (measured for this
+            # fixture; byte-identical gate:
+            # verify_variant_recalibrator_culprit_gatk_oracle.py).
+            assert native_info.get("culprit") == gatk_info.get("culprit") == "MQ", (
+                gatk_record, native_record
+            )
             # GATK's recalibration artifact and native output intentionally
             # use different provenance fields/allele representations.  Keep
             # the semantic contract on score, coordinate, labels, and the

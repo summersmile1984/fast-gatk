@@ -1513,6 +1513,14 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_gvcf_indel_end_gatk_oracle.py")
     set_tests_properties(fastgatk-hc-gvcf-indel-end-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # VariantRecalibrator INFO/culprit must be the NAME of the worst-performing
+    # annotation (GATK VariantRecalibratorEngine.calculateWorstPerformingAnnotation),
+    # not a model provenance string.  Strict gate.
+    add_test(NAME fastgatk-variant-recalibrator-culprit-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_variant_recalibrator_culprit_gatk_oracle.py")
+    set_tests_properties(fastgatk-variant-recalibrator-culprit-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).

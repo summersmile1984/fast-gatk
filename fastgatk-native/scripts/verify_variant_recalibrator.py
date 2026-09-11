@@ -81,7 +81,21 @@ def main() -> None:
         text = gzip.open(output, "rt", encoding="utf-8").read()
         records = [line for line in text.splitlines() if line and not line.startswith("#")]
         assert len(records) == 6, records
-        assert all("VQSLOD=" in line and "culprit=full-covariance-gmm" in line for line in records), records
+        # GATK writes the NAME of the datum's worst-scoring annotation
+        # dimension here, never a model/provenance string:
+        # VariantRecalibratorEngine.calculateWorstPerformingAnnotation
+        # (VariantRecalibratorEngine.java:80-93) minimises
+        # goodModel.evaluateDatumInOneDimension - badModel.evaluateDatumInOneDimension
+        # (the per-dimension log10 mixture likelihood,
+        # GaussianMixtureModel.java:208-222) and VariantDataManager.java:485
+        # writes annotationKeys.get(worstAnnotation).  The previous value,
+        # "full-covariance-gmm", was a native-only provenance string (0
+        # occurrences in the pinned gatk-package-4.6.2.0-local.jar); pinned GATK
+        # 4.6.2.0 emits culprit=MQ for all six records of this fixture
+        # (byte-identical gate:
+        # verify_variant_recalibrator_culprit_gatk_oracle.py, case
+        # tiny-truth-known).
+        assert all("VQSLOD=" in line and "culprit=MQ" in line for line in records), records
         assert all("\tN\t<VQSR>\t.\t.\t" in line for line in records), records
         assert "POSITIVE_TRAIN_SITE" in records[0].split("\t")[7]
         assert "POSITIVE_TRAIN_SITE" in records[2].split("\t")[7]
@@ -419,7 +433,11 @@ def main() -> None:
         assert gmm_payload["model"] == "full-covariance-gmm"
         assert gmm_payload["components"] == 2
         gmm_text = gzip.open(gmm_output, "rt", encoding="utf-8").read()
-        assert "culprit=full-covariance-gmm" in gmm_text
+        # Same GATK contract as above (annotation name, not the native model
+        # provenance string): pinned GATK 4.6.2.0 writes culprit=MQ for this
+        # fixture.
+        assert "culprit=MQ" in gmm_text
+        assert "culprit=full-covariance-gmm" not in gmm_text
 
         full_output = work / "full.vcf.gz"
         full_tranches = work / "full.tranches"
@@ -434,7 +452,13 @@ def main() -> None:
         full_payload = json.loads(full_result.stdout)
         assert full_payload["model"] == "full-covariance-gmm"
         assert full_payload["full_covariance"] is True
-        assert "culprit=full-covariance-gmm" in gzip.open(full_output, "rt", encoding="utf-8").read()
+        # GATK contract again: the culprit column carries the annotation name
+        # GATK's calculateWorstPerformingAnnotation selects (measured
+        # culprit=MQ on this fixture with pinned GATK 4.6.2.0), not the native
+        # model provenance string asserted before this fix.
+        full_text = gzip.open(full_output, "rt", encoding="utf-8").read()
+        assert "culprit=MQ" in full_text
+        assert "culprit=full-covariance-gmm" not in full_text
 
         as_input = work / "as.input.vcf"
         as_training = work / "as.training.vcf"
@@ -453,7 +477,25 @@ def main() -> None:
         as_payload = json.loads(as_result.stdout)
         assert as_payload["allele_specific"] is True
         as_text = gzip.open(as_output, "rt", encoding="utf-8").read()
-        assert "AS_VQSLOD=" in as_text and "AS_culprit=full-covariance-gmm" in as_text
+        # GATK's per-allele culprit is the same annotation NAME per (ref,alt)
+        # datum (VariantDataManager.java:485 collects one entry per allele into
+        # AS_culprit); the previous assertion pinned the native-only model
+        # provenance string "full-covariance-gmm".  The per-record values below
+        # are native's deterministic output for exactly these arguments; GATK
+        # itself cannot build a negative model for them (measured against the
+        # pinned jar: exit 2, UserException "No data found", because no datum
+        # passes the default --bad-lod-score-cutoff while the failing-STD rows
+        # are excluded from selectWorstVariants), so the AS column is asserted
+        # to the GATK *contract* -- requested annotation names only -- plus the
+        # exact native regression values.  Byte-identical GATK gating for the
+        # scalar column lives in
+        # verify_variant_recalibrator_culprit_gatk_oracle.py.
+        assert "AS_VQSLOD=" in as_text
+        assert "AS_culprit=full-covariance-gmm" not in as_text
+        as_culprits = [line.split("\t")[7].split("AS_culprit=")[1].split(";")[0]
+                       for line in as_text.splitlines() if line and not line.startswith("#")]
+        assert as_culprits == ["QD", "MQ", "MQ", "QD", "QD", "QD"], as_culprits
+        assert all(value in {"QD", "MQ"} for value in as_culprits), as_culprits
 
         # The Java spelling is an optional boolean, so an explicit false must
         # select scalar scoring and an invalid literal must fail closed.
