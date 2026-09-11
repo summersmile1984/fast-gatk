@@ -2964,13 +2964,36 @@ std::vector<int> estimate_mle_allele_counts(
     return result_counts;
 }
 
+// ``AF``/``MLEAF`` are Number=A Float INFO values carried as raw Java doubles:
+// htsjdk's ``VariantContextUtils.calculateChromosomeCounts`` fills ``AF`` and
+// GATK's ``GenotypingEngine.composeCallAttributes`` fills ``MLEAF`` from
+// ``calculateMLEAlleleFrequencies``, whose body is
+// ``alleleCountsofMLE.stream().map(AC -> Math.min(1.0, (double) AC / AN))``
+// (a ``List<Double>``), so htsjdk's encoder sees a Double per element.  The
+// encoder is ``htsjdk.variant.vcf.VCFEncoder.formatVCFDouble(double)``, whose
+// rule (decompiled from the pinned gatk-package-4.6.2.0-local.jar:
+// ``d >= 1.0`` -> "%.2f"; ``d >= 0.01`` -> "%.3f"; ``abs(d) >= 1e-20`` ->
+// "%.3e"; otherwise the literal "0.00") is *per value and magnitude-driven*.
+// That is why one list legitimately mixes "0.500" (interior value) with the
+// literal "0.00" (an exact zero), which the previous value-independent
+// three-place formatter could not express.
 std::string format_allele_frequency(const double frequency) {
-    std::ostringstream value;
-    if (std::abs(frequency - 1.0) < 1.0e-12)
+    if (frequency >= 1.0) {
+        std::ostringstream value;
         value << std::fixed << std::setprecision(2) << frequency;
-    else
+        return value.str();
+    }
+    if (frequency >= 0.01) {
+        std::ostringstream value;
         value << std::fixed << std::setprecision(3) << frequency;
-    return value.str();
+        return value.str();
+    }
+    if (std::abs(frequency) >= 1.0e-20) {
+        std::ostringstream value;
+        value << std::scientific << std::setprecision(3) << frequency;
+        return value.str();
+    }
+    return "0.00";
 }
 
 // QualByDepth intentionally de-jitters unusually high values so they do not
