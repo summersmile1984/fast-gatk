@@ -1219,11 +1219,20 @@ bool record_has_concrete_deletion(const Record& record) {
     return false;
 }
 
+// GATK only honours a spanning deletion that some *previously emitted* deletion
+// owns: GenotypingEngine.isVcCoveredByDeletion() requires
+// ``loc.getStart() < vc.getStart() && vc.getStart() <= loc.getEnd()``
+// (GenotypingEngine.java:365-371) and the deletion is recorded only after the
+// current locus has been subsetted (GenotypingEngine.java:178-179 calls
+// recordDeletions() *after* calculateOutputAlleleSubset()).  A deletion allele of
+// the very locus being genotyped therefore never owns that locus' own '*', which
+// is why the boundary test below is strict on the start (``span.begin <
+// record.pos``) rather than inclusive.
 bool spanning_deletion_supported_at(const Record& record,
                                     const std::vector<VariantSpan>& deletion_spans) {
     if (record.rid < 0) return false;
     for (const auto& span : deletion_spans) {
-        if (span.rid == record.rid && span.begin <= record.pos && record.pos < span.end)
+        if (span.rid == record.rid && span.begin < record.pos && record.pos < span.end)
             return true;
     }
     return false;

@@ -61,6 +61,38 @@ position-independent projection (``...-star-not-first``), the copy order
 together distinguish "project the source call" from "derive the call from the
 PLs" (whose argmax over this fixture is the ``(*,G)`` cell).
 
+The deletion-ownership cases
+----------------------------
+Whether a symbolic ``*`` is "spurious" is an ownership question, not a
+likelihood question.  ``GenotypingEngine.calculateOutputAlleleSubset()`` computes
+
+    isSpuriousSpanningDeletion = isSpanningDeletion(allele) && !isVcCoveredByDeletion(vc)
+
+(``GenotypingEngine.java:314``) and drops the allele when it is spurious
+(``:316``).  ``isVcCoveredByDeletion()`` (``:365-371``) requires
+
+    loc.getStart() < vc.getStart() && vc.getStart() <= loc.getEnd()
+
+over the deletions collected by ``recordDeletions()`` (``:343-357``), and
+``recordDeletions()`` is only reached at ``:179`` -- *after* the output-allele
+subset was already decided at ``:155``.  Two consequences are pinned here:
+
+1. a deletion allele carried by the very record being genotyped can never own
+   that record's own ``*`` (it is not in the upstream set yet, and the strict
+   ``<`` would exclude it anyway).  ``surviving-deletion-alt`` is exactly that
+   shape (``AA`` / ``*,A,<NON_REF>``, deletion ``A`` owns the best genotype):
+   GATK prunes ``*``, publishes ``ALT='A'`` and the source call projected to
+   ``0/1``, with ``FORMAT=GT:AD:DP:PL`` and no ``GQ``.
+2. an *upstream* deletion still owns a downstream ``*``, but only when it
+   genuinely spans the locus: ``...-noncovering-upstream`` (deletion spans 2-3,
+   ``*`` at 4) prunes, ``...-covering-upstream`` (deletion spans 2-4, ``*`` at 4)
+   keeps ``*`` and publishes ``1/2``.
+
+Native's ownership state is a pre-computed list of every input record carrying a
+concrete deletion allele, tested with ``span.begin <= record.pos && record.pos <
+span.end``; the inclusive start made a record's own deletion own its own ``*``.
+The fix makes the start strictly exclusive, matching ``:369``.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -100,6 +132,7 @@ HEADER = """##fileformat=VCFv4.2
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description=Read depth>
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description=Allele depths>
 ##FORMAT=<ID=PL,Number=G,Type=Integer,Description=Likelihoods>
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=Genotype quality>
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSTAR
 """
 
@@ -124,13 +157,52 @@ G_STAR_SECOND_RECORD = (
     "GT:DP:AD:PL\t0/1:20:0,20,0,0:100,100,100,100,0,100,100,100,100,100\n"
 )
 
-# Reported only: a concrete DELETION owns the best genotype.  GATK prunes the
-# orphan '*' here too, but native keeps it in the ALT list, which is a separate
-# deletion-ownership divergence (isVcCoveredByDeletion) rather than the
-# PREFER_PLS subsetting rule this oracle pins.
+# A concrete DELETION owns the best genotype of the very same record.  GATK
+# prunes the orphan '*' here too (see the deletion-ownership section of this
+# docstring), so ALT='A' and GT 0/1 are published.
 G_DELETION_ALT_RECORD = (
     "chr1\t2\t.\tAA\t*,A,<NON_REF>\t.\tPASS\tDP=20\t"
     "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# Same shape, but the deletion allele sits at a locus that an UPSTREAM deletion
+# does NOT cover (the record at 2 spans 2-3 while this one starts at 4), so the
+# record's own deletion still cannot own its own '*'.
+DEL_ALT_NONCOVERING_UPSTREAM = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t4\t.\tAA\t*,A,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# Positive control: the same '*' plus own deletion, but now an upstream deletion
+# emitted at 2 spans 2-4 (REF AAA -> ALT A), which DOES cover locus 4, so GATK
+# keeps '*,A' and genotypes 1/2.  This separates "the record's own deletion does
+# not own it" from "no deletion may own it".
+DEL_ALT_COVERING_UPSTREAM = (
+    "chr1\t2\t.\tAAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t4\t.\tAA\t*,A,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# '*', an own deletion and nothing else plausible: pruning '*' leaves a single
+# ALT that fails the standard-confidence threshold, the site turns monomorphic
+# and the default traversal writes no record at all.
+SELF_DELETION_ONLY_RECORD = (
+    "chr1\t2\t.\tAA\t*,A,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:10,0,10,0:0,100,100,100,100,100,100,100,100,100\n"
+)
+
+# A '*' that a strictly upstream deletion emits as covering, and which therefore
+# SURVIVES the subset -- but the record has no other ALT, so GATK drops it at
+# GenotypeGVCFs.apply() (isSpanningDeletionOnly).  Reported only: native writes
+# the '*' record, which is a separate record-emission rule, not ownership.
+STAR_ONLY_COVERED_RECORD = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,100,100,0,100,100\n"
 )
 
 # The same locus with the source call written in the opposite copy order.  The
@@ -159,6 +231,30 @@ GATK_G_REVERSED_ROW = ("chr1\t2\t.\tA\tG\t82.26\t.\t"
 GATK_G_PHASED_ROW = ("chr1\t2\t.\tA\tG\t82.26\t.\t"
                      "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
                      "GT:AD:DP:PL\t1|0:0,20:20:0,0,0")
+
+# Measured with pinned GATK 4.6.2.0 (see .diag/round-star-ownership.md).  When
+# the record's own deletion allele is pruned from owning the locus, the orphan
+# '*' goes away and only the concrete deletion allele is published.
+GATK_DEL_ROW = ("chr1\t2\t.\tAA\tA\t82.19\t.\t"
+                "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
+                "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
+GATK_DEL_UPSTREAM_LOCUS_ROW = ("chr1\t2\t.\tAA\tA\t92.60\t.\t"
+                               "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
+                               "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
+# The same publication one locus further down (the record at 4 whose own
+# deletion does not cover itself).
+GATK_DEL_DOWNSTREAM_ROW = ("chr1\t4\t.\tAA\tA\t82.19\t.\t"
+                           "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
+                           "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
+GATK_DEL_LONG_DELETION_ROW = ("chr1\t2\t.\tAAA\tA\t92.60\t.\t"
+                              "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
+                              "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
+# A '*' that a strictly upstream covering deletion owns is preserved, and the
+# site is genotyped as a two-ALT call (unchanged from before this round).
+GATK_STAR_AND_DEL_ROW = ("chr1\t4\t.\tAA\t*,A\t82.19\t.\t"
+                         "AC=1,1;AF=0.500,0.500;AN=2;DP=20;ExcessHet=0.0000;"
+                         "MLEAC=1,1;MLEAF=0.500,0.500;QD=4.11\t"
+                         "GT:AD:DP:GQ:PL\t1/2:0,0,20:20:99:100,100,100,100,0,100")
 
 CASES = [
     {
@@ -254,16 +350,70 @@ CASES = [
     },
     {
         "case": "surviving-deletion-alt",
-        "why": "reported only: with a concrete deletion owning the best genotype "
-               "GATK also prunes the orphan '*' and publishes ALT='A' with 0/1, "
-               "but native keeps '*' in the ALT list.  That is a separate "
-               "deletion-ownership (isVcCoveredByDeletion) divergence, not the "
-               "PREFER_PLS subsetting rule this oracle gates, so it is carried "
-               "without gating",
+        "why": "the locus' OWN deletion allele must not own its own '*'.  GATK "
+               "evaluates the spanning-deletion test with "
+               "isVcCoveredByDeletion() (GenotypingEngine.java:365-371), which "
+               "requires loc.getStart() < vc.getStart(), and it only calls "
+               "recordDeletions() for the emitted alleles AFTER the output "
+               "subset has been computed (:178-179), so a deletion allele of "
+               "the record being genotyped can never cover it.  The '*' is "
+               "spurious (:314), is dropped from the ALT subset (:316), and "
+               "the surviving 'A' is published with the source call projected "
+               "by bestMatchToOriginalGT() (0/2 -> 0/1) and the min-shifted PL "
+               "row 0,0,0",
         "body": G_DELETION_ALT_RECORD,
         "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_ROW],
+    },
+    {
+        "case": "surviving-deletion-alt-noncovering-upstream",
+        "why": "the same decision with an explicit upstream deletion record: "
+               "the deletion emitted at 2 spans 2-3 (recordDeletions, "
+               "GenotypingEngine.java:343-357) and therefore does NOT cover "
+               "locus 4 (:365-371), so '*' stays spurious and the locus-4 row "
+               "is byte-identical to surviving-deletion-alt",
+        "body": DEL_ALT_NONCOVERING_UPSTREAM,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW, GATK_DEL_DOWNSTREAM_ROW],
+    },
+    {
+        "case": "surviving-deletion-alt-covering-upstream",
+        "why": "positive control for the same boundary: the upstream deletion "
+               "emitted at 2 now spans 2-4 (REF AAA -> ALT A, deletionSize 2, "
+               "GenotypingEngine.java:348-355), so locus 4 IS covered, '*' "
+               "survives the subset and the site is genotyped 1/2.  Without "
+               "this case a fix that pruned every '*' would look correct",
+        "body": DEL_ALT_COVERING_UPSTREAM,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_LONG_DELETION_ROW, GATK_STAR_AND_DEL_ROW],
+    },
+    {
+        "case": "surviving-deletion-alt-only-alt-implausible",
+        "why": "pruning the orphan '*' leaves 'A' as the only ALT and it fails "
+               "the standard-confidence threshold, so the site is monomorphic "
+               "(:311-318) and the default traversal writes nothing "
+               "(:167-169, GenotypeGVCFsEngine.java:188-190)",
+        "body": SELF_DELETION_ONLY_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [],
+    },
+    {
+        "case": "covered-star-only-record",
+        "why": "reported only: this '*' IS covered by the upstream deletion, so "
+               "ownership is right, but the record has no other ALT and GATK "
+               "drops it at GenotypeGVCFs.apply() because "
+               "GATKVariantContextUtils.isSpanningDeletionOnly() is true "
+               "(GenotypeGVCFs.java:327-328).  Native writes the '*' record. "
+               "That is a separate record-emission rule, deliberately not "
+               "gated in this round",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "args": [],
         "gated": False,
-        "expect": None,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
     },
 ]
 
