@@ -157,6 +157,51 @@ value-driven, not a special case in the writer: the finite sibling
 (``include-non-variant-sites`` over ``STAR_RECORD``) is the *same* branch with a
 finite ``log10ProbVariantPresent()`` and reads ``127.78``.
 
+The FILTER column
+-----------------
+GATK's genotyper does not inherit the source record's filters.  It rebuilds the
+call from scratch:
+
+    final VariantContextBuilder builder = new VariantContextBuilder(
+            callSourceString(), vc.getContig(), vc.getStart(), vc.getEnd(),
+            outputAlleles);            // GenotypingEngine.java:181
+    builder.log10PError(log10Confidence);
+    if ( ! passesCallThreshold(phredScaledConfidence) ) {
+        builder.filter(GATKVCFConstants.LOW_QUAL_FILTER_NAME);   // :184-186
+    }
+
+because that constructor is given only the source string, the coordinates and
+the output alleles, no filter state is copied from ``vc``: the new context is
+unfiltered and ``filtersWereApplied`` is false, so htsjdk's ``VCFEncoder``
+writes ``.`` (its ``addFilterString`` emits ``.`` exactly when
+``!vc.filtersWereApplied()``).  The only filter a GenotypeGVCFs output record
+can carry is the engine's own ``LowQual`` from ``passesCallThreshold``, a test
+on the *recomputed* phred confidence against
+``--standard-min-confidence-threshold-for-calling`` (``:430-431``).
+
+The dense-mode non-PASS case therefore reads
+
+    chr1 3 . A . Infinity . DP=7;MLEAC=.;MLEAF=. GT ./.
+
+even though the source leaf is ``FILTER=LowQual`` -- the QUAL verifies that the
+recomputed confidence passes the threshold, so no filter is applied.  The
+measured divergence this gate was added for is native writing the inherited
+filter instead, rendered as a *wrong name*: HTSlib keeps one shared ID
+dictionary for ``##FILTER``/``##INFO``/``##FORMAT``, the source record was
+decoded with a header in which HTSlib had just auto-registered the undeclared
+``LowQual`` (``vcf_parse_filter`` appends a dummy ``##FILTER`` line while the
+record is parsed), and that index is resolved against the *writing* header at
+``vcf_format1``/``bcf_write`` time -- a header duplicated before any record was
+parsed.  Measured proof: with ``##FORMAT=<ID=RGQ,...>`` present the token reads
+``RGQ``, with that declaration removed the same row reads ``GQ``, and an input
+FILTER with an entirely different name (``StrandBias``) still reads ``RGQ``.
+Two layers are pinned separately below: the undeclared-header case (wrong name)
+and the declared-header case (right name, still wrong because GATK writes ``.``).
+
+The half of the contract native does not implement -- the engine's own
+``LowQual`` -- is pinned as REPORTED ONLY by
+``weak-locus-lowqual-filter-not-implemented``.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -204,6 +249,17 @@ HEADER = """##fileformat=VCFv4.2
 # dense-mode rule.  GATK's group-by-locus traversal merges both samples into one
 # record, and the materialized REF-only row carries one './.' per sample.
 HEADER_TWO_SAMPLES = HEADER.replace("\tSTAR\n", "\tS1\tS2\n")
+
+# The same header with an explicit FILTER declaration, so the source record's
+# FILTER id is registered while the header is being READ rather than appended by
+# HTSlib's vcf_parse_filter() when the first record is decoded.  The two
+# spellings separate "the token names the wrong id" from "the source FILTER is
+# carried at all": the undeclared header renders the inherited index against a
+# different ID dictionary (see the FILTER section of this docstring), the
+# declared one renders the right name, and GATK writes `.` for both.
+HEADER_WITH_LOWQUAL_FILTER = HEADER.replace(
+    "##FORMAT=<ID=GT", '##FILTER=<ID=LowQual,Description="Low quality">\n'
+                       "##FORMAT=<ID=GT")
 
 # verify_genotype_gvcf.py:378-381, byte for byte.
 STAR_RECORD = (
@@ -294,6 +350,34 @@ STAR_ONLY_COVERED_NONPASS_RECORD = (
     "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
     "chr1\t3\t.\tA\t*,<NON_REF>\t.\tLowQual\tDP=7\t"
     "GT:DP:AD:PL\t0/1:7:0,7,0:100,100,100,0,100,100\n"
+)
+
+# The same non-PASS star-only locus with two samples, for the dense-mode FILTER
+# statement of the multi-sample path.
+STAR_ONLY_COVERED_NONPASS_TWO_SAMPLES_RECORD = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\t"
+    "0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,<NON_REF>\t.\tLowQual\tDP=7\t"
+    "GT:DP:AD:PL\t0/1:7:0,7,0:100,100,100,0,100,100\t"
+    "0/1:7:0,7,0:100,100,100,0,100,100\n"
+)
+
+# The ordinary (non-dense) variant path with a non-PASS source FILTER: the same
+# record as G_PLAUSIBLE_RECORD, only the FILTER column changed.  GATK regenotypes
+# it and publishes `.`; a source FILTER is never carried into the output.
+G_PLAUSIBLE_NONPASS_RECORD = (
+    "chr1\t2\t.\tA\t*,G,<NON_REF>\t.\tLowQual\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# A locus whose best guess is the reference and whose phred confidence stays
+# below --standard-min-confidence-threshold-for-calling (30): GATK applies its
+# own FILTER=LowQual.  Used by the REPORTED ONLY case that pins the half of the
+# FILTER contract native does not implement.
+WEAK_LOCUS_RECORD = (
+    "chr1\t2\t.\tA\tG,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:19,1:0,0,40\n"
 )
 
 # A covered '*' that is NOT the only surviving ALT: the record also carries the
@@ -396,6 +480,29 @@ GATK_DEL_UPSTREAM_TWO_SAMPLES_ROW = (
     "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100\t0/1:0,20:20:99:100,0,100")
 GATK_STAR_ONLY_DENSE_TWO_SAMPLES_ROW = ("chr1\t3\t.\tA\t.\tInfinity\t.\t"
                                        "DP=20;MLEAC=.;MLEAF=.\tGT\t./.\t./.")
+# The FILTER column of the same materialization when the source leaf is non-PASS
+# (FILTER=LowQual, DP=7).  GATK writes `.`: GenotypingEngine builds the output
+# record with `new VariantContextBuilder(callSourceString(), vc.getContig(),
+# vc.getStart(), vc.getEnd(), outputAlleles)` (GenotypingEngine.java:181), which
+# copies NOTHING from the source record, so `filtersWereApplied` stays false and
+# htsjdk's VCFEncoder renders the unfiltered token `.`
+# (VCFEncoder.addFilterString: `!vc.filtersWereApplied()` -> ".").  The source
+# FILTER is only ever replaced by the engine's own decision at :184-186, which
+# is a threshold test on the *recomputed* phred confidence -- Infinity here, so
+# no filter is applied.
+GATK_STAR_ONLY_DENSE_NONPASS_ROW = ("chr1\t3\t.\tA\t.\tInfinity\t.\t"
+                                    "DP=7;MLEAC=.;MLEAF=.\tGT\t./.")
+GATK_STAR_ONLY_DENSE_NONPASS_TWO_SAMPLES_ROW = (
+    "chr1\t3\t.\tA\t.\tInfinity\t.\tDP=7;MLEAC=.;MLEAF=.\tGT\t./.\t./.")
+# The ordinary variant path with a non-PASS source FILTER is byte-identical to
+# GATK_G_ROW: the source FILTER never reaches the output, so only the QUAL
+# decides, and 82.26 passes the call threshold.
+GATK_G_NONPASS_ROW = GATK_G_ROW
+# The positive half of GATK's FILTER rule, which native does not implement:
+# phredScaledConfidence 23.14 < 30, so :184-186 applies LowQual.  Pinned as
+# REPORTED ONLY (see the case's `why`).
+GATK_WEAK_LOCUS_LOWQUAL_ROW = ("chr1\t2\t.\tA\t.\t23.14\tLowQual\t"
+                               "DP=20;MLEAC=.;MLEAF=.\tGT\t./.")
 # The finite sibling of the same branch, measured on the STAR_RECORD fixture
 # (`GATK_DEFAULT_ROW`, 127.78): log10ProbVariantPresent() is a small NEGATIVE
 # number there rather than -Infinity, so the row is finite.  Together the two
@@ -677,6 +784,107 @@ CASES = [
                    GATK_STAR_ONLY_DENSE_TWO_SAMPLES_ROW],
     },
     {
+        "case": "covered-star-only-record-dense-non-pass",
+        "why": "THE FILTER CASE.  Dense mode over the non-PASS variant of the "
+               "same fixture: the materialized REF-only row is "
+               "`chr1 3 . A . Infinity . DP=7;MLEAC=.;MLEAF=. GT ./.` -- GATK "
+               "writes `.`, not the source record's LowQual.  "
+               "GenotypingEngine.calculateGenotypes() rebuilds the call with "
+               "`new VariantContextBuilder(callSourceString(), vc.getContig(), "
+               "vc.getStart(), vc.getEnd(), outputAlleles)` "
+               "(GenotypingEngine.java:181), which copies no filter state from "
+               "the source VariantContext, so `filtersWereApplied` is false and "
+               "htsjdk's VCFEncoder emits the unfiltered token `.`; the ONLY "
+               "filter GATK can apply is its own threshold decision at "
+               "`if (!passesCallThreshold(phredScaledConfidence)) "
+               "builder.filter(LOW_QUAL_FILTER_NAME)` (:184-186), and this "
+               "locus' recomputed phred confidence is the infinite QUAL, which "
+               "passes.  A source FILTER must therefore never be inherited by "
+               "the output record",
+        "body": STAR_ONLY_COVERED_NONPASS_RECORD,
+        "args": ["--include-non-variant-sites"],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW,
+                   GATK_STAR_ONLY_DENSE_NONPASS_ROW],
+    },
+    {
+        "case": "covered-star-only-record-dense-non-pass-two-samples",
+        "why": "the same FILTER rule with two samples, so the gate does not "
+               "depend on a single-sample merge path: the upstream row is "
+               "genotyped from both samples and the materialized REF-only row "
+               "carries one './.' per sample with GATK's `.` FILTER",
+        "body": STAR_ONLY_COVERED_NONPASS_TWO_SAMPLES_RECORD,
+        "header": HEADER_TWO_SAMPLES,
+        "args": ["--include-non-variant-sites"],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_TWO_SAMPLES_ROW,
+                   GATK_STAR_ONLY_DENSE_NONPASS_TWO_SAMPLES_ROW],
+    },
+    {
+        "case": "covered-star-only-record-dense-non-pass-stream-by-locus",
+        "why": "the same fixture through native's OTHER writer "
+               "(--stream-by-locus).  Both writers funnel through the same "
+               "GATK-compatibility transform, so a FILTER fix that only covers "
+               "the aggregate path would leave this case red",
+        "body": STAR_ONLY_COVERED_NONPASS_RECORD,
+        "args": ["--include-non-variant-sites"],
+        "native_args": ["--stream-by-locus"],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW,
+                   GATK_STAR_ONLY_DENSE_NONPASS_ROW],
+    },
+    {
+        "case": "non-pass-variant-input-undeclared-filter",
+        "why": "the ORDINARY (non-dense) variant path with a non-PASS source "
+               "FILTER, and the source FILTER declared nowhere in the header.  "
+               "GATK writes the byte-identical GATK_G_ROW (FILTER `.`): the "
+               "engine rebuilds the record (GenotypingEngine.java:181) and the "
+               "recomputed confidence 82.26 passes :430-431, so no filter is "
+               "applied.  This case also pins the wrong-NAME half of the "
+               "defect: the undeclared source FILTER is registered by HTSlib "
+               "while a record is parsed (vcf_parse_filter appends "
+               "`##FILTER=<ID=...,Description=\"Dummy\">`), i.e. AFTER the "
+               "output header was duplicated from the header-only first pass, "
+               "so the inherited index names an unrelated id of the output "
+               "dictionary",
+        "body": G_PLAUSIBLE_NONPASS_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_G_NONPASS_ROW],
+    },
+    {
+        "case": "non-pass-variant-input-declared-filter",
+        "why": "the same record with `##FILTER=<ID=LowQual,...>` declared in "
+               "the input header, so the source index resolves to the right "
+               "name.  GATK STILL writes `.` (GATK_G_ROW), which separates the "
+               "two layers of the defect: the undeclared header only decides "
+               "whether the inherited filter is spelled `LowQual` or something "
+               "unrelated; carrying the source FILTER at all is wrong either "
+               "way",
+        "body": G_PLAUSIBLE_NONPASS_RECORD,
+        "header": HEADER_WITH_LOWQUAL_FILTER,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_G_NONPASS_ROW],
+    },
+    {
+        "case": "weak-locus-lowqual-filter-not-implemented",
+        "why": "REPORTED ONLY, different root cause.  A dense-mode locus whose "
+               "recomputed phred confidence is 23.14 < "
+               "--standard-min-confidence-threshold-for-calling (30): GATK "
+               "applies its OWN filter at GenotypingEngine.java:184-186 "
+               "(`builder.filter(LOW_QUAL_FILTER_NAME)`) and writes "
+               "`FILTER=LowQual`.  Native does not implement that decision at "
+               "all, so it writes `.`.  This is the positive half of the "
+               "FILTER contract; it is not caused by the inherited-filter "
+               "defect this gate was added for, and it stays reported-only "
+               "until the threshold rule is implemented",
+        "body": WEAK_LOCUS_RECORD,
+        "args": ["--include-non-variant-sites"],
+        "gated": False,
+        "expect": [GATK_WEAK_LOCUS_LOWQUAL_ROW],
+    },
+    {
         "case": "unemitted-upstream-deletion-star-plus-concrete-alt",
         "why": "reported only: the upstream deletion record is IMPLAUSIBLE, so "
                "GATK drops it (GenotypingEngine.java:167-169) and "
@@ -753,6 +961,7 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
     # semantic arguments above are identical on both sides.
     native_result = invoke([str(native), *common,
                             "--gatk-compatible-annotations",
+                            *case.get("native_args", []),
                             "-O", str(native_out)],
                            f"native GenotypeGVCFs [{case['case']}]", timeout)
 
@@ -764,6 +973,7 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
         "why": case["why"],
         "gated": case["gated"],
         "args": common,
+        "native_args": case.get("native_args", []),
         "gatk_exit": gatk_result.returncode,
         "native_exit": native_result.returncode,
         "expect": case["expect"],
@@ -866,6 +1076,8 @@ def main() -> int:
         print(f"[{result['case']}] {marker}")
         print(f"    why: {result['why']}")
         print(f"    args: {' '.join(result['args']) if result['args'] else '(none)'}")
+        if result["native_args"]:
+            print(f"    native-only args: {' '.join(result['native_args'])}")
         print(f"    gatk_exit={result['gatk_exit']} native_exit={result['native_exit']}")
         if result["expect"] is not None:
             print(f"    expected rows: {result['expect']}")

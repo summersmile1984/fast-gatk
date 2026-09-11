@@ -4168,18 +4168,35 @@ void apply_gatk_annotation_compatibility(const bcf_hdr_t* output_header,
                                          Record& record,
                                          const Options& options) {
     if (!options.gatk_annotation_compatibility) return;
-    // HTSJDK's VariantContext writer renders an unfiltered call as `.` even
-    // when the incoming gVCF encoded the equivalent state as FILTER=PASS.
-    // Preserve real filter labels, but canonicalize this PASS spelling at the
-    // final compatibility writer boundary.
+    // GATK never carries a source record's FILTER into the regenotyped call.
+    // GenotypingEngine.calculateGenotypes() rebuilds the variant with
+    //     new VariantContextBuilder(callSourceString(), vc.getContig(),
+    //                               vc.getStart(), vc.getEnd(), outputAlleles)
+    // (GenotypingEngine.java:181): that constructor receives only the source
+    // string, the coordinates and the output allele list, so no filter state is
+    // copied from the source VariantContext, `filtersWereApplied` stays false,
+    // and htsjdk's VCFEncoder writes the unfiltered token `.` (its
+    // addFilterString emits "." exactly when !vc.filtersWereApplied()).  The
+    // only FILTER a GenotypeGVCFs record can carry is the engine's own LowQual
+    // from `if (!passesCallThreshold(phredScaledConfidence))
+    // builder.filter(GATKVCFConstants.LOW_QUAL_FILTER_NAME)` (:184-186) -- a
+    // test on the RECOMPUTED confidence, never on the source filter.
+    //
+    // Inheriting the source filter is wrong in both name and presence.  HTSlib
+    // keeps a single ID dictionary shared by FILTER/INFO/FORMAT and resolves
+    // record.value->d.flt[] against the WRITING header, while the source record
+    // was decoded with a header in which an undeclared source FILTER had just
+    // been auto-registered by vcf_parse_filter() -- after this output header was
+    // duplicated from the header-only first pass.  Measured on the dense-mode
+    // non-PASS fixture: the REF-only row printed `RGQ` (the first id appended by
+    // add_genotype_output_header_fields) where GATK writes `.`, and the same
+    // row printed `GQ` once FORMAT/GQ was already declared in the input header.
+    // Clearing the inherited filters also canonicalizes FILTER=PASS to `.`,
+    // which is what htsjdk does for an unfiltered call.
     bcf_unpack(record.value, BCF_UN_FLT);
-    if (record.value->d.n_flt == 1) {
-        const auto* filter = bcf_hdr_int2id(output_header, BCF_DT_ID,
-                                            record.value->d.flt[0]);
-        if (filter != nullptr && std::strcmp(filter, "PASS") == 0 &&
-            bcf_update_filter(output_header, record.value, nullptr, 0) != 0)
-            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot canonicalize PASS filter");
-    }
+    if (record.value->d.n_flt > 0 &&
+        bcf_update_filter(output_header, record.value, nullptr, 0) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear inherited FILTER");
     // RAW_MQandDP is the reducible input annotation used to derive MQ; GATK's
     // finalized GenotypeGVCFs records do not retain it.  RCQ/RCP are native
     // cross-sample diagnostics rather than standard GATK INFO fields.
