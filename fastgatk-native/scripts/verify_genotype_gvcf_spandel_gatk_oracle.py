@@ -130,6 +130,33 @@ becomes spurious and is pruned, but native still counts it as owned:
 ``unemitted-upstream-deletion-star-plus-concrete-alt``.  Repairing it needs the
 ordered per-locus "emitted deletions" state, so it is out of scope here.
 
+The dense-mode QUAL token
+-------------------------
+The REF-only row that dense mode materializes carries QUAL ``Infinity`` when the
+locus is monomorphic *and* the model puts the whole posterior mass on "no
+variant present".  ``GenotypingEngine`` selects the confidence formula by
+monomorphy (``:158-163``):
+
+    log10Confidence = !outputAlternativeAlleles.siteIsMonomorphic
+                          || configuration.annotateAllSitesWithPLs
+                      ? AFresult.log10ProbOnlyRefAlleleExists() + 0.0
+                      : AFresult.log10ProbVariantPresent() + 0.0;
+
+and it is that second arm which is assigned to the record
+(``builder.log10PError(log10Confidence)`` at ``:183``, with the phred value only
+used for the LowQual test at ``:184``).  ``log10ProbOnlyRefAlleleExists()`` is
+``-0.0`` here (the posterior is 1.0), and
+``MathUtils.log10OneMinusPow10`` returns ``Double.NEGATIVE_INFINITY`` for a zero
+argument, so the QUAL is a genuine ``Double.POSITIVE_INFINITY``.  htsjdk renders
+it through ordinary decimal formatting -- ``VCFEncoder`` writes
+``formatQualValue(vc.getPhredScaledQual())`` whenever ``vc.hasLog10PError()``,
+and ``formatQualValue`` is ``String.format(Locale.US, "%.2f", qual)`` with a
+trailing ``.00`` stripped -- so Java's ``%f`` prints the token ``Infinity``
+(``-Infinity``/``NaN`` would print their own tokens).  The token is therefore
+value-driven, not a special case in the writer: the finite sibling
+(``include-non-variant-sites`` over ``STAR_RECORD``) is the *same* branch with a
+finite ``log10ProbVariantPresent()`` and reads ``127.78``.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -172,6 +199,11 @@ HEADER = """##fileformat=VCFv4.2
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=Genotype quality>
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSTAR
 """
+
+# The same header with two samples, for the multi-sample statement of the
+# dense-mode rule.  GATK's group-by-locus traversal merges both samples into one
+# record, and the materialized REF-only row carries one './.' per sample.
+HEADER_TWO_SAMPLES = HEADER.replace("\tSTAR\n", "\tS1\tS2\n")
 
 # verify_genotype_gvcf.py:378-381, byte for byte.
 STAR_RECORD = (
@@ -240,6 +272,18 @@ STAR_ONLY_COVERED_RECORD = (
     "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
     "chr1\t3\t.\tA\t*,<NON_REF>\t.\tPASS\tDP=20\t"
     "GT:DP:AD:PL\t0/1:20:0,20,0:100,100,100,0,100,100\n"
+)
+
+# The same two records with two samples: the dense-mode materialization is a
+# property of the locus, not of the sample count, and GATK emits one './.' per
+# sample on the REF-only row.
+STAR_ONLY_COVERED_TWO_SAMPLES_RECORD = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\t"
+    "0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,100,100,0,100,100\t"
+    "0/1:20:0,20,0:100,100,100,0,100,100\n"
 )
 
 # The same shipping rule must not depend on the dropped record's own FILTER,
@@ -327,8 +371,36 @@ GATK_DEL_UPSTREAM_LOCUS_ROW = ("chr1\t2\t.\tAA\tA\t92.60\t.\t"
                                "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
 # The dense-mode materialization of a locus whose only surviving allele was the
 # symbolic spanning deletion (measured, see .diag/round-star-only-record.md).
+#
+# The QUAL token is the literal `Infinity`.  It is not a special case in the VCF
+# writer: GenotypingEngine:158-163 takes
+#
+#     log10Confidence = AFresult.log10ProbVariantPresent() + 0.0
+#
+# for a monomorphic site, and MathUtils.log10OneMinusPow10(0.0) is
+# Double.NEGATIVE_INFINITY, so log10PError really is -Infinity and the phred
+# value really is Double.POSITIVE_INFINITY.  htsjdk's encoder then renders it
+# through plain decimal formatting -- VCFEncoder.formatQualValue() is
+# `String.format(Locale.US, "%.2f", qual)` with a trailing ".00" removed
+# (htsjdk VCFEncoder, verified by javap on the pinned gatk-package jar: the
+# QUAL column is written as formatQualValue(vc.getPhredScaledQual()) when
+# vc.hasLog10PError()) -- and Java's `%f` on an infinite double yields
+# "Infinity".  Hence the unusual token.
 GATK_STAR_ONLY_DENSE_ROW = ("chr1\t3\t.\tA\t.\tInfinity\t.\t"
                             "DP=20;MLEAC=.;MLEAF=.\tGT\t./.")
+# The two-sample statement of the same locus: the first row is genotyped from
+# both samples and the materialized REF-only row repeats the token.
+GATK_DEL_UPSTREAM_TWO_SAMPLES_ROW = (
+    "chr1\t2\t.\tAA\tA\t190.46\t.\t"
+    "AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76\t"
+    "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100\t0/1:0,20:20:99:100,0,100")
+GATK_STAR_ONLY_DENSE_TWO_SAMPLES_ROW = ("chr1\t3\t.\tA\t.\tInfinity\t.\t"
+                                       "DP=20;MLEAC=.;MLEAF=.\tGT\t./.\t./.")
+# The finite sibling of the same branch, measured on the STAR_RECORD fixture
+# (`GATK_DEFAULT_ROW`, 127.78): log10ProbVariantPresent() is a small NEGATIVE
+# number there rather than -Infinity, so the row is finite.  Together the two
+# rows pin that the token follows the value and is not a blanket rule for
+# monomorphic sites.
 # The same publication one locus further down (the record at 4 whose own
 # deletion does not cover itself).
 GATK_DEL_DOWNSTREAM_ROW = ("chr1\t4\t.\tAA\tA\t82.19\t.\t"
@@ -569,22 +641,40 @@ CASES = [
     },
     {
         "case": "covered-star-only-record-dense",
-        "why": "reported only: dense mode (OutputMode.EMIT_ALL_ACTIVE_SITES, "
+        "why": "dense mode (OutputMode.EMIT_ALL_ACTIVE_SITES, "
                "GenotypeGVCFsEngine.java:381-383) skips both null returns, so "
                "the locus is materialized as GATK's REF-only no-call row "
                "(subsetToRefOnly at GenotypingEngine.java:190 and "
                "cleanupGenotypeAnnotations at GenotypeGVCFsEngine.java:191-194) "
                "and apply() writes it because forceOutput is true "
                "(GenotypeGVCFs.java:326-330; the ALT set is empty, so the "
-               "record is not spanning-deletion-only).  Native reaches the "
-               "same ALT='.'/GT='./.'/FORMAT=GT shape but reports QUAL=0 "
-               "instead of GATK's Infinity, a pre-existing divergence of the "
-               "monomorphic-Qual path that is unrelated to the allele and is "
-               "documented in .diag/round-star-only-record.md",
+               "record is not spanning-deletion-only).  Its QUAL is the literal "
+               "token Infinity because the site is monomorphic, so the "
+               "confidence branch is GenotypingEngine.java:158-163 with "
+               "AFresult.log10ProbVariantPresent(), and "
+               "MathUtils.log10OneMinusPow10(0.0) is "
+               "Double.NEGATIVE_INFINITY -- a genuine positive-infinity QUAL "
+               "that htsjdk renders with Java's `%.2f` (see the "
+               "GATK_STAR_ONLY_DENSE_ROW comment)",
         "body": STAR_ONLY_COVERED_RECORD,
         "args": ["--include-non-variant-sites"],
-        "gated": False,
+        "gated": True,
         "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW, GATK_STAR_ONLY_DENSE_ROW],
+    },
+    {
+        "case": "covered-star-only-record-dense-two-samples",
+        "why": "the same locus with two samples in one gVCF: the allele rule "
+               "and the QUAL branch are per-locus, the upstream row is "
+               "genotyped from both samples, and the materialized REF-only row "
+               "repeats GATK's Infinity token once per sample.  This separates "
+               "'the token belongs to the monomorphic-confidence branch' from "
+               "'the token is an artefact of a single-sample path'",
+        "body": STAR_ONLY_COVERED_TWO_SAMPLES_RECORD,
+        "header": HEADER_TWO_SAMPLES,
+        "args": ["--include-non-variant-sites"],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_TWO_SAMPLES_ROW,
+                   GATK_STAR_ONLY_DENSE_TWO_SAMPLES_ROW],
     },
     {
         "case": "unemitted-upstream-deletion-star-plus-concrete-alt",
@@ -644,7 +734,7 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
              java: pathlib.Path, jar: pathlib.Path, native: pathlib.Path,
              timeout: int) -> dict:
     source = work / f"{case['case']}.g.vcf"
-    source.write_text(HEADER + case["body"], encoding="utf-8")
+    source.write_text(case.get("header", HEADER) + case["body"], encoding="utf-8")
     # GATK's --include-non-variant-sites switches to a group-by-locus traversal
     # that requires an index; a plain .vcf gets a tribble .idx.  Creating it for
     # every case keeps the two tools' inputs byte-identical.

@@ -2830,6 +2830,21 @@ void materialize_gatk_monomorphic_ref_call(const bcf_hdr_t* output_header,
         const auto complement = gatk_log10_one_minus_pow10(record.cohort_log10_p_no_variant);
         if (std::isfinite(complement))
             record.value->qual = gatk_qual_output(-10.0 * complement);
+        else if (std::isinf(complement) && complement < 0.0)
+            // GenotypingEngine.java:158-163 assigns that same
+            // log10ProbVariantPresent() straight into the record
+            // (builder.log10PError(log10Confidence) at :183), so when the
+            // posterior puts ALL of its mass on "no variant present",
+            // MathUtils.log10OneMinusPow10(0.0) is Double.NEGATIVE_INFINITY
+            // and GATK's QUAL really is Double.POSITIVE_INFINITY.  It is not a
+            // sentinel: htsjdk renders it with ordinary decimal formatting, so
+            // the published token is Java's `%.2f` spelling of an infinite
+            // double, "Infinity".  gatk_qual_output() would flatten that to 0,
+            // so keep the infinite value here and let
+            // format_gatk_qual_value() supply the token.  A NaN complement
+            // (log10Confidence > 0) keeps the previous leave-unchanged
+            // behaviour.
+            record.value->qual = std::numeric_limits<float>::infinity();
     }
 
     record.alleles = {reference};
@@ -4289,6 +4304,15 @@ std::string format_gatk_float_value(const std::string& key,
 
 std::string format_gatk_qual_value(const std::string& value) {
     if (value.empty() || value == ".") return value;
+    // htsjdk's VCFEncoder.formatQualValue() is `String.format(Locale.US,
+    // "%.2f", qual)` with a trailing ".00" removed, and Java's `%f` prints an
+    // infinite double as the literal word "Infinity" (measured on the pinned
+    // JDK 17: "Infinity" / "-Infinity" / "NaN").  HTSlib's kputd() renders the
+    // same float through C's "%.g", i.e. "inf"/"-inf" (htslib kstring.c:38,
+    // reached from vcf.c:4109), so translate the spelling.  A finite value
+    // keeps the decimal path below.
+    if (value == "inf") return "Infinity";
+    if (value == "-inf") return "-Infinity";
     try {
         auto quality = std::stod(value);
         if (!std::isfinite(quality)) return value;
