@@ -478,6 +478,18 @@ def main() -> int:
         # Common allele-specific (Number=A) annotations are lowered to the
         # per-ALT AS_FilterStatus INFO vector.  AS rules do not alter the site
         # FILTER column, which has no unambiguous ALT index.
+        #
+        # The previous expectation here (`AS_FilterStatus=LowASQD,PASS` /
+        # `PASS,LowASQD`) was native-only and is now corrected to the measured
+        # GATK 4.6.2.0 contract.  Pinned GATK evaluates each expression against
+        # splitMultiAllelics()'s single-ALT context, which is rebuilt by a
+        # VariantContextBuilder carrying only contig/start/stop/alleles
+        # (VariantFiltration.java:359-378), so this INFO-referencing rule sees a
+        # JEXL null and never fires; AlleleFilterUtils.addAlleleAndSiteFilters
+        # (:94-122) therefore keeps the "SITE" placeholder
+        # (GATKVCFConstants.java:201) in every allele slot and joins the alleles
+        # with "|" (AnnotationUtils.ALLELE_SPECIFIC_RAW_DELIM), not with ",".
+        # Gate: scripts/verify_variant_filtration_asfilterstatus_gatk_oracle.py.
         allele_source = work / "allele-specific.vcf.gz"
         allele_header = HEADER.replace(
             "##INFO=<ID=QD,Number=1,Type=Float,Description=Quality by depth>\n",
@@ -501,11 +513,13 @@ def main() -> int:
             allele_output, "rt", encoding="utf-8").read().splitlines()
             if line and not line.startswith("#")]
         assert allele_records[0][6] == "PASS" and allele_records[1][6] == "PASS"
-        assert "AS_FilterStatus=LowASQD,PASS" in allele_records[0][7]
-        assert "AS_FilterStatus=PASS,LowASQD" in allele_records[1][7]
+        assert allele_records[0][7] == "AS_QD=1,3;AS_FilterStatus=SITE|SITE"
+        assert allele_records[1][7] == "AS_QD=3,1;AS_FilterStatus=SITE|SITE"
         allele_metadata = json.loads(allele_manifest.read_text(encoding="utf-8"))
         assert allele_metadata["compatibility"]["allele_specific_filters"] is True
-        assert allele_metadata["telemetry"]["allele_filtered"] == 2
+        # GATK applies no allele filter for this fixture, so no allele is
+        # counted as filtered.
+        assert allele_metadata["telemetry"]["allele_filtered"] == 0
 
         unsupported_output = work / "allele-specific-unsupported.vcf.gz"
         unsupported_result = subprocess.run(

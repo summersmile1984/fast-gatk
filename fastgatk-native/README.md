@@ -3133,7 +3133,13 @@ outside the interval. Deterministic clustered-event filtering is available throu
 methods as SelectVariants are supported; complete JEXL method and
 allele-specific annotation coverage remains explicit fallback except for the
 common numeric `AS_*` `Number=A` subset enabled by
-`--apply-allele-specific-filters`, which writes per-ALT `AS_FilterStatus`.
+`--apply-allele-specific-filters`, which writes GATK's per-ALT
+`AS_FilterStatus` encoding (`SITE` placeholder, `|` between alleles,
+`AlleleFilterUtils.java:69-122`) and, like GATK, evaluates each expression
+against a per-ALT context that carries no INFO attributes and no genotypes
+(`VariantFiltration.java:359-378`), so an `AS_*` INFO predicate cannot fire in
+that mode; this contract is gated by
+`scripts/verify_variant_filtration_asfilterstatus_gatk_oracle.py`.
 Numeric INFO-vector operands additionally accept GATK's
 `vc.getAttribute("TAG").get(i)` and the compatible `TAG[i]` shorthand, with
 out-of-range elements treated as missing; vector arithmetic and all supported

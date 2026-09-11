@@ -2001,33 +2001,123 @@ void recompute_chromosome_counts(const bcf_hdr_t* header, bcf1_t* record) {
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update AF");
 }
 
+// Split one AS_FilterStatus component the way AnnotationUtils does: alleles are
+// joined by ALLELE_SPECIFIC_RAW_DELIM and several labels of one allele by
+// LIST_DELIMITER (AnnotationUtils.java:21-22), brackets are stripped and each
+// token is trimmed (AlleleFilterUtils.java:24-28).
+std::vector<std::string> split_as_filter_component(const std::string& raw, char delimiter) {
+    std::vector<std::string> parts;
+    std::string current;
+    for (const char character : raw) {
+        if (character == delimiter) {
+            parts.push_back(trim_copy(current));
+            current.clear();
+        } else if (character != '[' && character != ']') {
+            current.push_back(character);
+        }
+    }
+    parts.push_back(trim_copy(current));
+    return parts;
+}
+
+std::vector<std::vector<std::string>> decode_as_filter_status(const std::string& raw) {
+    if (raw.empty()) return {};
+    std::vector<std::vector<std::string>> decoded;
+    for (const auto& allele : split_as_filter_component(raw, '|'))
+        decoded.push_back(split_as_filter_component(allele, ','));
+    return decoded;
+}
+
 std::uint64_t apply_allele_specific_filters(
     const bcf_hdr_t* input_header, const bcf_hdr_t* output_header, bcf1_t* record,
     const std::vector<std::shared_ptr<Expr>>& rules,
-    const std::vector<std::string>& names, bool missing_fails, bool invert_expression) {
+    const std::vector<std::string>& names, bool invert_expression,
+    bool invalidate_previous_filters) {
     if (record->n_allele <= 1 || rules.empty()) return 0;
-    std::vector<std::string> statuses(static_cast<std::size_t>(record->n_allele - 1), "PASS");
+    const auto allele_count = static_cast<std::size_t>(record->n_allele - 1);
+
+    // GATK starts from the record's own AS_FilterStatus and only adds labels for
+    // alleles whose rule fired (AlleleFilterUtils.java:98-108).  A pre-existing
+    // vector with a different arity makes GATK leave the record untouched
+    // (:99-102); --invalidate-previous-filters discards it and reseeds below.
+    std::vector<std::vector<std::string>> allele_filters;
+    if (!invalidate_previous_filters) {
+        char* existing_raw = nullptr;
+        int existing_count = 0;
+        const auto existing_length = bcf_get_info_string(
+            input_header, record, "AS_FilterStatus", &existing_raw, &existing_count);
+        if (existing_length > 0 && existing_raw != nullptr)
+            allele_filters = decode_as_filter_status(existing_raw);
+        if (existing_raw != nullptr) free(existing_raw);
+        if (!allele_filters.empty() && allele_filters.size() != allele_count) return 0;
+    }
+    // GATKVCFConstants.SITE_LEVEL_FILTERS = "SITE": the placeholder GATK writes
+    // into every allele slot that no filter selected (GATKVCFConstants.java:201,
+    // AlleleFilterUtils.java:104-106).  It is a literal allele label, not PASS.
+    if (allele_filters.empty())
+        allele_filters.assign(allele_count, std::vector<std::string>{"SITE"});
+
+    // GATK does not evaluate the expressions against the input record: it
+    // filters splitMultiAllelics(vc) (VariantFiltration.java:359-365), and each
+    // of those contexts is rebuilt by a VariantContextBuilder that carries only
+    // contig/start/stop/alleles (:371-378), so the per-allele context has NO
+    // INFO attributes and NO genotypes.  An INFO/Number=A rule therefore
+    // dereferences a JEXL null and can never add a filter label.  Reproduce that
+    // context with a scratch copy of the record whose INFO and FORMAT payloads
+    // are removed: the unpacked flags stay set, so htslib never rebuilds these
+    // counts (vcf.c:3994-4059 bcf_unpack consults b->unpacked) and every
+    // bcf_get_info_*/bcf_get_format_* lookup reports "not present"
+    // (vcf.c:5817-5827).
+    bcf1_t* split_record = bcf_dup(record);
+    if (split_record == nullptr)
+        throw std::runtime_error(
+            "RESOURCE_EXHAUSTED: cannot duplicate the record for allele-split evaluation");
+    if (bcf_unpack(split_record, BCF_UN_ALL) != 0) {
+        bcf_destroy(split_record);
+        throw std::runtime_error(
+            "OUTPUT_CONTRACT_FAILURE: cannot unpack the record for allele-split evaluation");
+    }
+    split_record->n_info = 0;
+    split_record->n_fmt = 0;
+    split_record->n_sample = 0;
+
     std::uint64_t filtered = 0;
     for (int allele = 0; allele < record->n_allele - 1; ++allele) {
         for (std::size_t rule_index = 0; rule_index < rules.size(); ++rule_index) {
             if (!uses_allele_specific_field(*rules[rule_index])) continue;
-            const auto result = evaluate(*rules[rule_index], input_header, record,
-                                          missing_fails, allele);
+            // Within the split context every annotation lookup is absent and
+            // JEXL compares null as false, so the missing-values policy must not
+            // turn an unavailable allele annotation into a match: pinned GATK
+            // still emits SITE|SITE for this expression under
+            // --missing-values-evaluate-as-failing.
+            const auto result = evaluate(*rules[rule_index], input_header, split_record,
+                                          false, allele);
             const bool failed = invert_expression ? !result.value : result.value;
             if (!failed) continue;
-            auto& status = statuses[static_cast<std::size_t>(allele)];
-            if (status == "PASS" || status.empty()) status = names[rule_index];
-            else status += ';' + names[rule_index];
+            auto& current = allele_filters[static_cast<std::size_t>(allele)];
+            // addAlleleFilters (:69-82): the SITE placeholder is replaced by the
+            // first real filter, further filters are appended once, in order.
+            if (current.empty() || (current.size() == 1 && current.front() == "SITE")) {
+                current.assign(1, names[rule_index]);
+            } else if (std::find(current.begin(), current.end(), names[rule_index]) == current.end()) {
+                current.push_back(names[rule_index]);
+            }
             ++filtered;
         }
     }
-    std::ostringstream encoded;
-    for (std::size_t index = 0; index < statuses.size(); ++index) {
-        if (index != 0) encoded << ',';
-        encoded << statuses[index];
+    bcf_destroy(split_record);
+
+    // encodeASFilters (:36-38) joins the labels of one allele with "," and the
+    // alleles with "|" (AnnotationUtils.ALLELE_SPECIFIC_RAW_DELIM).
+    std::string encoded;
+    for (std::size_t allele = 0; allele < allele_filters.size(); ++allele) {
+        if (allele != 0) encoded.push_back('|');
+        for (std::size_t index = 0; index < allele_filters[allele].size(); ++index) {
+            if (index != 0) encoded.push_back(',');
+            encoded += allele_filters[allele][index];
+        }
     }
-    const auto value = encoded.str();
-    if (bcf_update_info_string(output_header, record, "AS_FilterStatus", value.c_str()) != 0)
+    if (bcf_update_info_string(output_header, record, "AS_FilterStatus", encoded.c_str()) != 0)
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update AS_FilterStatus");
     return filtered;
 }
@@ -2398,7 +2488,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             if (options.apply_allele_specific_filters && allele_specific_rules_present)
                 allele_filtered += apply_allele_specific_filters(
                     input_header, output_header, record, rules, options.names,
-                    options.missing_fails, options.invert_filter_expression);
+                    options.invert_filter_expression,
+                    options.invalidate_previous_filters);
             const auto genotype_result = apply_genotype_filters(
                 input_header, output_header, record, genotype_rules,
                 options.genotype_names, options.missing_fails,
