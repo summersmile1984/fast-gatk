@@ -1043,6 +1043,14 @@ struct Record {
     std::vector<int> output_samples;
     int ploidy = 0;
     std::vector<int32_t> gt;
+    // The merged source genotype in the union allele space, captured before
+    // GenotypingEngine's PL-derived assignment replaces `gt`.  GATK's
+    // PREFER_PLS path falls back to GATKVariantContextUtils.bestMatchToOriginalGT()
+    // on this call, so it must survive the union/sample merge.  `source_alleles`
+    // is the union allele list that `source_gt` indexes into; every record of a
+    // merged group shares it, so the merge keeps the first one.
+    std::vector<int32_t> source_gt;
+    std::vector<std::string> source_alleles;
     std::vector<int32_t> dp;
     std::vector<int32_t> gq;
     // HaplotypeCaller's physical-phasing annotations are ordinary
@@ -1146,6 +1154,8 @@ std::uint64_t genotype_record_bytes(const Record& record) {
     add(record.alleles.size(), sizeof(std::string));
     add(record.output_samples.size(), sizeof(int));
     add(record.gt.size(), sizeof(int32_t));
+    add(record.source_gt.size(), sizeof(int32_t));
+    add(record.source_alleles.size(), sizeof(std::string));
     add(record.dp.size(), sizeof(int32_t));
     add(record.gq.size(), sizeof(int32_t));
     add(record.rgq.size(), sizeof(int32_t));
@@ -2831,6 +2841,39 @@ void materialize_gatk_monomorphic_ref_call(const bcf_hdr_t* output_header,
     record.finalized_monomorphic_ref = true;
 }
 
+// GATKVariantContextUtils.makeGenotypeCall()'s PREFER_PLS branch is a two-way
+// split (GATKVariantContextUtils.java:331-352).  Only its first half derives
+// the call from the likelihood row that AlleleSubsettingUtils.subsetAlleles()
+// projected onto the KEPT alleles; when that row is not informative the row is
+// ignored and the call is projected from the SOURCE genotype instead
+// (bestMatchToOriginalGT: calls at :333-338, definition at :397-403).
+//
+// isInformative() is sum(log10GL) < SUM_GL_THRESH_NOCALL = -0.1 (:54-58), and
+// the row the builder stores has already been shifted by its minimum
+// (scaleLogSpaceArrayForNumericalStability, AlleleSubsettingUtils.java:90-95,
+// followed by GenotypeLikelihoods.GLsToPLs).  On integer PLs that makes the
+// test exactly sum(pl_i - min_pl) <= 1, which is shift-invariant and therefore
+// also correct for a row native has not normalized yet.
+bool gatk_prefer_pls_row_is_uninformative(const std::vector<int32_t>& pl,
+                                          const std::size_t begin,
+                                          const std::size_t end) {
+    int64_t sum = 0;
+    std::int32_t minimum = std::numeric_limits<std::int32_t>::max();
+    std::size_t count = 0;
+    for (std::size_t index = begin; index < end; ++index) {
+        const auto value = pl[index];
+        if (value < 0 || value == bcf_int32_vector_end) continue;
+        sum += value;
+        if (value < minimum) minimum = value;
+        ++count;
+    }
+    // An entirely absent row is the `genotypeLikelihoods == null` arm of the
+    // same Java condition.  Native keeps its existing no-call for that input
+    // rather than projecting the source genotype.
+    if (count == 0) return false;
+    return sum - static_cast<int64_t>(minimum) * static_cast<int64_t>(count) <= 1;
+}
+
 // GenotypingEngine does not publish every ALT that arrived from the merged
 // gVCF.  It asks AFCalculator whether each allele independently passes the
 // standard confidence threshold, then subsets the VariantContext and all
@@ -2920,7 +2963,92 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     // 0/1/1 result is allowed through; retain pre-existing no-call state.
     record.force_no_call_samples = force_before_output_subset;
     record.force_no_call_samples.resize(record.output_samples.size(), 0);
+    // Which samples take PREFER_PLS's second arm.  The projected row is
+    // measured after the Number=G remap and after the orphan-span
+    // normalization above; the test itself is min-shift invariant.
+    const auto subset_width = record.ploidy > 0
+        ? genotype_width(record.allele_count, record.ploidy) : 0;
+    std::vector<std::uint8_t> pls_row_ignored(record.output_samples.size(), 0);
+    if (subset_width > 0 && !record.pl.empty() &&
+        record.pl.size() % subset_width == 0 &&
+        !record.source_gt.empty() && !record.source_alleles.empty()) {
+        const auto rows = record.pl.size() / subset_width;
+        for (std::size_t sample = 0;
+             sample < pls_row_ignored.size() && sample < rows; ++sample) {
+            if (gatk_prefer_pls_row_is_uninformative(
+                    record.pl, sample * subset_width,
+                    (sample + 1) * subset_width))
+                pls_row_ignored[sample] = 1;
+        }
+    }
     derive_gt_gq_from_pl(record);
+    // PREFER_PLS's second arm: the projected PL row carries no usable signal,
+    // so GATK projects the SOURCE call allele by allele.  bestMatchToOriginalGT
+    // keeps every source allele that survived the subset, replaces an allele
+    // that was pruned by the reference, and keeps a no-call copy a no-call
+    // (GATKVariantContextUtils.java:333-338, definition at :397-403); the
+    // branch assigns no GQ, so a source without FORMAT/GQ leaves the field
+    // absent (AlleleSubsettingUtils.java:127-128 also gates the projected GQ
+    // on the source genotype's own hasGQ()).
+    // The stored merged call indexes the union allele list, so it must have the
+    // same sample-major shape as the GT vector it is projected onto.
+    const bool source_call_usable = !record.source_gt.empty() &&
+        !record.source_alleles.empty() &&
+        record.source_gt.size() == record.gt.size();
+    for (std::size_t sample = 0; sample < pls_row_ignored.size(); ++sample) {
+        if (pls_row_ignored[sample] == 0) continue;
+        if (sample < force_before_output_subset.size() &&
+            force_before_output_subset[sample] != 0)
+            continue;
+        if (!source_call_usable) break;
+        for (int copy = 0; copy < record.ploidy; ++copy) {
+            const auto index = sample * static_cast<std::size_t>(record.ploidy) +
+                               static_cast<std::size_t>(copy);
+            if (index >= record.gt.size()) break;
+            const auto source = record.source_gt[index];
+            if (source == bcf_int32_vector_end) {
+                record.gt[index] = bcf_int32_vector_end;
+                continue;
+            }
+            if (bcf_gt_is_missing(source)) {
+                record.gt[index] = bcf_gt_missing;
+                continue;
+            }
+            // bestMatchToOriginalGT() compares Allele objects, so match by
+            // allele name: a source allele that survived the subset keeps its
+            // identity, and every other source allele -- a pruned ALT, the
+            // symbolic '*' or '<NON_REF>' -- becomes the reference.
+            const auto old_index = bcf_gt_allele(source);
+            int new_index = 0;
+            if (old_index >= 0 &&
+                old_index < static_cast<int>(record.source_alleles.size())) {
+                const auto found = std::find(
+                    record.alleles.begin(), record.alleles.end(),
+                    record.source_alleles[static_cast<std::size_t>(old_index)]);
+                if (found != record.alleles.end())
+                    new_index = static_cast<int>(found - record.alleles.begin());
+            }
+            record.gt[index] = bcf_gt_is_phased(source)
+                ? bcf_gt_phased(new_index) : bcf_gt_unphased(new_index);
+        }
+        if (!record.source_has_gq && sample < record.gq.size())
+            record.gq[sample] = bcf_int32_missing;
+    }
+    if (std::any_of(pls_row_ignored.begin(), pls_row_ignored.end(),
+                    [](const std::uint8_t value) { return value != 0; }) &&
+        !record.gq.empty() &&
+        std::all_of(record.gq.begin(), record.gq.end(),
+                    [](const int32_t value) {
+                        return value == bcf_int32_missing ||
+                               value == bcf_int32_vector_end;
+                    })) {
+        // No genotype carries a GQ, so htsjdk does not emit the FORMAT key at
+        // all.  HTSlib would otherwise print an empty GQ column.
+        record.gq.clear();
+        if (bcf_hdr_id2int(output_header, BCF_DT_ID, "GQ") >= 0)
+            (void)bcf_update_format_int32(output_header, record.value, "GQ",
+                                          nullptr, 0);
+    }
     // GATKVariantContextUtils.makeGenotypeCall additionally turns an
     // effectively uninformative hom-ref PREFER_PLS result into a no-call
     // (SUM_GL_THRESH_NOCALL = -0.1).  With integer PL output that boundary
@@ -2928,6 +3056,11 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     // confident hom-ref call, and preserves the GATK orphan-* behaviour
     // while allowing a confident projected non-reference genotype above.
     for (std::size_t sample = 0; sample < record.output_samples.size(); ++sample) {
+        // The no-call rule lives in PREFER_PLS's first arm (:351-352), which
+        // requires an informative row; a sample that took the second arm is
+        // decided by the projected source call instead.
+        if (sample < pls_row_ignored.size() && pls_row_ignored[sample] != 0)
+            continue;
         if (sample < force_before_output_subset.size() &&
             force_before_output_subset[sample] != 0)
             continue;
@@ -3340,6 +3473,46 @@ void merge_sample_fields(const bcf_hdr_t* output_header,
     };
     copy_fields("GT", group.front()->ploidy > 0 ? group.front()->ploidy : 2,
                 &Record::gt, bcf_gt_missing);
+    // The stored merged source call is a Host-only staging vector with the same
+    // sample-major shape as GT; it has no FORMAT tag of its own.  Merge it with
+    // the identical sample projection so PREFER_PLS's bestMatchToOriginalGT()
+    // fallback sees every sample's own source call.  All members of a group
+    // share the union allele list, so the first non-empty one names it.
+    {
+        const int source_width = group.front()->ploidy > 0
+            ? group.front()->ploidy : 2;
+        const bool present = std::any_of(group.begin(), group.end(),
+            [](const Record* record) { return !record->source_gt.empty(); });
+        if (present && output_samples > 0) {
+            std::vector<int32_t> merged_source(
+                static_cast<std::size_t>(output_samples) *
+                    static_cast<std::size_t>(source_width), bcf_gt_missing);
+            for (const auto* record : group) {
+                if (record->source_gt.empty()) continue;
+                const int source_samples = static_cast<int>(record->output_samples.size());
+                for (int sample = 0; sample < source_samples; ++sample) {
+                    const auto output_sample = record->output_samples[static_cast<std::size_t>(sample)];
+                    if (output_sample < 0 || output_sample >= output_samples) continue;
+                    for (int index = 0; index < source_width; ++index) {
+                        const auto source_index =
+                            static_cast<std::size_t>(sample) * source_width +
+                            static_cast<std::size_t>(index);
+                        if (source_index >= record->source_gt.size()) continue;
+                        merged_source[static_cast<std::size_t>(output_sample) * source_width +
+                                      static_cast<std::size_t>(index)] =
+                            record->source_gt[source_index];
+                    }
+                }
+            }
+            group.front()->source_gt = std::move(merged_source);
+        } else if (!present) {
+            group.front()->source_gt.clear();
+        }
+        const auto named = std::find_if(group.begin(), group.end(),
+            [](const Record* record) { return !record->source_alleles.empty(); });
+        if (named != group.end()) group.front()->source_alleles = (*named)->source_alleles;
+        else group.front()->source_alleles.clear();
+    }
     copy_fields("DP", 1, &Record::dp, bcf_int32_missing);
     copy_fields("GQ", 1, &Record::gq, bcf_int32_missing);
     copy_fields("RGQ", 1, &Record::rgq, bcf_int32_missing);
@@ -5439,6 +5612,11 @@ int run_streaming_genotype_gvcf(Options& options,
                     }
                     for (auto& record : group) {
                         remap_record_to_allele_union(output_header, record, union_alleles);
+                        // The merged genotype is the source call expressed in the
+                        // union allele space; keep it before the PL-derived
+                        // assignment below consumes it.
+                        record.source_gt = record.gt;
+                        record.source_alleles = record.alleles;
                         remove_non_ref_allele(output_header, record, concrete,
                                               options.genotype_assignment_method == "BEST_MATCH_TO_ORIGINAL");
                         if (options.genotype_assignment_method != "DO_NOT_ASSIGN_GENOTYPES" &&
@@ -6095,6 +6273,10 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
             }
             for (std::size_t index = begin; index < end; ++index) {
                 remap_record_to_allele_union(output_header, records[index], union_alleles);
+                // See the streaming merge: keep the merged source call before the
+                // PL-derived assignment consumes it.
+                records[index].source_gt = records[index].gt;
+                records[index].source_alleles = records[index].alleles;
                 remove_non_ref_allele(
                     output_header, records[index], concrete_alleles,
                     options.genotype_assignment_method == "BEST_MATCH_TO_ORIGINAL");

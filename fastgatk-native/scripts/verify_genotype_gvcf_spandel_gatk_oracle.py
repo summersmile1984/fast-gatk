@@ -44,6 +44,23 @@ GATK's rule (read from ``gatk-source/`` and then confirmed by measurement)
    "spanning-deletion only" -- it has no ALT at all
    (``GenotypeGVCFs.java:324-330``, ``GATKVariantContextUtils.java:2089-2091``).
 
+The orphan-``*``-with-surviving-ALT cases
+-----------------------------------------
+``surviving-concrete-alt`` was carried as REPORTED ONLY until the round
+documented in ``.diag/round-prefer-pls.md`` promoted it.  It pins the other half
+of ``GATKVariantContextUtils.makeGenotypeCall()``'s PREFER_PLS split: when the
+likelihood row that ``AlleleSubsettingUtils.subsetAlleles()`` projected onto the
+KEPT alleles is not informative (``isInformative`` is ``sum(log10GL) < -0.1``,
+``GATKVariantContextUtils.java:54-58``), the row is ignored and the call is
+projected from the source genotype with ``bestMatchToOriginalGT()``
+(``:333-338``, definition ``:397-403``) -- a surviving source allele keeps its
+identity, every pruned allele becomes the reference, the source copy order and
+phase bit are preserved, and no GQ is assigned.  The companion cases pin the
+position-independent projection (``...-star-not-first``), the copy order
+(``...-reversed-source-gt``) and the phase bit (``...-phased-source-gt``), which
+together distinguish "project the source call" from "derive the call from the
+PLs" (whose argmax over this fixture is the ``(*,G)`` cell).
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -92,15 +109,56 @@ STAR_RECORD = (
     "GT:DP:AD:PL\t0/1:20:12,8,0,0:0,0,100,100,100,100,100,100,100,100\n"
 )
 
-# Control fixture (reported only, not from the contract test): the concrete ALT
-# G owns the best genotype, so only the orphan '*' is pruned.  GATK emits
-# ALT='G' with GT '0/1'; native emits the same ALT/QUAL but publishes './.'.
+# The concrete ALT G owns the best genotype (PL index 4 = the (*,G) cell), so
+# only the orphan '*' is pruned.  GATK keeps ALT='G' and publishes 0/1.
 G_PLAUSIBLE_RECORD = (
     "chr1\t2\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
     "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
 )
 
+# Same locus with the orphan '*' in the middle of the ALT list, so the pruned
+# allele is neither first nor last.  bestMatchToOriginalGT() projects the source
+# call by allele identity, not by index, so the published row is unchanged.
+G_STAR_SECOND_RECORD = (
+    "chr1\t2\t.\tA\tG,*,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# Reported only: a concrete DELETION owns the best genotype.  GATK prunes the
+# orphan '*' here too, but native keeps it in the ALT list, which is a separate
+# deletion-ownership divergence (isVcCoveredByDeletion) rather than the
+# PREFER_PLS subsetting rule this oracle pins.
+G_DELETION_ALT_RECORD = (
+    "chr1\t2\t.\tAA\t*,A,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# The same locus with the source call written in the opposite copy order.  The
+# measured GATK row keeps that order, so the fallback must project the source
+# genotype rather than any PL-argmax or sorted genotype.
+G_REVERSED_GT_RECORD = (
+    "chr1\t2\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t2/0:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# ... and the phased spelling of the same call, which GATK also preserves.
+G_PHASED_GT_RECORD = (
+    "chr1\t2\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t2|0:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
 GATK_DEFAULT_ROW = "chr1\t2\t.\tA\t.\t127.78\t.\tDP=20;MLEAC=.;MLEAF=.\tGT\t./."
+
+# Measured with pinned GATK 4.6.2.0 (see .diag/round-prefer-pls.md).
+GATK_G_ROW = ("chr1\t2\t.\tA\tG\t82.26\t.\t"
+              "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
+              "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
+GATK_G_REVERSED_ROW = ("chr1\t2\t.\tA\tG\t82.26\t.\t"
+                       "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
+                       "GT:AD:DP:PL\t1/0:0,20:20:0,0,0")
+GATK_G_PHASED_ROW = ("chr1\t2\t.\tA\tG\t82.26\t.\t"
+                     "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
+                     "GT:AD:DP:PL\t1|0:0,20:20:0,0,0")
 
 CASES = [
     {
@@ -137,12 +195,72 @@ CASES = [
     },
     {
         "case": "surviving-concrete-alt",
-        "why": "reported only: with G plausible GATK keeps ALT='G' and calls "
-               "0/1 while native keeps the same ALT/QUAL but publishes './.'.  "
-               "That PREFER_PLS genotype re-derivation after an orphan '*' is "
-               "pruned is a separate, still-open divergence, and this fixture "
-               "is not part of the registered contract test",
+        "why": "GATK keeps ALT='G' and calls 0/1.  The subset projection onto the "
+               "kept alleles [A,G] collapses the source PL row [100,100,100] to a "
+               "constant, so GATKVariantContextUtils.makeGenotypeCall() takes its "
+               "PREFER_PLS fallback: isInformative is false "
+               "(GATKVariantContextUtils.java:54-58; :333-338) and the call is "
+               "projected from the SOURCE genotype with bestMatchToOriginalGT() "
+               "(:397-403), which keeps every source allele that survived the "
+               "subset and replaces a pruned one by the reference.  No GQ is "
+               "assigned on that branch, and the published PL row is the "
+               "min-shifted projection (:90-95, GenotypeLikelihoods.GLsToPLs) = "
+               "0,0,0.  AC/AF/AN then follow from that genotype through the "
+               "StandardAnnotation pass: ChromosomeCounts counts the called "
+               "alleles of the published genotypes "
+               "(ChromosomeCounts.java:43-53 -> "
+               "VariantContextUtils.calculateChromosomeCounts) after "
+               "GenotypeGVCFsEngine.regenotypeVC() has finished them "
+               "(GenotypeGVCFsEngine.java:187-190)",
         "body": G_PLAUSIBLE_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_G_ROW],
+    },
+    {
+        "case": "surviving-concrete-alt-star-not-first",
+        "why": "the same PREFER_PLS fallback with the pruned '*' in the middle of "
+               "the ALT list: the projection is by allele identity, so the row is "
+               "byte-identical to surviving-concrete-alt and pins that GATK does "
+               "not depend on the position of the dropped allele",
+        "body": G_STAR_SECOND_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_G_ROW],
+    },
+    {
+        "case": "surviving-concrete-alt-reversed-source-gt",
+        "why": "the measured contract for the copy order: bestMatchToOriginalGT() "
+               "maps the source allele LIST position by position "
+               "(GATKVariantContextUtils.java:397-403), so a source call written "
+               "2/0 yields 1/0 and not a canonicalized 0/1.  This case separates "
+               "'project the source genotype' from 'derive the genotype from the "
+               "PLs' (whose argmax genotype would be (*,G) here)",
+        "body": G_REVERSED_GT_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_G_REVERSED_ROW],
+    },
+    {
+        "case": "surviving-concrete-alt-phased-source-gt",
+        "why": "GenotypeBuilder retains the source genotype's phase flag "
+               "(GATKVariantContextUtils.java:397-403 rebuilds the allele list "
+               "over the same builder), so a phased source call stays phased "
+               "after the projection",
+        "body": G_PHASED_GT_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_G_PHASED_ROW],
+    },
+    {
+        "case": "surviving-deletion-alt",
+        "why": "reported only: with a concrete deletion owning the best genotype "
+               "GATK also prunes the orphan '*' and publishes ALT='A' with 0/1, "
+               "but native keeps '*' in the ALT list.  That is a separate "
+               "deletion-ownership (isVcCoveredByDeletion) divergence, not the "
+               "PREFER_PLS subsetting rule this oracle gates, so it is carried "
+               "without gating",
+        "body": G_DELETION_ALT_RECORD,
         "args": [],
         "gated": False,
         "expect": None,
