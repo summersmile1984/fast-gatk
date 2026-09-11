@@ -2909,19 +2909,28 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     std::size_t pruned = 0;
     for (std::size_t index = 1; index < record.alleles.size(); ++index) {
         const auto& allele = record.alleles[index];
-        // A spanning deletion is retained as a structural non-variant allele
-        // when it is present in the merged context.  The upstream deletion
-        // ownership check happens in the caller's reference-confidence
-        // merge, while the AF threshold applies to ordinary concrete ALTs.
         const bool spanning_deletion = allele == "*";
         const auto absent = record.cohort_log10_p_allele_absent[index];
         const bool plausible = std::isfinite(absent) && absent + 1.0e-10 < threshold;
-        // GATK treats '*' as a structural non-variant only when a concrete
-        // deletion owns the span.  An orphan '*' is removed regardless of
-        // its AF posterior; ordinary ALTs remain subject to the posterior
-        // confidence threshold.
-        if ((spanning_deletion && !record.orphan_spanning_deletion) ||
-            (!spanning_deletion && plausible))
+        // GenotypingEngine.calculateOutputAlleleSubset() outputs an ALT only when
+        // it is individually plausible AND is not a spurious spanning deletion:
+        //
+        //   toOutput = (isPlausible || forceKeepAllele(allele)
+        //               || isNonRefWhichIsLoneAltAllele || forcedAlleles.contains(allele))
+        //              && !isSpuriousSpanningDeletion;
+        //
+        // (GenotypingEngine.java:316, with isPlausible = passesThreshold() at
+        // :312 and isSpuriousSpanningDeletion = isSpanningDeletion(allele) &&
+        // !isVcCoveredByDeletion(vc) at :314).  An owned '*' is therefore NOT
+        // exempt from the standard-confidence threshold: a '*' that a concrete
+        // deletion covers but whose allele count does not pass is pruned like
+        // any other ALT.  The upstream deletion ownership check happens in the
+        // caller's reference-confidence merge and reaches this point only as
+        // ``record.orphan_spanning_deletion``, which is the merged-context form
+        // of !isVcCoveredByDeletion(vc) and only ever marks records carrying a
+        // '*'; it must not gate a concrete ALT.
+        const bool owned = !spanning_deletion || !record.orphan_spanning_deletion;
+        if (owned && plausible)
             output_alleles.push_back(allele);
         else
             ++pruned;

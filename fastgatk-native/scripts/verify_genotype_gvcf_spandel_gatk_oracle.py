@@ -93,6 +93,43 @@ concrete deletion allele, tested with ``span.begin <= record.pos && record.pos <
 span.end``; the inclusive start made a record's own deletion own its own ``*``.
 The fix makes the start strictly exclusive, matching ``:369``.
 
+The spanning-deletion-only record
+---------------------------------
+Ownership is not the last filter.  Two further rules apply once the surviving ALT
+list is known, and neither depends on who owns the ``*``:
+
+1. ``GenotypingEngine`` refuses to build the call at all when the output allele
+   set is exactly ``[SPAN_DEL]`` and the traversal is not
+   ``EMIT_ALL_ACTIVE_SITES``: ``if (!emitAllActiveSites() &&
+   outputAlternativeAlleles.alleles.size() == 1 &&
+   Allele.SPAN_DEL.equals(...)) return null;`` (``GenotypingEngine.java:173-175``;
+   ``emitAllActiveSites()`` at ``:421-423``, configured by
+   ``GenotypeGVCFsEngine.createMinimalArgs()`` at ``:381-383``).
+2. ``GenotypeGVCFs.apply()`` writes the regenotyped record only when
+   ``forceOutput || !GATKVariantContextUtils.isSpanningDeletionOnly(...)``
+   (``GenotypeGVCFs.java:326-328``); ``isSpanningDeletionOnly()`` is
+   ``getAlternateAlleles().size() == 1 && isSpanningDeletion(allele0)``
+   (``GATKVariantContextUtils.java:2089-2091``).  ``forceOutput`` is
+   ``includeNonVariants || inForceOutputIntervals`` (``:324-326``).
+
+So a locus whose only surviving allele is ``*`` is never published by default,
+while under ``--include-non-variant-sites`` it is published as the REF-only
+no-call row: the allele subset is still computed by
+``calculateOutputAlleleSubset()``, and ``passesThreshold()`` applies to ``*``
+exactly as it does to a concrete ALT (``:312-316``).  ``covered-star-only-record``
+therefore emits only the upstream deletion row, and
+``covered-star-implausible-plus-concrete-alt`` shows that an implausible ``*`` is
+dropped *allele-wise* while the record survives on its concrete ALT.
+
+One divergence in this area is deliberately left REPORTED ONLY, because it is a
+different root cause: ``recordDeletions()`` only ever records deletions that were
+actually **emitted** (``:178-179``), while native's ownership state is a
+pre-computed span list built from the **input** records.  When GATK drops an
+upstream deletion record for failing the allele threshold, the downstream ``*``
+becomes spurious and is pruned, but native still counts it as owned:
+``unemitted-upstream-deletion-star-plus-concrete-alt``.  Repairing it needs the
+ordered per-locus "emitted deletions" state, so it is out of scope here.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -195,14 +232,61 @@ SELF_DELETION_ONLY_RECORD = (
 )
 
 # A '*' that a strictly upstream deletion emits as covering, and which therefore
-# SURVIVES the subset -- but the record has no other ALT, so GATK drops it at
-# GenotypeGVCFs.apply() (isSpanningDeletionOnly).  Reported only: native writes
-# the '*' record, which is a separate record-emission rule, not ownership.
+# SURVIVES the ownership test -- but the record has no other ALT, so GATK never
+# publishes it (GenotypingEngine.java:173-175 in the default output mode, and
+# GenotypeGVCFs.java:327-328 for the dense mode that reaches apply()).
 STAR_ONLY_COVERED_RECORD = (
     "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
     "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
     "chr1\t3\t.\tA\t*,<NON_REF>\t.\tPASS\tDP=20\t"
     "GT:DP:AD:PL\t0/1:20:0,20,0:100,100,100,0,100,100\n"
+)
+
+# The same shipping rule must not depend on the dropped record's own FILTER,
+# INFO/DP or AD: the star-only record is now non-PASS and shallower, and GATK
+# still writes only the upstream deletion row.
+STAR_ONLY_COVERED_NONPASS_RECORD = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,<NON_REF>\t.\tLowQual\tDP=7\t"
+    "GT:DP:AD:PL\t0/1:7:0,7,0:100,100,100,0,100,100\n"
+)
+
+# A covered '*' that is NOT the only surviving ALT: the record also carries the
+# concrete ALT G, whose (A,G) cell is the best of the source row.  Both alleles
+# pass the count threshold and the '*' has an upstream owner, so GATK KEEPS the
+# record and genotypes it 1/2.  Without this case a fix that dropped every
+# record carrying a '*' would look correct.
+COVERED_STAR_PLUS_CONCRETE_RECORD = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# The same locus with the source row's best cell moved to (A,G): the '*' is now
+# implausible as well as covered, so GATK prunes it from the output allele set
+# (AF threshold at GenotypingEngine.java:312-316) but still publishes the
+# surviving concrete ALT.  This separates "pruned because implausible" from
+# "pruned because unowned" and proves the record-level rule is not "drop the
+# whole record when it carries a '*'".
+COVERED_STAR_IMPLAUSIBLE_PLUS_CONCRETE_RECORD = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,0,100,100,100,100,100,100\n"
+)
+
+# The previous round's fixture D, sharpened with a concrete ALT so that the
+# residual structural difference is visible in the DEFAULT output mode.  The
+# upstream deletion record at 2 is implausible, so GATK drops it and never calls
+# recordDeletions() for it; the '*' at 3 is plausible, and native still counts
+# the INPUT record at 2 as owning the locus.
+IMPLAUSIBLE_UPSTREAM_STAR_PLUS_CONCRETE_RECORD = (
+    "chr1\t2\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/0:20:20,0,0:0,100,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
 )
 
 # The same locus with the source call written in the opposite copy order.  The
@@ -241,6 +325,10 @@ GATK_DEL_ROW = ("chr1\t2\t.\tAA\tA\t82.19\t.\t"
 GATK_DEL_UPSTREAM_LOCUS_ROW = ("chr1\t2\t.\tAA\tA\t92.60\t.\t"
                                "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
                                "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
+# The dense-mode materialization of a locus whose only surviving allele was the
+# symbolic spanning deletion (measured, see .diag/round-star-only-record.md).
+GATK_STAR_ONLY_DENSE_ROW = ("chr1\t3\t.\tA\t.\tInfinity\t.\t"
+                            "DP=20;MLEAC=.;MLEAF=.\tGT\t./.")
 # The same publication one locus further down (the record at 4 whose own
 # deletion does not cover itself).
 GATK_DEL_DOWNSTREAM_ROW = ("chr1\t4\t.\tAA\tA\t82.19\t.\t"
@@ -255,6 +343,24 @@ GATK_STAR_AND_DEL_ROW = ("chr1\t4\t.\tAA\t*,A\t82.19\t.\t"
                          "AC=1,1;AF=0.500,0.500;AN=2;DP=20;ExcessHet=0.0000;"
                          "MLEAC=1,1;MLEAF=0.500,0.500;QD=4.11\t"
                          "GT:AD:DP:GQ:PL\t1/2:0,0,20:20:99:100,100,100,100,0,100")
+
+# A '*' that a strictly upstream covering deletion owns, published together with
+# a concrete ALT at the same locus.  Measured GATK 4.6.2.0 keeps both.
+GATK_STAR_PLUS_CONCRETE_ROW = (
+    "chr1\t3\t.\tA\t*,G\t82.26\t.\t"
+    "AC=1,1;AF=0.500,0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1,1;MLEAF=0.500,0.500;QD=4.11\t"
+    "GT:AD:DP:GQ:PL\t1/2:0,0,20:20:99:100,100,100,100,0,100")
+# The same locus with the '*' implausible: only the concrete ALT is published.
+GATK_CONCRETE_ONLY_ROW = (
+    "chr1\t3\t.\tA\tG\t92.63\t.\t"
+    "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
+    "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
+
+# The same concrete-ALT publication one locus further down (the locus-3 form of
+# GATK_G_ROW, used by the residual input-vs-emitted case).
+GATK_G_DOWNSTREAM_ROW = ("chr1\t3\t.\tA\tG\t82.26\t.\t"
+                         "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
+                         "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
 
 CASES = [
     {
@@ -403,17 +509,102 @@ CASES = [
     },
     {
         "case": "covered-star-only-record",
-        "why": "reported only: this '*' IS covered by the upstream deletion, so "
-               "ownership is right, but the record has no other ALT and GATK "
-               "drops it at GenotypeGVCFs.apply() because "
-               "GATKVariantContextUtils.isSpanningDeletionOnly() is true "
-               "(GenotypeGVCFs.java:327-328).  Native writes the '*' record. "
-               "That is a separate record-emission rule, deliberately not "
-               "gated in this round",
+        "why": "the record's ONLY surviving allele is the symbolic spanning "
+               "deletion.  Ownership is correct -- the deletion emitted at 2 "
+               "spans 2-3 and covers locus 3 (GenotypingEngine.java:365-371) -- "
+               "but GATK still publishes nothing, because when the output "
+               "allele set is exactly [SPAN_DEL] the engine returns null unless "
+               "the traversal is EMIT_ALL_ACTIVE_SITES "
+               "(GenotypingEngine.java:173-175: 'return a null call if we "
+               "aren't forcing site emission and the only alt allele is a "
+               "spanning deletion'), and GenotypeGVCFs.apply() additionally "
+               "refuses such a record (GenotypeGVCFs.java:327-328 with "
+               "GATKVariantContextUtils.isSpanningDeletionOnly() at "
+               "GATKVariantContextUtils.java:2089-2091).  Only the upstream "
+               "deletion row is written",
         "body": STAR_ONLY_COVERED_RECORD,
         "args": [],
-        "gated": False,
+        "gated": True,
         "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
+        "case": "covered-star-only-record-non-pass",
+        "why": "the same rule with the dropped record non-PASS (FILTER=LowQual) "
+               "and shallower (DP=7): the measured GATK output is identical "
+               "apart from the surviving locus, which pins that the "
+               "star-only drop is a property of the output allele set and not "
+               "of the record's FILTER/INFO/FORMAT content",
+        "body": STAR_ONLY_COVERED_NONPASS_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
+        "case": "covered-star-plus-concrete-alt",
+        "why": "positive control for the same rule: the locus also carries the "
+               "concrete ALT G and the source row's best cell is (*,G), so the "
+               "'*' is plausible AND covered.  Two ALTs survive the output "
+               "subset, isSpanningDeletionOnly() is false "
+               "(GATKVariantContextUtils.java:2089-2091), and GATK publishes "
+               "ALT='*,G' with the PL-argmax call 1/2.  A fix that dropped "
+               "every record carrying a '*' would break this case",
+        "body": COVERED_STAR_PLUS_CONCRETE_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW, GATK_STAR_PLUS_CONCRETE_ROW],
+    },
+    {
+        "case": "covered-star-implausible-plus-concrete-alt",
+        "why": "the same locus with the source row's best cell moved to (A,G): "
+               "the '*' is still covered but is individually implausible, and "
+               "GenotypingEngine.calculateOutputAlleleSubset() prunes every "
+               "ALT unless it passesThreshold() (GenotypingEngine.java:312-316) "
+               "-- the AF threshold applies to '*' exactly as it does to a "
+               "concrete ALT.  Only the concrete ALT is published, so the rule "
+               "is 'drop the unqualified ALLELE', not 'drop the record'",
+        "body": COVERED_STAR_IMPLAUSIBLE_PLUS_CONCRETE_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW, GATK_CONCRETE_ONLY_ROW],
+    },
+    {
+        "case": "covered-star-only-record-dense",
+        "why": "reported only: dense mode (OutputMode.EMIT_ALL_ACTIVE_SITES, "
+               "GenotypeGVCFsEngine.java:381-383) skips both null returns, so "
+               "the locus is materialized as GATK's REF-only no-call row "
+               "(subsetToRefOnly at GenotypingEngine.java:190 and "
+               "cleanupGenotypeAnnotations at GenotypeGVCFsEngine.java:191-194) "
+               "and apply() writes it because forceOutput is true "
+               "(GenotypeGVCFs.java:326-330; the ALT set is empty, so the "
+               "record is not spanning-deletion-only).  Native reaches the "
+               "same ALT='.'/GT='./.'/FORMAT=GT shape but reports QUAL=0 "
+               "instead of GATK's Infinity, a pre-existing divergence of the "
+               "monomorphic-Qual path that is unrelated to the allele and is "
+               "documented in .diag/round-star-only-record.md",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "args": ["--include-non-variant-sites"],
+        "gated": False,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW, GATK_STAR_ONLY_DENSE_ROW],
+    },
+    {
+        "case": "unemitted-upstream-deletion-star-plus-concrete-alt",
+        "why": "reported only: the upstream deletion record is IMPLAUSIBLE, so "
+               "GATK drops it (GenotypingEngine.java:167-169) and "
+               "recordDeletions() is never called for it (:178-179); the "
+               "downstream '*' is therefore a spurious spanning deletion "
+               "(:314) and is pruned even though it is plausible, leaving "
+               "ALT='G' and the projected 0/1 call.  Native builds its deletion "
+               "spans from the INPUT records, so it still treats the '*' as "
+               "owned and publishes '*,G' with 1/2.  This is the residual "
+               "'input records vs emitted alleles' structural difference "
+               "flagged in .diag/round-star-ownership.md section 8, now visible "
+               "in the default output mode because the star-only record rule no "
+               "longer hides it; fixing it requires the ordered "
+               "emitted-deletions state and is out of scope for this round",
+        "body": IMPLAUSIBLE_UPSTREAM_STAR_PLUS_CONCRETE_RECORD,
+        "args": [],
+        "gated": False,
+        "expect": [GATK_G_DOWNSTREAM_ROW],
     },
 ]
 
