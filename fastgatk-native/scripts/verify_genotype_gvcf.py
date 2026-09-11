@@ -366,10 +366,17 @@ def main() -> int:
         assert info["AC"] == "3" and info["AN"] == "4"
         assert abs(float(info["AF"]) - 0.75) < 1e-6
 
-        # A spanning-deletion ALT is part of GATK's non-variant genotype set
-        # for cohort AF/QUAL, but remains a concrete ALT in the output.  Keep
-        # it adjacent to a regular ALT and <NON_REF> to exercise both union
-        # remapping and the shared Kokkos spanning-deletion reduction.
+        # GATK's GenotypingEngine publishes an ALT only when it individually
+        # passes standardConfidenceForCalling, and drops the symbolic
+        # spanning deletion '*' outright when no emitted deletion covers the
+        # locus (GenotypingEngine.java:311-327).  For this fixture both '*' and
+        # 'G' are pruned, so the default traversal writes NO record at all
+        # (GenotypingEngine.java:167-169) and only --include-non-variant-sites
+        # (short name -all-sites, GenotypeGVCFs.java:116-127) keeps the locus as
+        # a REF-only no-call whose FORMAT is GT alone
+        # (GenotypeGVCFsEngine.java:191-194 and :479-491).  Both expectations
+        # below are the literal pinned GATK 4.6.2.0 rows, re-measured by
+        # fastgatk-native/scripts/verify_genotype_gvcf_spandel_gatk_oracle.py.
         star_input = work / "spanning-deletion.g.vcf.gz"
         star_output = work / "spanning-deletion.vcf.gz"
         star_header = multi_header.replace("\tS1\tS2\n", "\tSTAR\n")
@@ -382,27 +389,50 @@ def main() -> int:
         star_manifest = work / "spanning-deletion.manifest.json"
         star_result = subprocess.run([
             str(genotype), "-V", str(star_input), "-O", str(star_output),
+            "--gatk-compatible-annotations",
             "--output-manifest", str(star_manifest),
         ], text=True, capture_output=True)
         assert star_result.returncode == 0, star_result.stderr
         star_records = [line.split("\t") for line in gzip.open(
             star_output, "rt", encoding="utf-8").read().splitlines()
             if line and not line.startswith("#")]
-        assert len(star_records) == 1 and "*" in star_records[0][4]
+        # Default options: GATK emits nothing for this locus.
+        assert star_records == []
         star_metadata = json.loads(star_manifest.read_text(encoding="utf-8"))
         assert star_metadata["compatibility"]["spanning_deletion_nonvariant_set"] is True
+        # --include-non-variant-sites: the one surviving row is GATK's REF-only
+        # no-call, with the monomorphic site confidence 127.78
+        # (GenotypingEngine.java:158-163) and MLEAC/MLEAF as missing Number=A
+        # vectors.
+        star_nonvariant_output = work / "spanning-deletion-nonvariant.vcf.gz"
+        star_nonvariant_result = subprocess.run([
+            str(genotype), "-V", str(star_input), "-O", str(star_nonvariant_output),
+            "--include-non-variant-sites", "--gatk-compatible-annotations",
+        ], text=True, capture_output=True)
+        assert star_nonvariant_result.returncode == 0, star_nonvariant_result.stderr
+        star_nonvariant_rows = [line for line in gzip.open(
+            star_nonvariant_output, "rt", encoding="utf-8").read().splitlines()
+            if line and not line.startswith("#")]
+        assert star_nonvariant_rows == [
+            "chr1\t2\t.\tA\t.\t127.78\t.\tDP=20;MLEAC=.;MLEAF=.\tGT\t./."]
         star_posterior_output = work / "spanning-deletion-posterior.vcf.gz"
         star_posterior_manifest = work / "spanning-deletion-posterior.manifest.json"
         star_posterior_result = subprocess.run([
             str(genotype), "-V", str(star_input), "-O", str(star_posterior_output),
-            "--gp-qual", "--output-manifest", str(star_posterior_manifest),
+            "--gp-qual", "--include-non-variant-sites",
+            "--gatk-compatible-annotations",
+            "--output-manifest", str(star_posterior_manifest),
         ], text=True, capture_output=True)
         assert star_posterior_result.returncode == 0, star_posterior_result.stderr
         star_posterior_records = [line.split("\t") for line in gzip.open(
             star_posterior_output, "rt", encoding="utf-8").read().splitlines()
             if line and not line.startswith("#")]
+        # The default PL-assignment path has no GP/PP posterior field, so
+        # --gp-qual is a no-op here and the QUAL must not rise above the
+        # PL-derived 127.78 (measured: the rows are identical).
         assert len(star_posterior_records) == 1
-        assert float(star_posterior_records[0][5]) <= float(star_records[0][5])
+        assert float(star_posterior_records[0][5]) <= float(
+            star_nonvariant_rows[0].split("\t")[5])
         star_posterior_metadata = json.loads(star_posterior_manifest.read_text(encoding="utf-8"))
         assert star_posterior_metadata["compatibility"]["spanning_deletion_posterior_qual"] is True
         assert star_posterior_metadata["telemetry"]["posterior_kernel_calls"] == 0

@@ -1092,12 +1092,29 @@ struct Record {
     // through the PL-derived assignment boundary.
     std::vector<std::uint8_t> force_no_call_samples;
     bool orphan_spanning_deletion = false;
+    // True when the source FORMAT carried GQ for this record, i.e. when GATK's
+    // merged genotype would report hasGQ().  Distinct from the native PL-derived
+    // GQ vector, which is synthesized even for inputs without FORMAT/GQ.
+    bool source_has_gq = false;
+    // Set when --include-non-variant-sites keeps a locus whose alternate
+    // alleles were all pruned.  GATK emits the resulting REF-only no-call
+    // straight out of GenotypeGVCFsEngine.regenotypeVC, without any further
+    // site or standard annotation, so the shared annotation stages must be
+    // skipped for that record.
+    bool finalized_monomorphic_ref = false;
     // AFCalculator returns per-ALT posterior absence probabilities.  Keep
     // this bounded vector through the staging boundary so the final output
     // allele subset can apply GATK's standard confidence threshold after
     // the cohort merge, before INFO/FORMAT annotations are finalized.
     std::vector<double> cohort_log10_p_allele_absent;
     std::vector<int32_t> cohort_integer_allele_counts;
+    // AlleleFrequencyResult.log10_p_no_variant.  GenotypingEngine reports the
+    // *complementary* posterior as the site QUAL for a locus that turned
+    // monomorphic (MathUtils.log10OneMinusPow10), which is only reachable in
+    // --include-non-variant-sites mode.  Keep the raw posterior alongside the
+    // already-derived `cohort.qual` so that boundary can be reproduced.
+    double cohort_log10_p_no_variant = 0.0;
+    bool cohort_quality_available = false;
 };
 
 // The joint-materialization pass is Host/HTSlib heavy, but its final
@@ -1423,6 +1440,11 @@ void extract_materialized_fields(const bcf_hdr_t* input_header, const bcf1_t* re
     };
     read_scalar_format("DP", destination.dp);
     read_scalar_format("GQ", destination.gq);
+    // Whether the source FORMAT actually carried GQ is a distinct contract from
+    // the later PL-derived GQ: GATK's cleanupGenotypeAnnotations() branches on
+    // the merged genotype's hasGQ().  read_scalar_format leaves the vector
+    // untouched when the tag is absent, so emptiness records that here.
+    destination.source_has_gq = !destination.gq.empty();
     read_scalar_format("MIN_DP", destination.min_dp);
     read_scalar_format("PS", destination.ps);
 
@@ -2127,6 +2149,8 @@ void update_cohort_af_annotations(const bcf_hdr_t* output_header, Record& record
     // AC/AN/AF fields.  AN is the number of called genotype alleles, not the
     // rounded EM count, so derive it from the authoritative merged GT vector.
     record.value->qual = gatk_qual_output(cohort.qual);
+    record.cohort_log10_p_no_variant = cohort.log10_p_no_variant;
+    record.cohort_quality_available = true;
     std::vector<int32_t> mle_ac(static_cast<std::size_t>(record.allele_count - 1), 0);
     for (std::size_t allele = 1; allele < cohort.integer_allele_counts.size(); ++allele)
         mle_ac[allele - 1] = cohort.integer_allele_counts[allele];
@@ -2657,6 +2681,156 @@ void remove_non_ref_allele(const bcf_hdr_t* output_header, Record& record,
     record.reference_block = false;
 }
 
+// GATK MathUtils.log10OneMinusPow10 (via NaturalLogUtils.log1mexp): the log10
+// of `1 - 10^log10_value`, computed without cancelling away the tiny
+// complement.  GenotypingEngine reports this complementary posterior as the
+// site QUAL of a locus that turned monomorphic
+// (GenotypingEngine.java:158-163).
+double gatk_log10_one_minus_pow10(const double log10_value) {
+    if (log10_value > 0.0) return std::numeric_limits<double>::quiet_NaN();
+    if (log10_value == 0.0) return -std::numeric_limits<double>::infinity();
+    constexpr double kLog10 = 2.30258509299404568402;
+    constexpr double kLog2 = 0.69314718055994530942;
+    const double natural = log10_value * kLog10;
+    const double log1mexp = natural > -kLog2
+        ? std::log(-std::expm1(natural)) : std::log1p(-std::exp(natural));
+    return log1mexp / kLog10;
+}
+
+// GATK keeps a locus in --include-non-variant-sites mode even when every
+// alternate allele failed the standard confidence threshold.  The rebuilt
+// VariantContext is REF-only: GenotypingEngine.calculateGenotypes() builds its
+// genotypes with GATKVariantContextUtils.subsetToRefOnly()
+// (GenotypingEngine.java:190), then GenotypeGVCFsEngine.regenotypeVC()
+// runs cleanupGenotypeAnnotations(result, createRefGTs=true, keepSB=false)
+// (GenotypeGVCFsEngine.java:191-194, defined at :440).  That helper re-installs
+// a hom-ref call only when the projected genotype still carries a positive
+// depth *and* a GQ -- in which case the GQ becomes RGQ and DP is the MIN_DP
+// (else the source DP) -- and otherwise publishes './.' with DP/GQ/PL removed
+// (GenotypeGVCFsEngine.java:479-491).  The locus is written because it is not
+// "spanning-deletion only": it has no ALT at all
+// (GenotypeGVCFs.java:324-330, GATKVariantContextUtils.java:2089-2091).
+//
+// This must be materialized before the shared Number=G remap, which requires at
+// least two target alleles and therefore cannot represent a REF-only output.
+void materialize_gatk_monomorphic_ref_call(const bcf_hdr_t* output_header,
+                                           Record& record) {
+    if (record.value == nullptr || record.alleles.empty())
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: invalid REF-only call");
+    const auto ploidy = record.ploidy > 0 ? record.ploidy : 2;
+    const auto sample_count = static_cast<std::size_t>(record.value->n_sample);
+    if (sample_count == 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: REF-only call has no samples");
+    const auto reference = record.alleles.front();
+
+    const auto present = [](const std::vector<int32_t>& field, const std::size_t index) {
+        return field.size() > index && field[index] != bcf_int32_missing &&
+               field[index] != bcf_int32_vector_end;
+    };
+
+    std::vector<int32_t> gt(sample_count * static_cast<std::size_t>(ploidy),
+                            bcf_gt_missing);
+    std::vector<int32_t> rgq(sample_count, bcf_int32_missing);
+    std::vector<int32_t> dp(sample_count, bcf_int32_missing);
+    bool any_rgq = false;
+    // cleanupGenotypeAnnotations() keys the hom-ref conversion on the merged
+    // genotype's GQ (GenotypeGVCFsEngine.java:485-488), so use the recorded
+    // source-FORMAT presence rather than the native PL-derived GQ vector.
+    int32_t* source_gq = nullptr;
+    int source_gq_count = 0;
+    if (record.source_has_gq)
+        (void)bcf_get_format_int32(output_header, record.value, "GQ", &source_gq,
+                                   &source_gq_count);
+    for (std::size_t sample = 0; sample < sample_count; ++sample) {
+        int32_t depth = 0;
+        if (present(record.min_dp, sample)) depth = record.min_dp[sample];
+        else if (present(record.dp, sample)) depth = record.dp[sample];
+        const auto gq = source_gq != nullptr && static_cast<int>(sample) < source_gq_count
+            ? source_gq[sample] : bcf_int32_missing;
+        if (depth <= 0 || gq == bcf_int32_missing || gq == bcf_int32_vector_end)
+            continue;
+        if (gq > 0)
+            for (int copy = 0; copy < ploidy; ++copy)
+                gt[sample * static_cast<std::size_t>(ploidy) +
+                   static_cast<std::size_t>(copy)] = bcf_gt_unphased(0);
+        rgq[sample] = gq;
+        dp[sample] = depth;
+        any_rgq = true;
+    }
+    free(source_gq);
+
+    // cleanupGenotypeAnnotations() drops AD/PL/PP/MIN_DP/SB and, for the
+    // no-call shape, DP/GQ as well; a G0 call keeps DP and RGQ instead.
+    const char* const dropped_format[] = {"AD", "PL", "PP", "MIN_DP", "SB",
+                                          "GP", "PG", "GQ"};
+    for (const auto* tag : dropped_format) {
+        if (bcf_hdr_id2int(output_header, BCF_DT_ID, tag) < 0) continue;
+        if (std::strcmp(tag, "GP") == 0 || std::strcmp(tag, "PG") == 0)
+            (void)bcf_update_format_float(output_header, record.value, tag, nullptr, 0);
+        else
+            (void)bcf_update_format_int32(output_header, record.value, tag, nullptr, 0);
+    }
+    for (const auto* tag : {"DP", "RGQ"}) {
+        if (any_rgq || bcf_hdr_id2int(output_header, BCF_DT_ID, tag) < 0) continue;
+        (void)bcf_update_format_int32(output_header, record.value, tag, nullptr, 0);
+    }
+    if (bcf_update_genotypes(output_header, record.value, gt.data(),
+                             static_cast<int>(gt.size())) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write REF-only GT");
+    if (any_rgq) {
+        if (bcf_update_format_int32(output_header, record.value, "RGQ", rgq.data(),
+                                    static_cast<int>(rgq.size())) != 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write REF-only RGQ");
+        if (bcf_update_format_int32(output_header, record.value, "DP", dp.data(),
+                                    static_cast<int>(dp.size())) != 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write REF-only DP");
+    }
+    // The Number=A MLEAC/MLEAF vectors survive as missing values on the empty
+    // ALT list, which is how GenotypingEngine.composeCallAttributes()
+    // (:437-441) renders a site with no emitted allele counts.
+    if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MLEAC") >= 0) {
+        const int32_t missing = bcf_int32_missing;
+        if (bcf_update_info_int32(output_header, record.value, "MLEAC", &missing, 1) != 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write REF-only MLEAC");
+    }
+    if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MLEAF") >= 0) {
+        float missing = 0.0F;
+        bcf_float_set_missing(missing);
+        if (bcf_update_info_float(output_header, record.value, "MLEAF", &missing, 1) != 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write REF-only MLEAF");
+    }
+    if (bcf_update_alleles_str(output_header, record.value, reference.c_str()) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot materialize REF-only alleles");
+
+    // GenotypingEngine treats the locus as monomorphic here (no ALT passed the
+    // standard confidence threshold), so the site confidence is the
+    // complementary posterior rather than the AFCalculator's own QUAL
+    // (GenotypingEngine.java:158-163); both formulas were already distinguished
+    // for HaplotypeCaller's gVCF blocks.
+    if (record.cohort_quality_available) {
+        const auto complement = gatk_log10_one_minus_pow10(record.cohort_log10_p_no_variant);
+        if (std::isfinite(complement))
+            record.value->qual = gatk_qual_output(-10.0 * complement);
+    }
+
+    record.alleles = {reference};
+    record.allele_count = 1;
+    record.ploidy = ploidy;
+    record.gt = std::move(gt);
+    record.rgq = std::move(rgq);
+    record.dp = std::move(dp);
+    record.gq.clear();
+    record.min_dp.clear();
+    record.ad.clear();
+    record.pl.clear();
+    record.pp.clear();
+    record.sb.clear();
+    record.force_no_call_samples.clear();
+    record.orphan_spanning_deletion = false;
+    record.reference_block = false;
+    record.finalized_monomorphic_ref = true;
+}
+
 // GenotypingEngine does not publish every ALT that arrived from the merged
 // gVCF.  It asks AFCalculator whether each allele independently passes the
 // standard confidence threshold, then subsets the VariantContext and all
@@ -2703,10 +2877,17 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     if (pruned == 0) return true;
     ++genotype_kernel_telemetry.output_allele_pruning_calls;
     genotype_kernel_telemetry.output_alleles_pruned += pruned;
-    if (output_alleles.size() == 1 && !options.include_non_variant_sites) {
-        bcf_destroy(record.value);
-        record.value = nullptr;
-        return false;
+    if (output_alleles.size() == 1) {
+        if (!options.include_non_variant_sites) {
+            bcf_destroy(record.value);
+            record.value = nullptr;
+            return false;
+        }
+        // Dense mode keeps the locus as GATK's REF-only no-call instead of
+        // projecting it through the Number=G remap, which has no representation
+        // for a single-allele output.
+        materialize_gatk_monomorphic_ref_call(output_header, record);
+        return true;
     }
     // Preserve force-no-call states inherited from an earlier merge, but do
     // not let this final structural projection alone decide the new call.
@@ -3106,6 +3287,11 @@ void merge_sample_fields(const bcf_hdr_t* output_header,
     if (group.empty()) return;
     const int output_samples = output_header->n[BCF_DT_SAMPLE];
     if (output_samples <= 0) return;
+    // A merged locus carries GQ when any contributing source record did, which
+    // is the property GATK's cleanupGenotypeAnnotations() tests with
+    // g.hasGQ() on the ReferenceConfidenceVariantContextMerger output.
+    for (std::size_t index = 1; index < group.size(); ++index)
+        group.front()->source_has_gq = group.front()->source_has_gq || group[index]->source_has_gq;
     const auto copy_fields = [&](const char* tag, int width,
                                  auto Record::*member, int32_t missing) {
         if (std::strcmp(tag, "GT") != 0 &&
@@ -5289,6 +5475,14 @@ int run_streaming_genotype_gvcf(Options& options,
                 update_cohort_af_annotations(output_header, record, options);
                 if (!apply_gatk_output_allele_subset(output_header, record, options))
                     return std::nullopt;
+                if (record.finalized_monomorphic_ref) {
+                    // The REF-only call is complete: GATK emits it directly from
+                    // regenotypeVC, so no site or standard annotation runs.
+                    apply_gatk_annotation_compatibility(output_header, record, options);
+                    GenotypeComputed computed;
+                    computed.record = std::move(record);
+                    return computed;
+                }
                 if (options.genotype_assignment_method == "USE_POSTERIOR_PROBABILITIES" &&
                     !options.gatk_annotation_compatibility &&
                     record.allele_count >= 2 && record.ploidy > 0)
@@ -5986,6 +6180,14 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 update_cohort_af_annotations(output_header, record, options);
                 if (!apply_gatk_output_allele_subset(output_header, record, options))
                     return std::nullopt;
+                if (record.finalized_monomorphic_ref) {
+                    // The REF-only call is complete: GATK emits it directly from
+                    // regenotypeVC, so no site or standard annotation runs.
+                    apply_gatk_annotation_compatibility(output_header, record, options);
+                    GenotypeComputed computed;
+                    computed.record = std::move(record);
+                    return computed;
+                }
                 if (options.genotype_assignment_method == "USE_POSTERIOR_PROBABILITIES" &&
                     !options.gatk_annotation_compatibility &&
                     record.allele_count >= 2 && record.ploidy > 0)

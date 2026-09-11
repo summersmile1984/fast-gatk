@@ -1550,6 +1550,14 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_reblock_gvcf_droplowqual_gatk_oracle.py")
     set_tests_properties(fastgatk-reblock-gvcf-droplowqual-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # GenotypeGVCFs dense mode must materialize GATK's monomorphic REF-only
+    # no-call call; native used to abort when the output-allele subset
+    # collapsed to REF.
+    add_test(NAME fastgatk-genotype-gvcf-spandel-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_spandel_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-spandel-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # NOTE: verify_reblock_gvcf_triploid_gatk_oracle.py is deliberately NOT registered:
     # its divergence is confirmed real (GATK reblocks the triploid record to 0/0/0
     # END=30 with 4 PLs) but the fix is blocked by an unrelated, GATK-untrue block in
