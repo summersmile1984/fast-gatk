@@ -476,8 +476,11 @@ def main() -> int:
         assert normalized_filter_records(breakend_output) == normalized_filter_records(breakend_gatk)
 
         # Common allele-specific (Number=A) annotations are lowered to the
-        # per-ALT AS_FilterStatus INFO vector.  AS rules do not alter the site
-        # FILTER column, which has no unambiguous ALT index.
+        # per-ALT AS_FilterStatus INFO vector.  With the flag GATK takes the
+        # allele path for *every* site rule, so this AS_* rule is evaluated per
+        # ALT against a context that carries no INFO, never fires, and leaves the
+        # site FILTER (the intersection of the per-ALT filter sets) empty/PASS --
+        # the placeholder vector is written regardless.
         #
         # The previous expectation here (`AS_FilterStatus=LowASQD,PASS` /
         # `PASS,LowASQD`) was native-only and is now corrected to the measured
@@ -489,7 +492,8 @@ def main() -> int:
         # (:94-122) therefore keeps the "SITE" placeholder
         # (GATKVCFConstants.java:201) in every allele slot and joins the alleles
         # with "|" (AnnotationUtils.ALLELE_SPECIFIC_RAW_DELIM), not with ",".
-        # Gate: scripts/verify_variant_filtration_asfilterstatus_gatk_oracle.py.
+        # Gates: scripts/verify_variant_filtration_asfilterstatus_gatk_oracle.py
+        # and scripts/verify_variant_filtration_flag_only_gatk_oracle.py.
         allele_source = work / "allele-specific.vcf.gz"
         allele_header = HEADER.replace(
             "##INFO=<ID=QD,Number=1,Type=Float,Description=Quality by depth>\n",

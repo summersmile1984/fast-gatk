@@ -2028,99 +2028,17 @@ std::vector<std::vector<std::string>> decode_as_filter_status(const std::string&
     return decoded;
 }
 
-std::uint64_t apply_allele_specific_filters(
-    const bcf_hdr_t* input_header, const bcf_hdr_t* output_header, bcf1_t* record,
-    const std::vector<std::shared_ptr<Expr>>& rules,
-    const std::vector<std::string>& names, bool invert_expression,
-    bool invalidate_previous_filters) {
-    if (record->n_allele <= 1 || rules.empty()) return 0;
-    const auto allele_count = static_cast<std::size_t>(record->n_allele - 1);
+// VariantFiltration.java:530 names the cluster filter CLUSTERED_SNP_FILTER_NAME.
+const std::string kClusterFilterName = "ClusteredEvents";
 
-    // GATK starts from the record's own AS_FilterStatus and only adds labels for
-    // alleles whose rule fired (AlleleFilterUtils.java:98-108).  A pre-existing
-    // vector with a different arity makes GATK leave the record untouched
-    // (:99-102); --invalidate-previous-filters discards it and reseeds below.
-    std::vector<std::vector<std::string>> allele_filters;
-    if (!invalidate_previous_filters) {
-        char* existing_raw = nullptr;
-        int existing_count = 0;
-        const auto existing_length = bcf_get_info_string(
-            input_header, record, "AS_FilterStatus", &existing_raw, &existing_count);
-        if (existing_length > 0 && existing_raw != nullptr)
-            allele_filters = decode_as_filter_status(existing_raw);
-        if (existing_raw != nullptr) free(existing_raw);
-        if (!allele_filters.empty() && allele_filters.size() != allele_count) return 0;
-    }
-    // GATKVCFConstants.SITE_LEVEL_FILTERS = "SITE": the placeholder GATK writes
-    // into every allele slot that no filter selected (GATKVCFConstants.java:201,
-    // AlleleFilterUtils.java:104-106).  It is a literal allele label, not PASS.
-    if (allele_filters.empty())
-        allele_filters.assign(allele_count, std::vector<std::string>{"SITE"});
-
-    // GATK does not evaluate the expressions against the input record: it
-    // filters splitMultiAllelics(vc) (VariantFiltration.java:359-365), and each
-    // of those contexts is rebuilt by a VariantContextBuilder that carries only
-    // contig/start/stop/alleles (:371-378), so the per-allele context has NO
-    // INFO attributes and NO genotypes.  An INFO/Number=A rule therefore
-    // dereferences a JEXL null and can never add a filter label.  Reproduce that
-    // context with a scratch copy of the record whose INFO and FORMAT payloads
-    // are removed: the unpacked flags stay set, so htslib never rebuilds these
-    // counts (vcf.c:3994-4059 bcf_unpack consults b->unpacked) and every
-    // bcf_get_info_*/bcf_get_format_* lookup reports "not present"
-    // (vcf.c:5817-5827).
-    bcf1_t* split_record = bcf_dup(record);
-    if (split_record == nullptr)
-        throw std::runtime_error(
-            "RESOURCE_EXHAUSTED: cannot duplicate the record for allele-split evaluation");
-    if (bcf_unpack(split_record, BCF_UN_ALL) != 0) {
-        bcf_destroy(split_record);
-        throw std::runtime_error(
-            "OUTPUT_CONTRACT_FAILURE: cannot unpack the record for allele-split evaluation");
-    }
-    split_record->n_info = 0;
-    split_record->n_fmt = 0;
-    split_record->n_sample = 0;
-
-    std::uint64_t filtered = 0;
-    for (int allele = 0; allele < record->n_allele - 1; ++allele) {
-        for (std::size_t rule_index = 0; rule_index < rules.size(); ++rule_index) {
-            if (!uses_allele_specific_field(*rules[rule_index])) continue;
-            // Within the split context every annotation lookup is absent and
-            // JEXL compares null as false, so the missing-values policy must not
-            // turn an unavailable allele annotation into a match: pinned GATK
-            // still emits SITE|SITE for this expression under
-            // --missing-values-evaluate-as-failing.
-            const auto result = evaluate(*rules[rule_index], input_header, split_record,
-                                          false, allele);
-            const bool failed = invert_expression ? !result.value : result.value;
-            if (!failed) continue;
-            auto& current = allele_filters[static_cast<std::size_t>(allele)];
-            // addAlleleFilters (:69-82): the SITE placeholder is replaced by the
-            // first real filter, further filters are appended once, in order.
-            if (current.empty() || (current.size() == 1 && current.front() == "SITE")) {
-                current.assign(1, names[rule_index]);
-            } else if (std::find(current.begin(), current.end(), names[rule_index]) == current.end()) {
-                current.push_back(names[rule_index]);
-            }
-            ++filtered;
-        }
-    }
-    bcf_destroy(split_record);
-
-    // encodeASFilters (:36-38) joins the labels of one allele with "," and the
-    // alleles with "|" (AnnotationUtils.ALLELE_SPECIFIC_RAW_DELIM).
-    std::string encoded;
-    for (std::size_t allele = 0; allele < allele_filters.size(); ++allele) {
-        if (allele != 0) encoded.push_back('|');
-        for (std::size_t index = 0; index < allele_filters[allele].size(); ++index) {
-            if (index != 0) encoded.push_back(',');
-            encoded += allele_filters[allele][index];
-        }
-    }
-    if (bcf_update_info_string(output_header, record, "AS_FilterStatus", encoded.c_str()) != 0)
-        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update AS_FilterStatus");
-    return filtered;
-}
+// The split contexts of the allele path carry no QUAL: splitMultiAllelics
+// (VariantFiltration.java:371-378) builds them with the 5-argument
+// VariantContextBuilder, which leaves log10PError at the htsjdk default
+// VariantContext.NO_LOG10_PERROR = 1.0d (verified with javap -constants), and
+// VariantJEXLContext computes the JEXL attribute QUAL as
+// `-10.0 * vc.getLog10PError()`.  Measured against the pinned jar: `QUAL < 0`
+// matches and `QUAL > 0` does not, for records of any real QUAL.
+const float kSplitContextQual = -10.0F;
 
 struct MaskInterval {
     std::string contig;
@@ -2321,6 +2239,187 @@ std::set<ClusterPosition> load_cluster_positions(const std::string& path,
     return clustered;
 }
 
+// GATK's "allele path", reproduced end to end.  With
+// --apply-allele-specific-filters, VariantFiltration.apply
+// (VariantFiltration.java:359-365) never filters the record itself: it filters
+// splitMultiAllelics(variant), collects the resulting filter sets per ALT and
+// rebuilds the record through AlleleFilterUtils.addAlleleAndSiteFilters
+// (:94-122).  Two things follow that the site path cannot express:
+//   * every site expression -- not just an AS_* one -- is evaluated against the
+//     split context, so the site FILTER is the intersection of the per-ALT
+//     filter sets rather than the outcome of the record's own QUAL/INFO;
+//   * AS_FilterStatus is written whenever the flag is set, even when no rule
+//     fires, because the placeholder vector is seeded unconditionally (:104-106).
+struct AllelePathOutcome {
+    // (allele, rule) pairs that added a label; reported as `allele_filtered`.
+    std::uint64_t filter_labels = 0;
+    bool masked = false;
+    bool clustered = false;
+    bool site_filtered = false;
+};
+
+AllelePathOutcome apply_allele_path_filters(
+    const bcf_hdr_t* input_header, const bcf_hdr_t* output_header, bcf1_t* record,
+    const std::vector<std::shared_ptr<Expr>>& rules, const Options& options,
+    const std::vector<MaskInterval>& mask_intervals,
+    const std::set<ClusterPosition>& clustered_positions) {
+    AllelePathOutcome outcome;
+    // addAlleleAndSiteFilters returns the variant untouched when there is no
+    // alternate allele to filter (AlleleFilterUtils.java:95-97).
+    if (record->n_allele <= 1) return outcome;
+    const auto allele_count = static_cast<std::size_t>(record->n_allele - 1);
+
+    // GATK starts from the record's own AS_FilterStatus and only adds labels for
+    // alleles whose rule fired (AlleleFilterUtils.java:98-108).  A pre-existing
+    // vector with a different arity makes GATK leave the record untouched
+    // (:99-102); --invalidate-previous-filters discards it and reseeds below.
+    std::vector<std::vector<std::string>> allele_filters;
+    if (!options.invalidate_previous_filters) {
+        char* existing_raw = nullptr;
+        int existing_count = 0;
+        const auto existing_length = bcf_get_info_string(
+            input_header, record, "AS_FilterStatus", &existing_raw, &existing_count);
+        if (existing_length > 0 && existing_raw != nullptr)
+            allele_filters = decode_as_filter_status(existing_raw);
+        if (existing_raw != nullptr) free(existing_raw);
+        if (!allele_filters.empty() && allele_filters.size() != allele_count) return outcome;
+    }
+    // GATKVCFConstants.SITE_LEVEL_FILTERS = "SITE": the placeholder GATK writes
+    // into every allele slot that no filter selected (GATKVCFConstants.java:201,
+    // AlleleFilterUtils.java:104-106).  It is a literal allele label, not PASS.
+    if (allele_filters.empty())
+        allele_filters.assign(allele_count, std::vector<std::string>{"SITE"});
+
+    // GATK does not evaluate the expressions against the input record: it
+    // filters splitMultiAllelics(vc) (VariantFiltration.java:359-365), and each
+    // of those contexts is rebuilt by
+    //   new VariantContextBuilder("SimpleSplit", contig, start, end,
+    //                             Arrays.asList(ref, NO_CALL))
+    // (:371-378).  That 5-argument htsjdk constructor carries only
+    // contig/start/stop/alleles, so the split context has NO INFO attributes and
+    // NO genotypes and keeps the builder default log10PError
+    // (VariantContext.NO_LOG10_PERROR = 1.0d), which is why the JEXL attribute
+    // VariantJEXLContext computes as `-10.0 * vc.getLog10PError()` is the
+    // constant -10.0 for every split context -- measured: `QUAL < 0` matches and
+    // `QUAL > 0` does not, whatever the record's real QUAL is.
+    bcf1_t* split_record = bcf_dup(record);
+    if (split_record == nullptr)
+        throw std::runtime_error(
+            "RESOURCE_EXHAUSTED: cannot duplicate the record for allele-split evaluation");
+    if (bcf_unpack(split_record, BCF_UN_ALL) != 0) {
+        bcf_destroy(split_record);
+        throw std::runtime_error(
+            "OUTPUT_CONTRACT_FAILURE: cannot unpack the record for allele-split evaluation");
+    }
+    // The unpacked flags stay set, so htslib never rebuilds these counts
+    // (htslib/vcf.c:3994-4059 bcf_unpack consults b->unpacked) and every
+    // bcf_get_info_*/bcf_get_format_* lookup reports "not present"
+    // (htslib/vcf.c:5817-5827).
+    split_record->n_info = 0;
+    split_record->n_fmt = 0;
+    split_record->n_sample = 0;
+    split_record->qual = kSplitContextQual;
+    // The split context is built by the 5-argument VariantContextBuilder
+    // (VariantFiltration.java:371-378), which carries no filters at all -- not
+    // the record's own.  Measured: `vc.getFilters().isEmpty()` fires for a
+    // record whose input FILTER is `foo`.
+    split_record->d.n_flt = 0;
+    // ...and it carries exactly two alleles, `[reference, this ALT]`.  Keep the
+    // original allele pointers: they point into the duplicated record's own
+    // string block, which bcf_destroy frees as a whole.
+    std::vector<char*> split_alleles(split_record->d.allele,
+                                     split_record->d.allele + split_record->n_allele);
+
+    // filter() adds the mask to a split context when
+    // `maskVariants.isEmpty() == filterRecordsNotInMask`
+    // (VariantFiltration.java:379-392), and areClusteredSNPs (:415-417) adds
+    // CLUSTERED_SNP_FILTER_NAME.  Both are per-ALT in GATK; every ALT of one
+    // record shares the record's contig/position here, and the mask query below
+    // is the same record-overlap query the site path uses.
+    const bool masked = !options.masks.empty() &&
+        (overlaps_mask(input_header, record, mask_intervals, options.mask_extension)
+         != options.filter_records_not_in_mask);
+    outcome.masked = masked;
+    const auto* contig = record->rid >= 0 ? bcf_hdr_id2name(input_header, record->rid) : nullptr;
+    const bool clustered = options.cluster_size != 0 && contig != nullptr &&
+        clustered_positions.contains({contig, static_cast<int>(record->pos)});
+    outcome.clustered = clustered;
+
+    std::vector<std::vector<std::string>> new_filters(allele_count);
+    for (int allele = 0; allele < record->n_allele - 1; ++allele) {
+        bcf_unpack(split_record, BCF_UN_STR);
+        split_record->n_allele = 2;
+        split_record->d.allele[0] = split_alleles[0];
+        split_record->d.allele[1] = split_alleles[static_cast<std::size_t>(allele) + 1];
+        auto& current = new_filters[static_cast<std::size_t>(allele)];
+        if (masked) current.push_back(options.mask_name);
+        if (clustered) current.push_back(kClusterFilterName);
+        for (std::size_t rule_index = 0; rule_index < rules.size(); ++rule_index) {
+            // Within the split context every annotation lookup is absent and
+            // JEXL compares null as false, so the missing-values policy must not
+            // turn an unavailable annotation into a match: pinned GATK still
+            // emits SITE|SITE for an AS_* expression under
+            // --missing-values-evaluate-as-failing.
+            const auto result = evaluate(*rules[rule_index], input_header, split_record,
+                                          false, allele);
+            const bool failed = options.invert_filter_expression ? !result.value : result.value;
+            if (!failed) continue;
+            if (std::find(current.begin(), current.end(), options.names[rule_index]) == current.end())
+                current.push_back(options.names[rule_index]);
+            ++outcome.filter_labels;
+        }
+        // addAlleleFilters (:69-82): the SITE placeholder is replaced by the
+        // first real filter, further filters are appended once, in order.
+        auto& merged = allele_filters[static_cast<std::size_t>(allele)];
+        if (!current.empty()) {
+            if (merged.empty() || (merged.size() == 1 && merged.front() == "SITE")) {
+                merged = current;
+            } else {
+                for (const auto& label : current)
+                    if (std::find(merged.begin(), merged.end(), label) == merged.end())
+                        merged.push_back(label);
+            }
+        }
+    }
+    bcf_destroy(split_record);
+
+    // encodeASFilters (:36-38) joins the labels of one allele with "," and the
+    // alleles with "|" (AnnotationUtils.ALLELE_SPECIFIC_RAW_DELIM).
+    std::string encoded;
+    for (std::size_t allele = 0; allele < allele_filters.size(); ++allele) {
+        if (allele != 0) encoded.push_back('|');
+        for (std::size_t index = 0; index < allele_filters[allele].size(); ++index) {
+            if (index != 0) encoded.push_back(',');
+            encoded += allele_filters[allele][index];
+        }
+    }
+    if (bcf_update_info_string(output_header, record, "AS_FilterStatus", encoded.c_str()) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update AS_FilterStatus");
+
+    // The site FILTER is the intersection of the per-ALT filter sets, added to
+    // the record's existing filters; an empty result is PASS, and
+    // --invalidate-previous-filters has already cleared the record
+    // (AlleleFilterUtils.java:112-120).
+    std::vector<std::string> intersection = new_filters.front();
+    for (std::size_t allele = 1; allele < new_filters.size(); ++allele) {
+        intersection.erase(
+            std::remove_if(intersection.begin(), intersection.end(),
+                           [&](const std::string& label) {
+                               return std::find(new_filters[allele].begin(),
+                                                new_filters[allele].end(),
+                                                label) == new_filters[allele].end();
+                           }),
+            intersection.end());
+    }
+    for (const auto& label : intersection) {
+        const int filter_id = bcf_hdr_id2int(output_header, BCF_DT_ID, label.c_str());
+        if (filter_id < 0 || bcf_add_filter(output_header, record, filter_id) < 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update allele-path FILTER column");
+    }
+    outcome.site_filtered = !intersection.empty();
+    return outcome;
+}
+
 int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& resources) {
     htsFile* input = nullptr;
     htsFile* output = nullptr;
@@ -2339,11 +2438,9 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
     try {
         std::vector<std::shared_ptr<Expr>> rules;
         rules.reserve(options.expressions.size());
-        bool allele_specific_rules_present = false;
         for (const auto& expression : options.expressions) {
             auto parsed = parse_expression(expression);
             const bool allele_specific = uses_allele_specific_field(*parsed);
-            if (allele_specific) allele_specific_rules_present = true;
             if (allele_specific && !options.apply_allele_specific_filters)
                 throw std::invalid_argument(
                     "UNSUPPORTED_PARAMETER: AS_* expression requires --apply-allele-specific-filters");
@@ -2389,14 +2486,13 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             bcf_hdr_printf(output_header, "##FILTER=<ID=%s,Description=%s>",
                            options.mask_name.c_str(), description.c_str());
         }
-        if (options.apply_allele_specific_filters && allele_specific_rules_present && bcf_hdr_id2int(
+        if (options.apply_allele_specific_filters && bcf_hdr_id2int(
                 output_header, BCF_DT_ID, "AS_FilterStatus") < 0)
             bcf_hdr_append(output_header,
                            "##INFO=<ID=AS_FilterStatus,Number=A,Type=String,Description=Allele-specific filter status>");
-        const std::string cluster_name = "ClusteredEvents";
-        if (!clustered_positions.empty() && bcf_hdr_id2int(output_header, BCF_DT_ID, cluster_name.c_str()) < 0)
+        if (!clustered_positions.empty() && bcf_hdr_id2int(output_header, BCF_DT_ID, kClusterFilterName.c_str()) < 0)
             bcf_hdr_printf(output_header, "##FILTER=<ID=%s,Description=fastgatk VariantFiltration cluster>",
-                           cluster_name.c_str());
+                           kClusterFilterName.c_str());
         bcf_hdr_append(output_header, "##source=fastgatk-variant-filtration");
         bcf_hdr_append(output_header, "##fastgatk_variant_filtration_status=prototype-jexl-subset");
         if (!genotype_rules.empty() && bcf_hdr_id2int(output_header, BCF_DT_ID, "FT") < 0)
@@ -2435,61 +2531,69 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             if (options.invalidate_previous_filters &&
                 bcf_update_filter(output_header, record, nullptr, 0) != 0)
                 throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot invalidate previous FILTER values");
-            bool any_failed = false;
-            for (std::size_t index = 0; index < rules.size(); ++index) {
-                // AS_* predicates are per-ALT annotations.  They must not
-                // leak into the site FILTER column (which has no ALT index).
-                if (uses_allele_specific_field(*rules[index])) continue;
-                const auto result = evaluate(*rules[index], input_header, record, options.missing_fails);
-                const bool failed = options.invert_filter_expression ? !result.value : result.value;
-                if (!failed) continue;
-                // GATK appends a new site FILTER to an already filtered record;
-                // it clears only PASS/no-filter state.  Clearing unconditionally
-                // loses provenance when VariantFiltration is chained.
-                if (!any_failed && record->d.n_flt == 0 &&
-                    bcf_update_filter(output_header, record, nullptr, 0) != 0)
-                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear PASS filter");
-                any_failed = true;
-                const int filter_id = bcf_hdr_id2int(output_header, BCF_DT_ID, options.names[index].c_str());
-                if (filter_id < 0 || bcf_add_filter(output_header, record, filter_id) < 0)
-                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update FILTER column");
+            if (options.apply_allele_specific_filters) {
+                // VariantFiltration.apply takes the allele path for *every*
+                // rule when the flag is set (VariantFiltration.java:359-365),
+                // so the record itself is never filtered here.
+                const auto allele_outcome = apply_allele_path_filters(
+                    input_header, output_header, record, rules, options,
+                    mask_intervals, clustered_positions);
+                allele_filtered += allele_outcome.filter_labels;
+                if (allele_outcome.masked) ++masked_records;
+                if (allele_outcome.clustered) ++clustered_records;
+                if (allele_outcome.site_filtered) ++filtered_records;
+            } else {
+                bool any_failed = false;
+                for (std::size_t index = 0; index < rules.size(); ++index) {
+                    // AS_* predicates are per-ALT annotations.  They must not
+                    // leak into the site FILTER column (which has no ALT index).
+                    if (uses_allele_specific_field(*rules[index])) continue;
+                    const auto result = evaluate(*rules[index], input_header, record, options.missing_fails);
+                    const bool failed = options.invert_filter_expression ? !result.value : result.value;
+                    if (!failed) continue;
+                    // GATK appends a new site FILTER to an already filtered record;
+                    // it clears only PASS/no-filter state.  Clearing unconditionally
+                    // loses provenance when VariantFiltration is chained.
+                    if (!any_failed && record->d.n_flt == 0 &&
+                        bcf_update_filter(output_header, record, nullptr, 0) != 0)
+                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear PASS filter");
+                    any_failed = true;
+                    const int filter_id = bcf_hdr_id2int(output_header, BCF_DT_ID, options.names[index].c_str());
+                    if (filter_id < 0 || bcf_add_filter(output_header, record, filter_id) < 0)
+                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update FILTER column");
+                }
+                // GATK's addMaskIfCoversVariant uses
+                // `maskVariants.isEmpty() == filterRecordsNotInMask`: normal mode
+                // filters an overlapping record, while --filter-not-in-mask
+                // filters a record that has no overlap.  Keep the overlap query
+                // unchanged so extension and END-span semantics are shared by
+                // both modes.  Since mask_overlap is the inverse of
+                // maskVariants.isEmpty(), the filter condition is `!=` here.
+                const bool mask_overlap = overlaps_mask(
+                    input_header, record, mask_intervals, options.mask_extension);
+                if (mask_overlap != options.filter_records_not_in_mask) {
+                    if (!any_failed && record->d.n_flt == 0 &&
+                        bcf_update_filter(output_header, record, nullptr, 0) != 0)
+                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear PASS filter for mask");
+                    any_failed = true;
+                    const int mask_id = bcf_hdr_id2int(output_header, BCF_DT_ID, options.mask_name.c_str());
+                    if (mask_id < 0 || bcf_add_filter(output_header, record, mask_id) < 0)
+                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update mask FILTER column");
+                    ++masked_records;
+                }
+                const auto* contig = record->rid >= 0 ? bcf_hdr_id2name(input_header, record->rid) : nullptr;
+                if (contig != nullptr && clustered_positions.contains({contig, static_cast<int>(record->pos)})) {
+                    if (!any_failed && record->d.n_flt == 0 &&
+                        bcf_update_filter(output_header, record, nullptr, 0) != 0)
+                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear PASS filter for cluster");
+                    any_failed = true;
+                    const int cluster_id = bcf_hdr_id2int(output_header, BCF_DT_ID, kClusterFilterName.c_str());
+                    if (cluster_id < 0 || bcf_add_filter(output_header, record, cluster_id) < 0)
+                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update cluster FILTER column");
+                    ++clustered_records;
+                }
+                if (any_failed) ++filtered_records;
             }
-            // GATK's addMaskIfCoversVariant uses
-            // `maskVariants.isEmpty() == filterRecordsNotInMask`: normal mode
-            // filters an overlapping record, while --filter-not-in-mask
-            // filters a record that has no overlap.  Keep the overlap query
-            // unchanged so extension and END-span semantics are shared by
-            // both modes.  Since mask_overlap is the inverse of
-            // maskVariants.isEmpty(), the filter condition is `!=` here.
-            const bool mask_overlap = overlaps_mask(
-                input_header, record, mask_intervals, options.mask_extension);
-            if (mask_overlap != options.filter_records_not_in_mask) {
-                if (!any_failed && record->d.n_flt == 0 &&
-                    bcf_update_filter(output_header, record, nullptr, 0) != 0)
-                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear PASS filter for mask");
-                any_failed = true;
-                const int mask_id = bcf_hdr_id2int(output_header, BCF_DT_ID, options.mask_name.c_str());
-                if (mask_id < 0 || bcf_add_filter(output_header, record, mask_id) < 0)
-                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update mask FILTER column");
-                ++masked_records;
-            }
-            const auto* contig = record->rid >= 0 ? bcf_hdr_id2name(input_header, record->rid) : nullptr;
-            if (contig != nullptr && clustered_positions.contains({contig, static_cast<int>(record->pos)})) {
-                if (!any_failed && record->d.n_flt == 0 &&
-                    bcf_update_filter(output_header, record, nullptr, 0) != 0)
-                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear PASS filter for cluster");
-                any_failed = true;
-                const int cluster_id = bcf_hdr_id2int(output_header, BCF_DT_ID, cluster_name.c_str());
-                if (cluster_id < 0 || bcf_add_filter(output_header, record, cluster_id) < 0)
-                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot update cluster FILTER column");
-                ++clustered_records;
-            }
-            if (any_failed) ++filtered_records;
-            if (options.apply_allele_specific_filters && allele_specific_rules_present)
-                allele_filtered += apply_allele_specific_filters(
-                    input_header, output_header, record, rules, options.names,
-                    options.invert_filter_expression,
-                    options.invalidate_previous_filters);
             const auto genotype_result = apply_genotype_filters(
                 input_header, output_header, record, genotype_rules,
                 options.genotype_names, options.missing_fails,
@@ -2538,7 +2642,7 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                  << ",\"invert_genotype_filter_expression\":"
                  << (options.invert_genotype_filter_expression ? "true" : "false")
                  << ",\"allele_specific_filters\":"
-                 << (options.apply_allele_specific_filters && allele_specific_rules_present ? "true" : "false")
+                 << (options.apply_allele_specific_filters ? "true" : "false")
                  << ",\"mask_filter\":" << (!options.masks.empty() ? "true" : "false")
                  << ",\"filter_not_in_mask\":"
                  << (options.filter_records_not_in_mask ? "true" : "false")

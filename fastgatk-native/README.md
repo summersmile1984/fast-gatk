@@ -3135,11 +3135,17 @@ allele-specific annotation coverage remains explicit fallback except for the
 common numeric `AS_*` `Number=A` subset enabled by
 `--apply-allele-specific-filters`, which writes GATK's per-ALT
 `AS_FilterStatus` encoding (`SITE` placeholder, `|` between alleles,
-`AlleleFilterUtils.java:69-122`) and, like GATK, evaluates each expression
-against a per-ALT context that carries no INFO attributes and no genotypes
-(`VariantFiltration.java:359-378`), so an `AS_*` INFO predicate cannot fire in
-that mode; this contract is gated by
-`scripts/verify_variant_filtration_asfilterstatus_gatk_oracle.py`.
+`AlleleFilterUtils.java:69-122`) for *every* record whenever the flag is set.
+Like GATK (`VariantFiltration.java:359-378`) the flag takes the allele path for
+**all** site expressions, not only `AS_*` ones: each ALT is evaluated against a
+context that carries no INFO attributes, no genotypes, no filters and the
+default `QUAL` (`VariantContext.NO_LOG10_PERROR`, i.e. `-10`), so an `AS_*` or
+ordinary INFO predicate cannot fire in that mode while a `QUAL` predicate fires
+for every ALT; the mask and the cluster test are applied per ALT and the site
+`FILTER` is the intersection of the per-ALT filter sets
+(`AlleleFilterUtils.java:112-120`). This contract is gated by
+`scripts/verify_variant_filtration_asfilterstatus_gatk_oracle.py` and
+`scripts/verify_variant_filtration_flag_only_gatk_oracle.py`.
 Numeric INFO-vector operands additionally accept GATK's
 `vc.getAttribute("TAG").get(i)` and the compatible `TAG[i]` shorthand, with
 out-of-range elements treated as missing; vector arithmetic and all supported

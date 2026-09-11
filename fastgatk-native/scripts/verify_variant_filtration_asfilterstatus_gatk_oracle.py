@@ -64,10 +64,12 @@ measured for that case so fixture/CLI drift cannot pass silently.  Writer-only
 differences outside this subject -- INFO key order and the ``AS_QD`` float
 spelling (GATK ``1.0`` vs htslib ``1``) -- are reported, not gated.
 
-Case ``invert-filter-expression`` is *reported only*: there an allele filter
-really does fire, so GATK's site FILTER (step 5) comes into play and native
-still writes PASS.  That is a separate, previously-scoped divergence in the site
-FILTER column, recorded here with its measured rows rather than hidden.
+Case ``invert-filter-expression`` used to be *reported only* because native then
+still wrote ``PASS`` where GATK writes the intersection of the per-ALT filter
+sets (``AlleleFilterUtils.java:115-120``).  ``variant_filtration_tool.cpp`` now
+implements that intersection for the whole ``--apply-allele-specific-filters``
+path -- see ``verify_variant_filtration_flag_only_gatk_oracle.py`` for the cases
+where no ``AS_*`` expression is in play -- so the case is gated too.
 
 Exit status: 0 when every gated check passes, non-zero otherwise.
 ``--expect-divergence`` turns the run into a pure diagnostic that always exits 0.
@@ -160,13 +162,13 @@ CASES = [
     {
         "case": "invert-filter-expression",
         "why": "inverting the predicate makes every allele match; AS_FilterStatus "
-               "then carries the real label, but the site FILTER column (GATK's "
-               "intersection, AlleleFilterUtils.java:115-120) is a separately "
-               "scoped divergence, so this case is reported rather than gated",
+               "then carries the real label and the site FILTER is GATK's "
+               "intersection of the per-ALT filter sets "
+               "(AlleleFilterUtils.java:115-120)",
         "body": ONE_RECORD,
         "extra_header": "",
         "args": AS_QD_FILTER_ARGS + ["--invert-filter-expression"],
-        "gated": False,
+        "gated": True,
         "expect": [("LowASQD", "LowASQD|LowASQD")],
     },
 ]

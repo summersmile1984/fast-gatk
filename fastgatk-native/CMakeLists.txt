@@ -1535,6 +1535,14 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_variant_filtration_asfilterstatus_gatk_oracle.py")
     set_tests_properties(fastgatk-variant-filtration-asfilterstatus-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # With --apply-allele-specific-filters GATK routes EVERY rule (and mask/
+    # cluster) through a per-ALT split context, so both FILTER and
+    # AS_FilterStatus must match GATK in the flag path.
+    add_test(NAME fastgatk-variant-filtration-flag-only-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_variant_filtration_flag_only_gatk_oracle.py")
+    set_tests_properties(fastgatk-variant-filtration-flag-only-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # A6 WGS benchmark oracle: runs the existing benchmark_end_to_end.py on the
     # canonical NA12878 chr17 69-70k fixture and verifies the JSON artifact
     # (schema_version=4, status=pass, 5 native cases + GATK baseline).
