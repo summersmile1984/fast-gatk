@@ -569,3 +569,50 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 > 教训：本会话有两次新建了严格门禁却忘了注册（AF-format 直到本轮才补上；
 > 另有一批由子代理创建的脚本同样没注册）。**门禁不注册等于没有门禁** ——
 > 每次新增 oracle 后应立刻做一次上面的机械比对。
+
+## 测试契约审计（第 20 轮）：6 处**被测试钉死的 parity 分歧** + 一个隐性失真机制
+
+对 273 个 add_test 条目做程序化枚举：94 个名字不含 `oracle`；其中约 30 个按构造确属 oracle，
+**约 64 个是真·native 内部契约**。全部 94 个都进了分类表（测试名 / CMake 行 / 脚本 /
+是否做记录级断言 / 类别 / 行号）。报告：`fastgatk-native/evidence/2026-09-11-wave0/round-testcontract-audit.md`。
+
+### 新测出 6 处 class-(c)（测试把**偏离 GATK 的行为**当契约；均以 pinned GATK 跑测试自带夹具实测确认）
+
+| 测试断言 | 钉住的行为 | GATK 实测 |
+| --- | --- | --- |
+| `verify_reblock_gvcf.py:64/:82-83` | `--drop-low-quals` 下多出 POS 20 的参考块（第 3 条记录） | 只输出 2 条，**整条丢弃**该位点（`ReblockGVCF.java:542-545`） |
+| `verify_genotype_gvcf.py:391` | 存在 `*,G` 跨接删除记录（`len(star_records)==1`） | 默认 **0 条**；`-all-sites` 下 ALT='.' GT='./.'（`GenotypeGVCFs.java:326-330`） |
+| `verify_reblock_gvcf.py:283-287` | 三倍体保持 `0/1/1` + 压缩成 10 项 PL | 重分块为 `0/0/0`、`END=30`、4 项 PL（`ReblockGVCF.java:515-531`） |
+| `verify_select_variants.py:820` | `ref_only_records == []`（丢弃全 hom-ref 记录） | **保留**，ALT='.' |
+| `verify_variant_recalibrator.py:84/422/437/456` | `culprit=full-covariance-gmm` | 该字符串在 pinned jar 里**出现 0 次**；GATK 写 `culprit=MQ` |
+| `verify_variant_filtration.py:504-505` | `AS_FilterStatus=LowASQD,PASS` | `AS_FilterStatus=SITE\|SITE`，且不施加等位基因过滤 |
+
+另有实测分歧：`verify_filter_mutect_calls.py`（MBQ/MMQ 元数不符；`FILTER=FAIL`/`AS_FilterStatus=low_tlod`，
+而 **`--min-tlod` 根本不是 GATK 选项**、`low_tlod` 不是 GATK 常量）、
+`verify_depth_of_coverage_multisample.py`（多出 per-sample 列与 1.00 分母 vs GATK 单一列与 1.50）、
+`verify_mutect2.py:650`（缺 OTHER_NORMAL 样本列）、以及 4 处输入校验包络分歧
+（负数 `-ip`/`-ixp` 拒绝、接受未索引 gzip 区间、3 字段 `.interval_list`）。
+
+### 更大的问题：一个**让绿色失真的机制**
+
+**11+ 个脚本**把 GATK 比对包在 `if java.exists() and jar.exists():` 里，**却从不断言 jar 存在**。
+一旦 oracle 缺失，这些 (a) 字面量就**静默降级**为「未经验证的 native 自身期望」，而
+**测试仍然保持绿色**。这与 verify_indel.py:173 那次事故同形，但**不可见**——因为它不会变红。
+
+> 结论：**当前的 294/294 绿色并不能支撑 parity 声称**。其中包含至少 6 处被钉死的分歧，
+> 且有一批「看起来是 GATK oracle、实际不是」的测试在静默退化。
+> 这条应优先于「再修一个 bug」处理，因为它影响的是**所有后续结论的可信度**。
+
+### 处置顺序（建议）
+
+1. **修隐性失真**：让这些脚本在声称做 GATK 比对时**必须**确认 jar 存在（缺失则明确 skip 或失败），
+   使隐性降级变为显性。此项不动生产代码，但会暴露一批需要决断的用例。
+2. **逐条处理 6 处 class-(c)**：每处都是真 parity 缺陷，需与对应测试的过期断言一起修
+   （参照第 19 轮 `verify_indel.py` 的正确处置方式）。
+3. **处置 class-(b) 高危项**：`verify_hc_genotype_priors.py:128-184` 的精确 PL/GQ 字面量
+   （native PairHMM 输出被当作期望，无 GATK 比对）、以及多处**按位置读 FORMAT 列**的脆弱写法
+   （`verify_reblock_gvcf.py:77,80`、`verify_select_variants.py:116,790-795`、
+   `verify_left_align.py:111-113,326-327` 等）。
+
+> 注：`verify_indel.py` 经本轮实测确认**已正确**——该夹具上 native 与 GATK 三个 gVCF 记录逐字节相同，
+> 故第 19 轮改成 GATK 契约的断言是对的。
