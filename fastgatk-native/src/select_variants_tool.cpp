@@ -1882,40 +1882,125 @@ void compact_fields(const bcf_hdr_t* header, bcf1_t* record, const std::vector<i
         int pl_count = 0;
         const auto length = bcf_get_format_int32(header, record, "PL", &pls, &pl_count);
         if (length > 0 && pl_count >= static_cast<int>(sample_count * old_pl_width)) {
-            std::vector<std::int32_t> source(
-                pls, pls + sample_count * old_pl_width);
-            std::vector<std::int32_t> kept_indices;
-            kept_indices.reserve(kept.size());
-            for (const auto allele : kept)
-                kept_indices.push_back(static_cast<std::int32_t>(allele));
-            const auto remapped = fastgatk::kernels::remap_genotype_pl_kokkos(
-                source, static_cast<std::size_t>(sample_count), old_alleles,
-                new_alleles, ploidy, kept_indices);
-            if (bcf_update_format_int32(header, record, "PL", remapped.pl.data(),
-                                        static_cast<int>(remapped.pl.size())) != 0) {
-                free(pls);
-                throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot subset PL FORMAT");
-            }
-            ++telemetry.pl_remap_calls;
-            telemetry.pl_remap_prepare_seconds += remapped.prepare_seconds;
-            telemetry.pl_remap_execute_seconds += remapped.seconds;
-            telemetry.execution_space = remapped.execution_space;
-            if (bcf_hdr_id2int(header, BCF_DT_ID, "GQ") >= 0) {
-                const auto derived = fastgatk::kernels::derive_genotype_gt_gq_kokkos(
-                    remapped.pl, static_cast<std::size_t>(sample_count),
-                    new_alleles, ploidy);
-                if (bcf_update_format_int32(header, record, "GQ", derived.gq.data(), sample_count) != 0) {
+            if (new_alleles == 1) {
+                // A reference-only allele space has exactly one Number=G cell:
+                // the all-reference likelihood, which is old PL index 0 because
+                // AlleleSubsettingUtils.subsettedPLIndices maps the new
+                // (ref,ref,..) genotype onto oldAlleleCounts (0,0,..).  The
+                // Kokkos remap kernel is defined for two or more target alleles,
+                // so collapse the vector directly.  GQ is left to the caller:
+                // AlleleSubsettingUtils.java:98-99 keeps the original GQ for
+                // this subset, and compact_fields must not re-derive it here.
+                std::vector<std::int32_t> collapsed(static_cast<std::size_t>(sample_count));
+                for (int sample = 0; sample < sample_count; ++sample)
+                    collapsed[static_cast<std::size_t>(sample)] =
+                        pls[static_cast<std::size_t>(sample) * static_cast<std::size_t>(old_pl_width)];
+                if (bcf_update_format_int32(header, record, "PL", collapsed.data(), sample_count) != 0) {
                     free(pls);
-                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot recompute SelectVariants GQ");
+                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot collapse SelectVariants PL FORMAT");
                 }
-                ++telemetry.gt_gq_calls;
-                telemetry.gt_gq_prepare_seconds += derived.prepare_seconds;
-                telemetry.gt_gq_execute_seconds += derived.seconds;
-                telemetry.execution_space = derived.execution_space;
+            } else {
+                std::vector<std::int32_t> source(
+                    pls, pls + sample_count * old_pl_width);
+                std::vector<std::int32_t> kept_indices;
+                kept_indices.reserve(kept.size());
+                for (const auto allele : kept)
+                    kept_indices.push_back(static_cast<std::int32_t>(allele));
+                const auto remapped = fastgatk::kernels::remap_genotype_pl_kokkos(
+                    source, static_cast<std::size_t>(sample_count), old_alleles,
+                    new_alleles, ploidy, kept_indices);
+                if (bcf_update_format_int32(header, record, "PL", remapped.pl.data(),
+                                            static_cast<int>(remapped.pl.size())) != 0) {
+                    free(pls);
+                    throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot subset PL FORMAT");
+                }
+                ++telemetry.pl_remap_calls;
+                telemetry.pl_remap_prepare_seconds += remapped.prepare_seconds;
+                telemetry.pl_remap_execute_seconds += remapped.seconds;
+                telemetry.execution_space = remapped.execution_space;
+                if (bcf_hdr_id2int(header, BCF_DT_ID, "GQ") >= 0) {
+                    const auto derived = fastgatk::kernels::derive_genotype_gt_gq_kokkos(
+                        remapped.pl, static_cast<std::size_t>(sample_count),
+                        new_alleles, ploidy);
+                    if (bcf_update_format_int32(header, record, "GQ", derived.gq.data(), sample_count) != 0) {
+                        free(pls);
+                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot recompute SelectVariants GQ");
+                    }
+                    ++telemetry.gt_gq_calls;
+                    telemetry.gt_gq_prepare_seconds += derived.prepare_seconds;
+                    telemetry.gt_gq_execute_seconds += derived.seconds;
+                    telemetry.execution_space = derived.execution_space;
+                }
             }
         }
         free(pls);
     }
+}
+
+// Pinned GATK 4.6.2.0 does *not* drop an all-hom-ref record when
+// --remove-unused-alternates is enabled: SelectVariants.subsetGenotypesBySampleNames
+// trims the unused ALTs and returns a single-allele VariantContext
+// (SelectVariants.java:1214-1233 -> GATKVariantContextUtils.trimAlleles at
+// GATKVariantContextUtils.java:1455), which the writer emits with ALT='.'.
+// The non-variant record is only removed when --exclude-non-variants is set
+// (SelectVariants.java:708-715).
+//
+// Two further observable details of that ref-only subset, both measured against
+// the pinned jar:
+//   * AlleleSubsettingUtils.java:94-100 keeps the *original* GQ when the new
+//     allele subset has a single PL cell ("if we subset to just ref allele, keep
+//     the GQ"), instead of re-deriving it from the collapsed PL vector, and it
+//     only emits GQ when the input genotype had one.
+//   * htsjdk's chromosome-count refresh then writes AN (including AN=0 for an
+//     all-no-call genotype set) and no AC/AF, because the record has no ALT.
+void trim_record_to_reference_only(const bcf_hdr_t* header, bcf1_t* record, int old_alleles,
+                                   GenotypeKernelTelemetry& telemetry) {
+    std::vector<std::int32_t> original_gq;
+    int32_t* gq = nullptr;
+    int gq_count = 0;
+    const bool had_gq = bcf_get_format_int32(header, record, "GQ", &gq, &gq_count) > 0 &&
+        gq != nullptr && gq_count >= record->n_sample;
+    if (had_gq) original_gq.assign(gq, gq + record->n_sample);
+    free(gq);
+
+    bcf_unpack(record, BCF_UN_STR);
+    const std::string reference_allele = record->d.allele[0] == nullptr ? "" : record->d.allele[0];
+    if (reference_allele.empty() || reference_allele == "." ||
+        bcf_update_alleles_str(header, record, reference_allele.c_str()) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot trim SelectVariants record to the reference allele");
+
+    const std::vector<int> kept{0};
+    compact_fields(header, record, kept, old_alleles, telemetry);
+
+    if (had_gq) {
+        if (bcf_update_format_int32(header, record, "GQ", original_gq.data(),
+                                    static_cast<int>(original_gq.size())) != 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot preserve SelectVariants GQ for a reference-only record");
+    } else if (bcf_hdr_id2int(header, BCF_DT_ID, "GQ") >= 0 &&
+               bcf_update_format_int32(header, record, "GQ", nullptr, 0) != 0) {
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot drop unrequested SelectVariants GQ");
+    }
+
+    int32_t allele_number = 0;
+    int32_t* genotypes = nullptr;
+    int genotype_count = 0;
+    if (bcf_get_genotypes(header, record, &genotypes, &genotype_count) > 0) {
+        for (int index = 0; index < genotype_count; ++index) {
+            const auto encoded = genotypes[index];
+            if (encoded == bcf_int32_vector_end || bcf_gt_is_missing(encoded)) continue;
+            ++allele_number;
+        }
+    }
+    free(genotypes);
+    if (bcf_hdr_id2int(header, BCF_DT_ID, "AC") >= 0 &&
+        bcf_update_info_int32(header, record, "AC", nullptr, 0) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear SelectVariants AC for a reference-only record");
+    if (bcf_hdr_id2int(header, BCF_DT_ID, "AF") >= 0 &&
+        bcf_update_info_float(header, record, "AF", nullptr, 0) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear SelectVariants AF for a reference-only record");
+    if (bcf_hdr_id2int(header, BCF_DT_ID, "AN") >= 0 &&
+        bcf_update_info_int32(header, record, "AN", &allele_number, 1) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot refresh SelectVariants AN for a reference-only record");
 }
 
 // SelectVariants applies --set-filtered-gt-to-nocall after sample subsetting
@@ -2388,28 +2473,37 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                 }
                 free(genotypes);
                 if (kept.size() < static_cast<std::size_t>(record->n_allele)) {
-                    // GATK drops records whose samples do not use any ALT
-                    // when --remove-unused-alternates is enabled.  A
-                    // ref-only record has no valid Number=G/Number=R target
-                    // space, so do this contract check before invoking the
-                    // Kokkos remap kernels.
-                    if (kept.size() == 1) {
-                        ++filtered_records;
-                        bcf_clear(record);
-                        continue;
-                    }
                     const int old_alleles = record->n_allele;
-                    std::string alleles;
-                    retained_alt_indices.clear();
-                    for (std::size_t index = 0; index < kept.size(); ++index) {
-                        if (index != 0) alleles.push_back(',');
-                        alleles += record->d.allele[kept[index]];
-                        if (index != 0) retained_alt_indices.push_back(kept[index]);
+                    // A record whose samples use no ALT keeps the reference
+                    // allele alone; GATK emits it with ALT='.'.  The
+                    // --exclude-non-variants test of SelectVariants.java:708-715
+                    // runs *after* the trimming (and after
+                    // --set-filtered-gt-to-nocall), so a record trimmed down to
+                    // the reference allele is non-variant by definition and is
+                    // dropped here even though the pre-trim check above, which
+                    // sees the original record, could not tell.
+                    if (kept.size() == 1) {
+                        if (options.exclude_non_variants) {
+                            ++non_variant_skipped;
+                            bcf_clear(record);
+                            continue;
+                        }
+                        retained_alt_indices.clear();
+                        trim_record_to_reference_only(output_header, record, old_alleles,
+                                                      genotype_kernel_telemetry);
+                    } else {
+                        std::string alleles;
+                        retained_alt_indices.clear();
+                        for (std::size_t index = 0; index < kept.size(); ++index) {
+                            if (index != 0) alleles.push_back(',');
+                            alleles += record->d.allele[kept[index]];
+                            if (index != 0) retained_alt_indices.push_back(kept[index]);
+                        }
+                        if (bcf_update_alleles_str(output_header, record, alleles.c_str()) != 0)
+                            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot remove unused alternate alleles");
+                        compact_fields(output_header, record, kept, old_alleles,
+                                       genotype_kernel_telemetry);
                     }
-                    if (bcf_update_alleles_str(output_header, record, alleles.c_str()) != 0)
-                        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot remove unused alternate alleles");
-                    compact_fields(output_header, record, kept, old_alleles,
-                                  genotype_kernel_telemetry);
                 }
             }
             // GATK refreshes AC/AN/AF only when the selected sample/allele

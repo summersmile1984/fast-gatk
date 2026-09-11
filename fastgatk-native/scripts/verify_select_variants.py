@@ -796,8 +796,24 @@ chr1\t10\t.\tA\tC,G\t50\tPASS\t.\tGT:AD:PL:GQ\t0/1/1:30,8,0:0,10,20,30,40,50,60,
         assert "AC=2" in triploid_records[0][7] and "AN=3" in triploid_records[0][7]
 
         # If every sample is hom-ref, removing unused alternates produces a
-        # ref-only record, which GATK drops instead of attempting an invalid
-        # one-allele Number=G/Number=R remap.
+        # ref-only record.  Pinned GATK 4.6.2.0 KEEPS that record and writes it
+        # with ALT='.': SelectVariants.subsetGenotypesBySampleNames trims the
+        # unused ALTs and returns a single-allele VariantContext
+        # (SelectVariants.java:1195-1233 -> GATKVariantContextUtils.trimAlleles at
+        # GATKVariantContextUtils.java:1455) instead of dropping it.  The record
+        # is removed only by --exclude-non-variants (SelectVariants.java:708-715;
+        # the flag defaults to false at SelectVariants.java:265-266), which the
+        # second run below pins as well.  The previous expectation here
+        # (ref_only_records == []) was native-only and pinned a drop that GATK
+        # does not perform; it was measured by
+        # verify_select_variants_refonly_gatk_oracle.py.
+        #
+        # Measured GATK row for this fixture (FORMAT keys are re-emitted by GATK
+        # in its own rebuild order, GT:AD:GQ:PL; native preserves the input
+        # header order GT:AD:PL:GQ -- a pre-existing, separately-scoped
+        # difference with identical values, see the oracle's
+        # diagnostic-input-format-order case):
+        #   chr1  20  .  A  .  50  PASS  AN=2  GT:AD:GQ:PL  0/0:30:30:0
         ref_only_source = work / "ref-only-unused.vcf.gz"
         ref_only_output = work / "ref-only-unused-output.vcf.gz"
         with gzip.open(ref_only_source, "wt", encoding="utf-8") as handle:
@@ -817,7 +833,25 @@ chr1\t20\t.\tA\tC,G\t50\tPASS\t.\tGT:AD:PL:GQ\t0/0:30,0,0:0,30,60,40,70,80:30
         ref_only_records = [line for line in gzip.open(
             ref_only_output, "rt", encoding="utf-8").read().splitlines()
             if line and not line.startswith("#")]
-        assert ref_only_records == []
+        assert ref_only_records == [
+            "chr1\t20\t.\tA\t.\t50\tPASS\tAN=2\tGT:AD:PL:GQ\t0/0:30:0:30"]
+        ref_only_fields = ref_only_records[0].split("\t")
+        assert ref_only_fields[4] == "."
+        assert ref_only_fields[7] == "AN=2"
+        assert ref_only_fields[8] == "GT:AD:PL:GQ"
+        assert ref_only_fields[9] == "0/0:30:0:30"
+
+        # --exclude-non-variants is the option that decides retention in GATK,
+        # so the same input must produce no record at all under it.
+        ref_only_excluded = work / "ref-only-unused-excluded.vcf.gz"
+        ref_only_excluded_result = subprocess.run(
+            [str(binary), "-V", str(ref_only_source), "-O", str(ref_only_excluded),
+             "--remove-unused-alternates", "--exclude-non-variants"],
+            text=True, capture_output=True, check=False)
+        assert ref_only_excluded_result.returncode == 0, ref_only_excluded_result.stderr
+        assert [line for line in gzip.open(
+            ref_only_excluded, "rt", encoding="utf-8").read().splitlines()
+            if line and not line.startswith("#")] == []
 
     print(json.dumps({"status": "pass", "output_records": summary["output_records"],
                       "gatk_oracle_exact": True}))

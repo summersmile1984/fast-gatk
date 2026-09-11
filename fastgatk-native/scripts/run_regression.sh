@@ -65,12 +65,20 @@ for pair in "omp:${BUILD_OMP}" "serial:${BUILD_SERIAL}"; do
     *) continue ;;
   esac
   [[ -d "${dir}" ]] || { echo "缺少构建目录 ${dir}" >&2; fail_precheck=1; continue; }
-  # 陈旧性检查：源码比二进制新则告警（回归结论不可信）
-  newer="$(find "${ROOT}/fastgatk-native/src" "${ROOT}/fastgatk-native/include" \
-                "${ROOT}/fastgatk-kernels/src" "${ROOT}/fastgatk-kernels/include" \
-                -type f \( -name '*.cpp' -o -name '*.hpp' \) \
-                -newer "${dir}/fastgatk-hc-call" -print -quit 2>/dev/null || true)"
-  [[ -n "${newer}" ]] && echo "警告：[${name}] 源码比二进制新（${newer}），结论可能失效，请先重新构建" >&2
+  # 陈旧性检查：源码比二进制新则告警（回归结论不可信）。
+  # 与构建目录中**最新**的产物比较，而不是只与 fastgatk-hc-call 比较——
+  # 后者会把 HC 根本不链接的源文件（如 select_variants_tool.cpp）误报为陈旧，
+  # 产生假告警；假告警会训练人忽略告警，从而掩盖真正的陈旧。
+  newest_bin="$(find "${dir}" -maxdepth 1 -type f -name 'fastgatk-*' -perm -u+x \
+                  -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)"
+  newer=""
+  if [[ -n "${newest_bin}" ]]; then
+    newer="$(find "${ROOT}/fastgatk-native/src" "${ROOT}/fastgatk-native/include" \
+                  "${ROOT}/fastgatk-kernels/src" "${ROOT}/fastgatk-kernels/include" \
+                  -type f \( -name '*.cpp' -o -name '*.hpp' \) \
+                  -newer "${newest_bin}" -print -quit 2>/dev/null || true)"
+  fi
+  [[ -n "${newer}" ]] && echo "警告：[${name}] 源码比最新产物（$(basename "${newest_bin}")）新（${newer}），结论可能失效，请先重新构建" >&2
 done
 [[ "${fail_precheck}" -eq 0 ]] || exit 2
 
