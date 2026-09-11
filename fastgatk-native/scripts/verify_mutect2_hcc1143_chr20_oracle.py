@@ -31,6 +31,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 ROOT = Path(__file__).resolve().parents[2]
 JAVA = ROOT / "third_party/jdk17/bin/java"
@@ -170,6 +171,7 @@ def activity_region_range(igv: Path) -> tuple[int, int] | None:
 def main() -> int:
     required = (JAVA, GATK, NATIVE, TUMOR, NORMAL, REFERENCE)
     if not all(p.is_file() for p in required):
+        oracle_guard.oracle_not_verified('verify_mutect2_hcc1143_chr20_oracle.py', JAVA, GATK)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             sys.stderr.write(f"missing required inputs: {[str(p) for p in required if not p.is_file()]}\n")
             return 2

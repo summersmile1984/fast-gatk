@@ -616,3 +616,41 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 注：`verify_indel.py` 经本轮实测确认**已正确**——该夹具上 native 与 GATK 三个 gVCF 记录逐字节相同，
 > 故第 19 轮改成 GATK 契约的断言是对的。
+
+## Oracle 完整性（第 21 轮）：消除「缺失 oracle 被误当证据」的机制
+
+审计的估计被实测**放大了 16 倍**：**176 个已注册脚本 / 294 个已注册测试中的 187 个（63.6%）**
+把 GATK 比对包在一个**从不断言 jar 存在**的存在性守卫里；其中 **51 个连
+`FASTGATK_REQUIRE_GATK_ORACLE` 逃生口都没有**。（审计原文估计「11+」，实测 176。）
+
+**关键限定：今天没有一个是真未验证的。** 每个脚本计算出的 oracle 路径都解析到
+`third_party/jdk17/bin/java` 与 pinned jar，`paths_missing` 全空 —— 也就是说
+**风险是潜在的（latent），不是已发生的（active）**。这一点很重要：它意味着此前的
+294/294 并没有被实际污染，但**随时可能**。
+
+处置：
+- 新增共享助手 `fastgatk-native/scripts/oracle_guard.py`（复用已有的 `oracle_toolchain.py` 解析器），
+  策略为：oracle 在 → 行为不变；oracle 缺失且 `FASTGATK_REQUIRE_GATK_ORACLE=1` → **响亮失败**
+  （非零退出并指名缺失路径）；oracle 缺失且未设该变量 → 打印
+  `[NOT VERIFIED AGAINST GATK]` 横幅并 exit 0（不得被误读为已验证）。
+- 应用于全部 176 个已注册脚本（`+369/-42`；被删的 42 行全是纯存在性守卫表达式，
+  **无任何期望值或断言被改写**）。7 个未注册脚本未动（CTest 不运行它们）。
+- **`run_regression.sh` 现在默认设置 `FASTGATK_REQUIRE_GATK_ORACLE=1`** —— 这是关闭
+  「横幅在正常运行中不可见」这一残余缺口的关键：`--output-on-failure` 会丢弃通过用例的输出，
+  故横幅只在 `-V` 或直接运行时可见；改为由强制门禁兜底。
+
+验证（均实测）：
+- 套件在**设与不设** `FASTGATK_REQUIRE_GATK_ORACLE=1` 两种情况下均
+  **294/294 双后端通过**（1195.7s/1198.2s 与 1194.7s/1183.8s）——
+  运行时证明没有任何已注册测试缺 oracle，也证明该变量今天即可用作 CI 门禁。
+- 「咬合」演示：把一个已注册脚本的 oracle 隐藏（临时目录镜像仓库布局、jar 目录置空），
+  (i) 设变量 → exit 1 并报 `[ORACLE REQUIRED]` 与缺失路径；
+  (ii) 不设 → exit 0 但 stderr 打印 `[NOT VERIFIED AGAINST GATK]`，stdout 标 `"java_oracle": false`；
+  (iii)/(iv) oracle 存在时两种情形输出逐字节相同（即改动是惰性的）。
+  并**经真实 CTest 沙盒复验**：`JAVA=bogus` + 变量 → 测试 FAILED；仅 `JAVA=bogus` → Passed（横幅需 `-V` 才可见）。
+
+仍未证明（报告 §4）：本轮的保证是「**缺失 oracle 会响亮**」，**不是**「其余断言已由 GATK 验证」——
+审计 §4.4 的发现（native-only 字面量、按位置读 FORMAT 列、SelectVariants 作为读取器）仍待处理；
+只扫描了 java/jar 存在性守卫，未覆盖其它静默跳过机制（裸 except、吞掉非零返回码）；
+`FASTGATK_REQUIRE_GATK_ORACLE` 运行只能证明**到达了守卫**的脚本找到了 oracle，
+被更早 return 挡住的守卫不会被触及。

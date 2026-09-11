@@ -16,6 +16,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -61,6 +62,7 @@ def index(path: pathlib.Path) -> None:
 def main() -> int:
     required = (BINARY, JAVA, GATK)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_apply_vqsr_default_cutoff_gatk_oracle.py', JAVA, GATK)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("ApplyVQSR default-cutoff GATK oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "GATK oracle unavailable"}))

@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 def main() -> int:
@@ -81,7 +82,7 @@ def main() -> int:
         java = root / "third_party/jdk17/bin/java"
         jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
         java_oracle = False
-        if java.exists() and jar.exists():
+        if oracle_guard.oracle_ready('verify_check_reference_compatibility.py', java, jar):
             java_output = work / "java.table"
             java_result = subprocess.run([
                 str(java), "-jar", str(jar), "CheckReferenceCompatibility", "-I", str(checks[0][0]),

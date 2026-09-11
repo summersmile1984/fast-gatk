@@ -14,6 +14,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str], label: str) -> None:
@@ -63,6 +64,7 @@ def main() -> int:
     java = Path(os.environ.get("JAVA", str(root / "third_party/jdk17/bin/java")))
     gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     if not all(path.is_file() for path in (native, java, gatk)):
+        oracle_guard.oracle_not_verified('verify_genotype_gvcf_starts_in_intervals_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GenotypeGVCFs STARTS_IN oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

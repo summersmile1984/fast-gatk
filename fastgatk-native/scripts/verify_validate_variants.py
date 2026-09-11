@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 HEADER = """##fileformat=VCFv4.2
@@ -112,7 +113,7 @@ def main() -> int:
 
         java = root / "third_party/jdk17/bin/java"
         gatk_jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_validate_variants.py', java, gatk_jar):
             index_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "IndexFeatureFile",
                 "-I", str(excluded_invalid),
@@ -188,7 +189,7 @@ def main() -> int:
         assert "not observed in any called genotype" in unused_failure.stderr
         java = root / "third_party/jdk17/bin/java"
         gatk_jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_validate_variants.py', java, gatk_jar):
             oracle_unused = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "ValidateVariants",
                 "-V", str(unused_alt), "--validation-type-to-exclude", "REF",

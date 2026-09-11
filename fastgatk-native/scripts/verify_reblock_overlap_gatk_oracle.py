@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 from verify_reblock_gatk_oracle import read_records
+import oracle_guard
 
 
 def main() -> int:
@@ -21,6 +22,7 @@ def main() -> int:
     ))
     required = (java, gatk, reference, binary)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_reblock_overlap_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK overlap oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

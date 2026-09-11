@@ -14,6 +14,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -35,6 +36,7 @@ def main() -> int:
     if not BINARY.exists():
         raise SystemExit(f"missing native binary: {BINARY}")
     if not JAVA.exists() or not GATK.exists():
+        oracle_guard.oracle_not_verified('verify_variant_recalibrator_zero_variance_gatk_oracle.py', JAVA, GATK)
         raise SystemExit("VariantRecalibrator zero-variance oracle inputs are required")
     with tempfile.TemporaryDirectory(prefix="fastgatk-variant-recalibrator-zero-variance-") as temporary:
         work = pathlib.Path(temporary)

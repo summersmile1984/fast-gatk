@@ -15,6 +15,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -62,6 +63,7 @@ def run_native(reference: pathlib.Path, bam: pathlib.Path, output: pathlib.Path,
 
 def main() -> None:
     if not NATIVE.exists() or not JAVA.exists() or not GATK.exists():
+        oracle_guard.oracle_not_verified('verify_depth_of_coverage_ignore_deletion_sites_gatk_oracle.py', JAVA, GATK)
         raise SystemExit("missing DepthOfCoverage deletion oracle assets")
     with tempfile.TemporaryDirectory(prefix="fastgatk-depth-of-coverage-deletion-oracle-") as temporary:
         work = pathlib.Path(temporary)

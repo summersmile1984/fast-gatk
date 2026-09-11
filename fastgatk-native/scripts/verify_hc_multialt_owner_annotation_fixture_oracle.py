@@ -96,6 +96,7 @@ from hc_symbolic_prior_fixture_lib import (  # noqa: E402
     REFERENCE_LENGTH, build_reference, compare_rows, layout, make_bam,
     prepare_reference, records,
 )
+import oracle_guard
 
 MULTI_ALT_SITE = "698"           # 1-based POS of the forced multi-ALT record
 MULTI_ALT_SITE_0BASED = 697      # FASTGATK_DEBUG_ANNOTATION_POSITION value
@@ -274,6 +275,7 @@ def main() -> int:
     java = os.environ.get("JAVA", str(root / "third_party/jdk17/bin/java"))
     assets = [native, Path(java), gatk]
     if not all(path.is_file() for path in assets):
+        oracle_guard.oracle_not_verified('verify_hc_multialt_owner_annotation_fixture_oracle.py', Path(java), gatk)
         missing = sorted(str(path) for path in assets if not path.is_file())
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing oracle assets: {missing}")

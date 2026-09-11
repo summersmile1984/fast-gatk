@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run_checked(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
@@ -65,6 +66,7 @@ def main() -> int:
     required = (importer, bridge, java, jar, gvcf)
     if not all(path.is_file() and os.access(path, os.X_OK) if path in (importer, bridge, java)
                else path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_genomicsdb_import_native_interval_gatk_oracle.py', java, jar)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             missing = [str(path) for path in required if not path.is_file()]
             raise SystemExit(f"bundled native GenomicsDB interval oracle assets unavailable: {missing}")

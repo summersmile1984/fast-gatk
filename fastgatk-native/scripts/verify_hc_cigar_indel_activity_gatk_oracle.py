@@ -15,6 +15,7 @@ import random
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def write_fixture(work: Path) -> tuple[Path, Path, Path]:
@@ -69,6 +70,7 @@ def main() -> int:
     gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     java = os.environ.get("JAVA", str(root / "third_party/jdk17/bin/java"))
     if not native.exists() or not gatk.exists():
+        oracle_guard.oracle_not_verified('verify_hc_cigar_indel_activity_gatk_oracle.py', gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit("missing HC binary or pinned GATK 4.6.2.0 jar")
         print(json.dumps({"status": "skipped", "reason": "GATK jar or native binary absent"}))

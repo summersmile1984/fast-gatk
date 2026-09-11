@@ -18,6 +18,7 @@ import stat
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run_checked(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
@@ -54,6 +55,7 @@ def main() -> int:
     reference = root / "reference.fa"
     required = (importer, java, jar, gvcf, gvcf_index, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_genomicsdb_import_update_workspace_gatk_oracle.py', java, jar)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             missing = [str(path) for path in required if not path.is_file()]
             raise SystemExit(f"bundled GenomicsDB update oracle assets unavailable: {missing}")

@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 def write_reference(path: pathlib.Path) -> None:
@@ -86,7 +87,7 @@ def main() -> int:
         java = root / "third_party/jdk17/bin/java"
         jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
         java_checked = False
-        if java.exists() and jar.exists():
+        if oracle_guard.oracle_ready('verify_annotate_intervals.py', java, jar):
             java_output = work / "java.tsv"
             java_result = subprocess.run([
                 str(java), "-jar", str(jar), "AnnotateIntervals", "-R", str(reference),
@@ -131,7 +132,7 @@ def main() -> int:
         assert track_metadata["mappability_segments"] == 3
         assert track_metadata["segmental_duplication_segments"] == 1
         assert track_metadata["telemetry"]["track_index_strategy"] == "per-contig-binary-search"
-        if java.exists() and jar.exists():
+        if oracle_guard.oracle_ready('verify_annotate_intervals.py', java, jar):
             for track in (mappability, segmental):
                 index_result = subprocess.run([
                     str(java), "-jar", str(jar), "IndexFeatureFile", "-I", str(track),
@@ -179,7 +180,7 @@ def main() -> int:
             native_meta = json.loads(native_manifest.read_text(encoding="utf-8"))
             if label == "exclude":
                 assert native_meta["excluded_intervals"] == 1
-            if java.exists() and jar.exists():
+            if oracle_guard.oracle_ready('verify_annotate_intervals.py', java, jar):
                 java_case = work / f"java-{label}.tsv"
                 java_run = subprocess.run([
                     str(java), "-Xmx1g", "-jar", str(jar), "AnnotateIntervals", "-R", str(reference),
@@ -205,7 +206,7 @@ def main() -> int:
             )
             if native_reject.returncode == 0 or expected_error not in native_reject.stderr:
                 raise AssertionError({"option": option, "native": native_reject.stderr})
-            if java.exists() and jar.exists():
+            if oracle_guard.oracle_ready('verify_annotate_intervals.py', java, jar):
                 java_reject = subprocess.run([
                     str(java), "-Xmx1g", "-jar", str(jar), "AnnotateIntervals", "-R", str(reference),
                     "-L", "chr1:1-8", "--interval-merging-rule", "OVERLAPPING_ONLY", option, "1",

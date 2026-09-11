@@ -15,6 +15,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def rows(path: Path) -> list[list[str]]:
@@ -45,6 +46,7 @@ def main() -> int:
     if not native.exists() or not reference.exists() or not bam.exists():
         raise SystemExit("missing native build or chr20 min-pruning fixture")
     if not gatk.exists():
+        oracle_guard.oracle_not_verified('verify_hc_chr20_min_pruning_gvcf_gatk_oracle.py', gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing GATK oracle jar: {gatk}")
         print(json.dumps({"status": "skipped", "reason": "GATK jar not present"}))

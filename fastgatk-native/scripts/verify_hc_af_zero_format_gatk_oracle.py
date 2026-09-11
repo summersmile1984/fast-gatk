@@ -85,6 +85,7 @@ from hc_symbolic_prior_fixture_lib import (  # noqa: E402
     REFERENCE_LENGTH, build_reference, compare_rows, layout, make_bam,
     normalize_row, prepare_reference, records,
 )
+import oracle_guard
 
 SITE = "698"                     # 1-based POS of the forced multi-ALT record
 INTERVAL = "chr1:500-780"
@@ -377,6 +378,7 @@ def main() -> int:
 
     assets = [native, Path(java), gatk]
     if not all(path.is_file() for path in assets):
+        oracle_guard.oracle_not_verified('verify_hc_af_zero_format_gatk_oracle.py', Path(java), gatk)
         missing = sorted(str(path) for path in assets if not path.is_file())
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing oracle assets: {missing}")

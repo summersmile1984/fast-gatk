@@ -97,6 +97,7 @@ from hc_symbolic_prior_fixture_lib import (  # noqa: E402
     ORDINARY_VCF, compare_rows, layout, make_bam, prepare_reference, qual_summary,
     records,
 )
+import oracle_guard
 
 SPAN_DEL_POSITION = "698"
 
@@ -230,6 +231,7 @@ def main() -> int:
     java = os.environ.get("JAVA", str(root / "third_party/jdk17/bin/java"))
     assets = [native, Path(java), gatk]
     if not all(path.is_file() for path in assets):
+        oracle_guard.oracle_not_verified('verify_hc_arbitrary_ploidy_span_del_prior_fixture_oracle.py', Path(java), gatk)
         missing = sorted(str(path) for path in assets if not path.is_file())
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing oracle assets: {missing}")

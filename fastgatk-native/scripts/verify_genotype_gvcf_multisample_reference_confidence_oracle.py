@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def body(path: Path) -> list[str]:
@@ -33,6 +34,7 @@ def main() -> int:
     bam = root / "gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam"
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     if not all(path.exists() for path in (native, gatk, java, bam, reference)):
+        oracle_guard.oracle_not_verified('verify_genotype_gvcf_multisample_reference_confidence_oracle.py', gatk, java)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("multi-sample reference-confidence oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

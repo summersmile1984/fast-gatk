@@ -15,6 +15,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +39,7 @@ def data_positions(path: Path) -> list[int]:
 def main() -> int:
     required = (JAVA, GATK, NATIVE, REFERENCE, BAM, Path(f"{BAM}.bai"))
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_mutect2_mito_interval_halo_gatk_oracle.py', JAVA, GATK)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             missing = [str(path) for path in required if not path.is_file()]
             raise AssertionError({"missing": missing})

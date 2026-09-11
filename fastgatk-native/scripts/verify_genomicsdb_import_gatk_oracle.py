@@ -16,6 +16,7 @@ import stat
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def main() -> int:
@@ -29,6 +30,7 @@ def main() -> int:
     reference = root / "reference.fa"
     required = (binary, java, jar, gvcf, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_genomicsdb_import_gatk_oracle.py', java, jar)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             missing = [str(path) for path in required if not path.is_file()]
             raise SystemExit(f"bundled GATK GenomicsDBImport oracle assets unavailable: {missing}")

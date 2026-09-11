@@ -15,6 +15,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -45,6 +46,7 @@ def index(path: pathlib.Path) -> None:
 
 def main() -> int:
     if not BINARY.exists() or not JAVA.exists() or not GATK.exists():
+        oracle_guard.oracle_not_verified('verify_variant_recalibrator_attempt_iteration_gatk_oracle.py', JAVA, GATK)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("VariantRecalibrator attempt/iteration oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "GATK oracle unavailable"}))

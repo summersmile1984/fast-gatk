@@ -9,6 +9,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -412,7 +413,7 @@ def main() -> None:
         gatk = ROOT / "third_party" / "gatk-package" / "gatk-4.6.2.0" / "gatk-package-4.6.2.0-local.jar"
         java_oracle = {"status": "skip", "reason": "bundled GATK/JDK oracle not present"}
         java_as_oracle = {"status": "skip", "reason": "bundled GATK/JDK oracle not present"}
-        if java.exists() and gatk.exists():
+        if oracle_guard.oracle_ready('verify_apply_vqsr.py', java, gatk):
             # ApplyVQSR queries the recalibration VCF by interval, so make the
             # exact same small fixture random-accessible before invoking Java.
             subprocess.run([str(java), "-jar", str(gatk), "IndexFeatureFile", "-I", str(input_vcf)],

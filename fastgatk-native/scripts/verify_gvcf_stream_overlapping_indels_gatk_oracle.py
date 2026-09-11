@@ -23,6 +23,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def records(path: Path) -> list[list[str]]:
@@ -140,6 +141,7 @@ def main() -> int:
 
     if not all(path.is_file() for path in (default_native, serial_native,
                                             reference, bam, java, gatk)):
+        oracle_guard.oracle_not_verified('verify_gvcf_stream_overlapping_indels_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit("missing native binaries or oracle assets")
         print(json.dumps({"status": "skipped",

@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 HEADER = """##fileformat=VCFv4.2
@@ -198,7 +199,7 @@ def main() -> int:
         assert merging_rows == [["1"], ["2"]]
         merging_metadata = json.loads(merging_manifest.read_text(encoding="utf-8"))
         assert merging_metadata["compatibility"]["interval_merging_rule"] == "OVERLAPPING_ONLY"
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_variants_to_table.py', java, gatk_jar):
             # GATK requires a random-access feature index for interval
             # exclusion; build the sidecar only for this oracle invocation.
             index_result = subprocess.run([
@@ -285,7 +286,7 @@ def main() -> int:
             [str(binary), "-V", str(standard_source), "-O", str(standard_table), *standard_args],
             text=True, capture_output=True, check=False)
         assert standard_result.returncode == 0, standard_result.stderr
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_variants_to_table.py', java, gatk_jar):
             oracle_standard = work / "oracle-standard-fields.tsv"
             oracle_standard_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "VariantsToTable",
@@ -320,7 +321,7 @@ def main() -> int:
         ], text=True, capture_output=True, check=False)
         assert wildcard_result.returncode == 0, wildcard_result.stderr
         assert wildcard_table.read_text(encoding="utf-8").splitlines() == ["A*", "5,[2, 3]"]
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_variants_to_table.py', java, gatk_jar):
             oracle_wildcard = work / "oracle-wildcard.tsv"
             oracle_wildcard_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "VariantsToTable",
@@ -332,7 +333,7 @@ def main() -> int:
         # The pinned GATK oracle is available in this workspace.  Compare the
         # complete table, including getter formatting and allele-valued GT,
         # rather than only checking a few cells.
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_variants_to_table.py', java, gatk_jar):
             oracle = work / "oracle.tsv"
             oracle_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "VariantsToTable",
@@ -380,7 +381,7 @@ def main() -> int:
         assert split_as_rows[0][4] == split_as_rows[1][4]
         assert split_as_rows[0][3] == "8,1" and split_as_rows[1][3] == "8,5"
         assert split_as_rows[0][5] == "8,4" and split_as_rows[1][5] == "8,2"
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_variants_to_table.py', java, gatk_jar):
             oracle_split_as = work / "oracle-split-as.tsv"
             oracle_split_as_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "VariantsToTable",
@@ -409,7 +410,7 @@ def main() -> int:
         ]
         type_result = subprocess.run(type_command, text=True, capture_output=True, check=False)
         assert type_result.returncode == 0, type_result.stderr
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_variants_to_table.py', java, gatk_jar):
             oracle_types = work / "oracle-types.tsv"
             oracle_types_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "VariantsToTable",

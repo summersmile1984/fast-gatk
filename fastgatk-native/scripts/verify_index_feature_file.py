@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -76,7 +77,7 @@ def main() -> int:
         assert plain_payload["linear_contigs"] == 1
         assert plain_payload["linear_blocks"] == 1
 
-        if JAVA.is_file() and GATK_JAR.is_file():
+        if oracle_guard.oracle_ready('verify_index_feature_file.py', JAVA, GATK_JAR):
             java_index = work / "java.idx"
             java_result = subprocess.run(
                 [str(JAVA), "-Xmx1g", "-jar", str(GATK_JAR), "IndexFeatureFile",
@@ -114,7 +115,7 @@ def main() -> int:
         assert plain_vcf_payload["compression"] == "NONE"
         assert plain_vcf_payload["index_type"] == "TRIBBLE_LINEAR"
         assert plain_vcf_payload["linear_records"] == 1
-        if JAVA.is_file() and GATK_JAR.is_file():
+        if oracle_guard.oracle_ready('verify_index_feature_file.py', JAVA, GATK_JAR):
             java_vcf_index = work / "java-plain-vcf.idx"
             java_vcf_result = subprocess.run(
                 [str(JAVA), "-Xmx1g", "-jar", str(GATK_JAR), "IndexFeatureFile",
@@ -160,7 +161,7 @@ def main() -> int:
         assert dense_payload["index_type"] == "TRIBBLE_INTERVAL_TREE"
         assert dense_payload["linear_records"] == 300
         assert dense_payload["linear_blocks"] == 4
-        if JAVA.is_file() and GATK_JAR.is_file():
+        if oracle_guard.oracle_ready('verify_index_feature_file.py', JAVA, GATK_JAR):
             java_dense_index = work / "java-dense.idx"
             java_dense_result = subprocess.run(
                 [str(JAVA), "-Xmx1g", "-jar", str(GATK_JAR), "IndexFeatureFile",
@@ -195,7 +196,7 @@ def main() -> int:
         plain_bed_summary = json.loads(plain_bed_result.stderr.splitlines()[-1])
         assert plain_bed_summary["index_type"] == "TRIBBLE_LINEAR"
         assert plain_bed_summary["linear_records"] == 6
-        if JAVA.is_file() and GATK_JAR.is_file():
+        if oracle_guard.oracle_ready('verify_index_feature_file.py', JAVA, GATK_JAR):
             java_bed_index = work / "java-bed.idx"
             java_bed_result = subprocess.run(
                 [str(JAVA), "-Xmx1g", "-jar", str(GATK_JAR), "IndexFeatureFile",
@@ -216,7 +217,7 @@ def main() -> int:
         assert dense_bed_index.is_file() and dense_bed_index.stat().st_size > 0
         dense_bed_summary = json.loads(dense_bed_result.stderr.splitlines()[-1])
         assert dense_bed_summary["index_type"] == "TRIBBLE_INTERVAL_TREE"
-        if JAVA.is_file() and GATK_JAR.is_file():
+        if oracle_guard.oracle_ready('verify_index_feature_file.py', JAVA, GATK_JAR):
             java_dense_bed_index = work / "java-dense-bed.idx"
             java_dense_bed_result = subprocess.run(
                 [str(JAVA), "-Xmx1g", "-jar", str(GATK_JAR), "IndexFeatureFile",

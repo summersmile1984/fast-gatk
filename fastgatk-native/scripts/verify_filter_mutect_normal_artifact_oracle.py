@@ -14,6 +14,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def records(path: Path) -> list[tuple[str, str, str]]:
@@ -43,6 +44,7 @@ def main() -> int:
     ))
     required = (java, gatk, reference, binary)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_filter_mutect_normal_artifact_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK normal-artifact oracle unavailable")
         print(json.dumps({"status": "skip", "reason": "bundled GATK normal-artifact oracle unavailable"}))

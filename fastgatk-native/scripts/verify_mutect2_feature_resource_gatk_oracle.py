@@ -12,6 +12,7 @@ from pathlib import Path
 import pysam
 
 from verify_mutect2_zero_lod_indel_activity_gatk_oracle import REFERENCE
+import oracle_guard
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -129,6 +130,7 @@ def main() -> int:
         "FASTGATK_MUTECT2_BINARY", str(root / "fastgatk-native/build/fastgatk-mutect2")
     ))
     if not all(path.is_file() for path in (java, gatk, native)):
+        oracle_guard.oracle_not_verified('verify_mutect2_feature_resource_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK Mutect2 feature-resource oracle is required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

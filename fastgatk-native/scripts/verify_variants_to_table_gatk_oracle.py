@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,6 +54,7 @@ def main() -> int:
     if not BINARY.is_file() or not os.access(BINARY, os.X_OK):
         raise SystemExit(f"missing native VariantsToTable binary: {BINARY}")
     if not JAVA.is_file() or not GATK_JAR.is_file():
+        oracle_guard.oracle_not_verified('verify_variants_to_table_gatk_oracle.py', JAVA, GATK_JAR)
         raise SystemExit("pinned GATK 4.6.2.0 runtime is required for this oracle")
 
     with tempfile.TemporaryDirectory(prefix="fastgatk-variants-to-table-oracle-") as directory:

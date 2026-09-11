@@ -14,6 +14,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def records(path: Path) -> list[list[str]]:
@@ -116,6 +117,7 @@ def main() -> int:
     java = root / "third_party/jdk17/bin/java"
     jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     if not binary.is_file() or not java.is_file() or not jar.is_file():
+        oracle_guard.oracle_not_verified('verify_left_align_gatk_oracle.py', java, jar)
         print(json.dumps({"status": "skip", "reason": "native or pinned GATK assets unavailable"}))
         return 0
 

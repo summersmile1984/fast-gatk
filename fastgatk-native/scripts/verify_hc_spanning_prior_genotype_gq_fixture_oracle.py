@@ -95,6 +95,7 @@ from hc_symbolic_prior_fixture_lib import (  # noqa: E402
     BP_RESOLUTION, build_reference, compare_rows, layout, make_bam,
     prepare_reference, records,
 )
+import oracle_guard
 
 SPAN_DEL_POSITION = "698"
 POSTERIOR_ASSIGNMENT = ("--genotype-assignment-method", "USE_POSTERIOR_PROBABILITIES")
@@ -275,6 +276,7 @@ def main() -> int:
     java = os.environ.get("JAVA", str(root / "third_party/jdk17/bin/java"))
     assets = [native, Path(java), gatk]
     if not all(path.is_file() for path in assets):
+        oracle_guard.oracle_not_verified('verify_hc_spanning_prior_genotype_gq_fixture_oracle.py', Path(java), gatk)
         missing = sorted(str(path) for path in assets if not path.is_file())
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing oracle assets: {missing}")

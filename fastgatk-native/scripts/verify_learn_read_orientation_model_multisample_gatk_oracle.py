@@ -11,6 +11,7 @@ import sys
 import tarfile
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def clone_samples(source: Path, destination: Path, samples: tuple[str, ...]) -> None:
@@ -80,7 +81,7 @@ def main() -> int:
         env = os.environ.copy()
         env.setdefault("OMP_PROC_BIND", "true")
         env.setdefault("OMP_PLACES", "threads")
-        if gatk.exists() and java.exists():
+        if oracle_guard.oracle_ready('verify_learn_read_orientation_model_multisample_gatk_oracle.py', gatk, java):
             oracle_env = env.copy()
             oracle_env["JAVA_HOME"] = str(java.parent.parent)
             oracle_env["PATH"] = str(java.parent) + os.pathsep + oracle_env.get("PATH", "")

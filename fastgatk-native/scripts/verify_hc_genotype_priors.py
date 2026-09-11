@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def record(path: Path) -> tuple[list[str], dict[str, str]]:
@@ -26,6 +27,7 @@ def java_assuming_hw_oracle(root: Path, work: Path) -> dict[str, list[float]]:
     jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     java = Path(os.environ.get("JAVA", root / "third_party/jdk17/bin/java"))
     if not jar.exists() or not java.exists():
+        oracle_guard.oracle_not_verified('verify_hc_genotype_priors.py', jar, java)
         raise AssertionError("GATK/JDK is required for the genotype-prior oracle")
     source = work / "HCPriorOracle.java"
     source.write_text(

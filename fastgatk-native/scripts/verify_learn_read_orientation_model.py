@@ -12,6 +12,7 @@ import sys
 import tarfile
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def prior_rows(path: Path) -> dict[str, list[str]]:
@@ -136,7 +137,7 @@ def main() -> int:
         gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk"
         java = root / "third_party/jdk17/bin/java"
         standard_oracle = {"status": "skip", "reason": "bundled GATK/JDK oracle not present"}
-        if gatk.exists() and java.exists():
+        if oracle_guard.oracle_ready('verify_learn_read_orientation_model.py', gatk, java):
             oracle_env = env.copy()
             oracle_env["JAVA_HOME"] = str(java.parent.parent)
             oracle_env["PATH"] = str(java.parent) + os.pathsep + oracle_env.get("PATH", "")

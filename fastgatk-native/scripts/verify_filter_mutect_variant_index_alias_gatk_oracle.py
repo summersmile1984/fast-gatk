@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -38,6 +39,7 @@ def main() -> int:
     ))
     required = (java, gatk, reference, binary)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_filter_mutect_variant_index_alias_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK FilterMutectCalls -OVI oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK -OVI oracle unavailable"}))

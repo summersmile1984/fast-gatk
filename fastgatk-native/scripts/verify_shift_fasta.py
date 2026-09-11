@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,7 +47,7 @@ def main() -> int:
     assert EXAMPLE_REF.exists() and EXAMPLE_REF.with_suffix(EXAMPLE_REF.suffix + ".fai").exists()
     assert EXPECTED_INTERVALS.exists() and EXPECTED_SHIFTED_INTERVALS.exists()
     assert SHIFT_BIN.exists()
-    java_oracle = JAVA.exists() and GATK_JAR.exists()
+    java_oracle = oracle_guard.oracle_ready('verify_shift_fasta.py', JAVA, GATK_JAR)
 
     with tempfile.TemporaryDirectory(prefix="fastgatk-shift-fasta-") as directory:
         work = Path(directory)

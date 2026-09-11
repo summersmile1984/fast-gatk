@@ -94,6 +94,7 @@ from verify_hc_alleles_deep_boundary import (  # noqa: E402
     HOMOPOLYMER_INTERVAL, HOMOPOLYMER_START, TANDEM_INTERVAL,
     records, write_feature, write_inputs,
 )
+import oracle_guard
 
 # ``cases`` are gated: any difference in any data row is a violation.
 CASES: tuple[dict, ...] = (
@@ -244,6 +245,7 @@ def main() -> int:
 
     assets = [native, Path(java), gatk]
     if not all(path.is_file() for path in assets):
+        oracle_guard.oracle_not_verified('verify_hc_gvcf_indel_end_gatk_oracle.py', Path(java), gatk)
         missing = sorted(str(path) for path in assets if not path.is_file())
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing oracle assets: {missing}")

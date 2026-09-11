@@ -17,6 +17,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def invoke(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -42,6 +43,7 @@ def main() -> int:
         "expected.CEUTrio.HiSeq.WGS.b37.ch20.1m-1m1k.NA12878.recal.txt")
     required = (native, java, jar, report)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_analyze_covariates_bqsr_alias_gatk_oracle.py', java, jar)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("AnalyzeCovariates -bqsr oracle inputs are required")
         print('{"status":"skip","reason":"GATK oracle unavailable"}')

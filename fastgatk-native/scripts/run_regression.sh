@@ -87,7 +87,10 @@ run_one() {  # $1=name $2=builddir
   local -a args=(--test-dir "${dir}" -j "${JOBS}" --output-on-failure)
   [[ -n "${FILTER}" ]] && args+=(-R "${FILTER}")
   [[ -n "${TIMEOUT}" ]] && args+=(--timeout "${TIMEOUT}")
-  if "${CTEST}" "${args[@]}" > "${log}" 2>&1; then
+  # Enforce GATK-oracle presence: without this, a script whose oracle is absent can silently
+  # compare native against its own recorded expectations while staying green (the audit found
+  # 176 registered scripts guarded that way).  With the flag, a missing oracle fails loudly.
+  if FASTGATK_REQUIRE_GATK_ORACLE=1 "${CTEST}" "${args[@]}" > "${log}" 2>&1; then
     echo "PASS" > "${OUTDIR}/$1.status"
   else
     echo "FAIL" > "${OUTDIR}/$1.status"

@@ -29,6 +29,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import oracle_guard
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BINARY = pathlib.Path(os.environ.get(
@@ -190,6 +191,7 @@ def native_pairhmm_haplotypes(stderr: str) -> set[str]:
 def main() -> int:
     if not (BINARY.is_file() and REFERENCE.is_file() and BAM.is_file()
             and BAM_INDEX.is_file() and JAVA.is_file() and GATK.is_file()):
+        oracle_guard.oracle_not_verified('verify_hc_chr20_real_contract.py', JAVA, GATK)
         raise SystemExit("fastgatk-hc-chr20-real-contract inputs are required")
     import tempfile
     with tempfile.TemporaryDirectory(prefix="hc-chr20-real-") as temporary:

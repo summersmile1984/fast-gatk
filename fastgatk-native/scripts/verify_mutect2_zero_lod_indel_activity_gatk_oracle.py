@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 import pysam
+import oracle_guard
 
 
 REFERENCE = (
@@ -94,6 +95,7 @@ def main() -> int:
         "FASTGATK_MUTECT2_BINARY", str(root / "fastgatk-native/build/fastgatk-mutect2")
     ))
     if not all(path.is_file() for path in (java, gatk, native)):
+        oracle_guard.oracle_not_verified('verify_mutect2_zero_lod_indel_activity_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK zero-LOD ActivityProfile oracle is required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

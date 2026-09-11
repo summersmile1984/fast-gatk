@@ -19,6 +19,7 @@ import subprocess
 import tarfile
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -102,6 +103,7 @@ def main() -> int:
     ))
     required = (java, gatk, reference, binary)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_filter_mutect_orientation_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK orientation oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK orientation oracle unavailable"}))

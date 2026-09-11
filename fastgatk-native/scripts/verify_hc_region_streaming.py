@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(binary: Path, args: list[str], extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -171,7 +172,7 @@ def main() -> int:
         assert excluded_result.returncode == 0, excluded_result.stderr
         java = root / "third_party/jdk17/bin/java"
         gatk_jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_hc_region_streaming.py', java, gatk_jar):
             excluded_gatk = work / "excluded-gatk.vcf"
             excluded_gatk_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "HaplotypeCaller",

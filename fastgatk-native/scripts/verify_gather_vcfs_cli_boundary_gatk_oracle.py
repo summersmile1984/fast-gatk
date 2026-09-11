@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 HEADER = """##fileformat=VCFv4.2
@@ -36,6 +37,7 @@ def main() -> int:
     java = root / "third_party/jdk17/bin/java"
     gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     if not all(path.is_file() for path in (binary, java, gatk)):
+        oracle_guard.oracle_not_verified('verify_gather_vcfs_cli_boundary_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("GatherVcfs CLI oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "native or pinned GATK assets unavailable"}))

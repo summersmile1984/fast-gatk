@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def read_records(path: Path) -> list[dict[str, object]]:
@@ -43,6 +44,7 @@ def main() -> int:
     ))
     required = (java, gatk, binary, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_filter_mutect_calls_germline_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK germline oracle unavailable")
         print(json.dumps({"status": "skip", "reason": "bundled GATK germline oracle unavailable"}))

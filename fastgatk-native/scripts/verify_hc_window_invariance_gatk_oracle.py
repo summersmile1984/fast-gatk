@@ -56,6 +56,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 D2_POSITION = 10020680
 D2_ALLELES = "AT,*,<NON_REF>"
@@ -334,6 +335,7 @@ def main() -> int:
                           "missing": missing}))
         return 0
     if not Path(java).is_file():
+        oracle_guard.oracle_not_verified('verify_hc_window_invariance_gatk_oracle.py', Path(java))
         raise SystemExit(f"missing java: {java}")
 
     starts = parse_windows(arguments.windows)

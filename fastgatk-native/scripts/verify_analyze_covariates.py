@@ -8,6 +8,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
@@ -30,6 +31,7 @@ def main() -> int:
         print(json.dumps({"status": "skipped", "reason": "missing native fixture"}))
         return 0
     if not jar.exists() or not java.exists() or not known_sites.exists():
+        oracle_guard.oracle_not_verified('verify_analyze_covariates.py', jar, java)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit("missing GATK/JDK/known-sites oracle fixture")
         print(json.dumps({"status": "skipped", "reason": "GATK oracle unavailable"}))

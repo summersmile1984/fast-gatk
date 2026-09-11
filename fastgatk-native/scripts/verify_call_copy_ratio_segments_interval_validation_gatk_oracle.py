@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 NATIVE = pathlib.Path(os.environ.get(
@@ -27,6 +28,7 @@ def run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
 
 def main() -> int:
     if not NATIVE.exists() or not JAVA.exists() or not JAR.exists():
+        oracle_guard.oracle_not_verified('verify_call_copy_ratio_segments_interval_validation_gatk_oracle.py', JAVA, JAR)
         raise SystemExit("missing native binary or pinned GATK runtime")
     cases = {
         "overlap": "chr1\t1\t100\t10\t0\nchr1\t100\t200\t10\t1\n",

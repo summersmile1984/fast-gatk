@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 SAM = """@HD\tVN:1.6\tSO:unsorted
@@ -82,6 +83,7 @@ def main() -> int:
         native /= "fastgatk-sort-sam"
     if not (native.is_file() and os.access(native, os.X_OK) and
             java.is_file() and gatk.is_file()):
+        oracle_guard.oracle_not_verified('verify_sort_sam_cli_boundary_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("pinned SortSam CLI oracle assets are required")
         print(json.dumps({"status": "skip", "reason": "pinned GATK/Picard oracle unavailable"}))

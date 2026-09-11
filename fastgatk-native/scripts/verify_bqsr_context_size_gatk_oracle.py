@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 from collections import Counter
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -69,6 +70,7 @@ def main() -> int:
     gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     if not all(path.is_file() for path in (base, apply, java, gatk, reference)):
+        oracle_guard.oracle_not_verified('verify_bqsr_context_size_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled BQSR context-size oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "GATK context-size oracle unavailable"}))

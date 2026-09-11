@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 def write_counts(path: pathlib.Path, sample: str, values: list[int]) -> None:
@@ -99,7 +100,7 @@ def main() -> int:
         java = root / "third_party/jdk17/bin/java"
         jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
         java_checked = False
-        if java.exists() and jar.exists():
+        if oracle_guard.oracle_ready('verify_create_read_count_panel_of_normals.py', java, jar):
             standardized = work / "java-standardized.tsv"
             denoised = work / "java-denoised.tsv"
             java_command = [str(java), "-jar", str(jar), "DenoiseReadCounts",

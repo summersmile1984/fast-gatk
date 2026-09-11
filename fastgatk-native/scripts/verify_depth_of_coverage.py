@@ -10,6 +10,7 @@ import pathlib
 import shutil
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -106,7 +107,7 @@ def main() -> None:
         ]
         assert all(path.exists() and path.stat().st_size > 0 for path in expected_sidecars)
 
-        gatk_ready = JAVA.exists() and GATK_JAR.exists()
+        gatk_ready = oracle_guard.oracle_ready('verify_depth_of_coverage.py', JAVA, GATK_JAR)
         oracle = False
         if gatk_ready:
             gatk_prefix = work / "gatk.out"

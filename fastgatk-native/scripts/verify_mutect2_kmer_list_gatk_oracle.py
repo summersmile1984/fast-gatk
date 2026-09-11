@@ -18,6 +18,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,6 +54,7 @@ def allele_identities(rows: list[str]) -> list[tuple[str, str, str, str]]:
 def main() -> int:
     required = (JAVA, GATK, NATIVE, REFERENCE, TUMOR, NORMAL)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_mutect2_kmer_list_gatk_oracle.py', JAVA, GATK)
         raise RuntimeError(f"missing oracle inputs: {[str(path) for path in required if not path.is_file()]}")
 
     common = [

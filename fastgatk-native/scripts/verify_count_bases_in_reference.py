@@ -9,6 +9,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 def write_reference(path: pathlib.Path) -> None:
@@ -118,7 +119,7 @@ def main() -> int:
         java = root / "third_party/jdk17/bin/java"
         jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
         java_oracle = False
-        if java.exists() and jar.exists():
+        if oracle_guard.oracle_ready('verify_count_bases_in_reference.py', java, jar):
             java_result = subprocess.run([
                 str(java), "-jar", str(jar), "CountBasesInReference", "-R", str(reference),
                 "-L", "chr1:2-7", "-L", "chr2",

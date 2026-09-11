@@ -21,6 +21,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 SAM = """@HD\tVN:1.6\tSO:coordinate
@@ -260,6 +261,7 @@ def main() -> int:
         native /= "fastgatk-mark-duplicates"
     required = (java, gatk, native)
     if not all(path.is_file() and os.access(path, os.X_OK) for path in (java, native)) or not gatk.is_file():
+        oracle_guard.oracle_not_verified('verify_mark_duplicates_gatk_oracle.py', gatk, java)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("pinned GATK/Picard MarkDuplicates oracle assets are required")
         print(json.dumps({"status": "skip", "reason": "pinned GATK/Picard oracle unavailable"}))

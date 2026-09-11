@@ -18,6 +18,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 REFERENCE_START = 11_363_000
@@ -76,6 +77,7 @@ def main() -> int:
                                root / "fastgatk-native/build/fastgatk-hc-call"))
     bam = root / "gatk-source/src/test/resources/org/broadinstitute/hellbender/tools/haplotypecaller/pretendTobeTetraPloidTetraAllelicSite.bam"
     if not (java.exists() and jar.exists() and native.exists() and bam.exists()):
+        oracle_guard.oracle_not_verified('verify_hc_complex_multiallelic_oracle.py', java, jar)
         raise SystemExit("missing bundled GATK/JDK/native HC complex oracle assets")
 
     with tempfile.TemporaryDirectory(prefix="fastgatk-hc-complex-oracle-") as directory:

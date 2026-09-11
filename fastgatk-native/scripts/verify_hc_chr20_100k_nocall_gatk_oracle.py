@@ -15,6 +15,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str]) -> None:
@@ -36,6 +37,7 @@ def main() -> int:
     java = Path(os.environ.get("JAVA", root / "third_party/jdk17/bin/java"))
     required = (native, reference, Path(f"{reference}.fai"), bam, bam_index, gatk, java)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_hc_chr20_100k_nocall_gatk_oracle.py', gatk, java)
         raise SystemExit("missing real chr20 no-call oracle inputs")
 
     interval = "20:10000000-10100000"

@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -151,6 +152,7 @@ def sample_format(row: list[str], header: list[str], sample: str) -> dict[str, s
 def main() -> int:
     required = (JAVA, GATK, NATIVE, REFERENCE, TUMOR, NORMAL)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_mutect2_dream_low_bq_gatk_oracle.py', JAVA, GATK)
         message = f"missing required inputs: {[str(path) for path in required if not path.is_file()]}"
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise RuntimeError(message)

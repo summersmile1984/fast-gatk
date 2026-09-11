@@ -14,6 +14,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str]) -> None:
@@ -38,6 +39,7 @@ def main() -> int:
     reference = fixture / "GRCh37_MTonly.fa"
     bam = fixture / "culprit.bam"
     if not all(path.is_file() for path in (native, java, gatk, reference, bam)):
+        oracle_guard.oracle_not_verified('verify_hc_softclip_contig_start_gatk_oracle.py', java, gatk)
         raise SystemExit("missing HC soft-clip contig-start oracle assets")
 
     with tempfile.TemporaryDirectory(prefix="fastgatk-hc-softclip-contig-start-") as directory:

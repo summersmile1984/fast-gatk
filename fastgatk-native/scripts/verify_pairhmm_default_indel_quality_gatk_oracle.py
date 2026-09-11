@@ -17,6 +17,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -45,6 +46,7 @@ def main() -> int:
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     required = (binary, java, gatk, bam, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_pairhmm_default_indel_quality_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             missing = [str(path) for path in required if not path.is_file()]
             raise SystemExit(f"PairHMM default-quality oracle inputs are required: {missing}")

@@ -24,6 +24,7 @@ from verify_mark_duplicates_gatk_oracle import (
     run,
     semantic_records,
 )
+import oracle_guard
 
 
 def main() -> int:
@@ -36,6 +37,7 @@ def main() -> int:
     if native.is_dir():
         native /= "fastgatk-mark-duplicates"
     if not (java.is_file() and gatk.is_file() and native.is_file() and os.access(native, os.X_OK)):
+        oracle_guard.oracle_not_verified('verify_mark_duplicates_tagging_policy_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("pinned GATK/Picard MarkDuplicates oracle assets are required")
         print(json.dumps({"status": "skip", "reason": "pinned GATK/Picard oracle unavailable"}))

@@ -15,6 +15,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -46,6 +47,7 @@ def data(path: pathlib.Path) -> list[str]:
 def main() -> int:
     required = (DENOISE, COLLECT, JAVA, JAR, BAM, INTERVALS)
     if any(not path.exists() for path in required):
+        oracle_guard.oracle_not_verified('verify_denoise_read_counts_hdf5_metadata_gatk_oracle.py', JAVA, JAR)
         missing = next(path for path in required if not path.exists())
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit(f"missing DenoiseReadCounts HDF5 metadata oracle input: {missing}")

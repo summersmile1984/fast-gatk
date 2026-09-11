@@ -17,6 +17,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def lines(path: Path) -> list[str]:
@@ -46,6 +47,7 @@ def main() -> int:
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     required = (native, java, gatk, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_genotype_gvcf_gp_input_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK GP-input oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

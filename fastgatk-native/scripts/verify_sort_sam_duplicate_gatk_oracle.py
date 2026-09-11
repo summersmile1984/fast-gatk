@@ -12,6 +12,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 SAM = """@HD\tVN:1.6\tSO:unsorted
@@ -68,6 +69,7 @@ def main() -> int:
     java = Path(os.environ.get("JAVA", root / "third_party/jdk17/bin/java"))
     gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     if not (native.is_file() and os.access(native, os.X_OK) and java.is_file() and gatk.is_file()):
+        oracle_guard.oracle_not_verified('verify_sort_sam_duplicate_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("pinned SortSam duplicate-order oracle assets are required")
         print(json.dumps({"status": "skip", "reason": "pinned oracle unavailable"}))

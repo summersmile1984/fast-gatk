@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def read_records(path: Path) -> tuple[list[str], list[tuple[str, ...]]]:
@@ -38,6 +39,7 @@ def main() -> int:
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     required = (java, gatk, native, bam, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_hc_bp_resolution_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled HaplotypeCaller BP_RESOLUTION oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

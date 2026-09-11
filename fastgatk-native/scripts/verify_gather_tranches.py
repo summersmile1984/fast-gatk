@@ -10,6 +10,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -97,6 +98,7 @@ def main() -> None:
         # formatted data row.  This catches the non-obvious stateful target
         # walk and Tranche.tranchesString call-count ordering.
         if not JAVA.exists() or not GATK_JAR.exists():
+            oracle_guard.oracle_not_verified('verify_gather_tranches.py', JAVA, GATK_JAR)
             raise AssertionError(f"missing GATK oracle runtime: {JAVA} / {GATK_JAR}")
         gatk_output = work / "gatk.tranches"
         subprocess.run(

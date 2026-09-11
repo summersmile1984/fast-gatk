@@ -17,6 +17,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def records(path: Path) -> dict[tuple[str, int, str, str], list[str]]:
@@ -48,6 +49,7 @@ def main() -> int:
     reference = root / "reference.fa"
     required = (helper, genotype, jar, java, gvcf, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_genomicsdb_bridge.py', jar, java)
         if os.environ.get("FASTGATK_REQUIRE_GENOMICSDB_BRIDGE"):
             missing = [str(path) for path in required if not path.is_file()]
             raise SystemExit(f"missing GenomicsDB bridge assets: {missing}")

@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 REGION = "20:10019901-10020710"
@@ -70,6 +71,7 @@ def main() -> int:
     bam = root / "fixtures/chr20/mnp.bam"
     required = (hc, genotype, java, gatk, reference, bam)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_hc_dense_gvcf_genotype_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("dense HC -> GenotypeGVCFs oracle inputs are required")
         print(json.dumps({"status": "skipped", "reason": "oracle inputs unavailable"}))

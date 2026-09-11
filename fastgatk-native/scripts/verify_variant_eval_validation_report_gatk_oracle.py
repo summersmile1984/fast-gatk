@@ -14,6 +14,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 GENOTYPE_EVAL = """##fileformat=VCFv4.2
@@ -135,6 +136,7 @@ def main() -> int:
     jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     if not all(path.is_file() for path in (binary, java, jar, reference)):
+        oracle_guard.oracle_not_verified('verify_variant_eval_validation_report_gatk_oracle.py', java, jar)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("VariantEval ValidationReport oracle inputs are required")
         print('{"status":"skip","reason":"GATK oracle unavailable"}')

@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def record(path: Path) -> tuple[dict[str, str], dict[str, str]]:
@@ -40,6 +41,7 @@ def main() -> int:
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     required = (binary, java, gatk, bam, reference)
     if not all(path.exists() for path in required):
+        oracle_guard.oracle_not_verified('verify_hc_likelihood_filter.py', java, gatk)
         missing = [str(path) for path in required if not path.exists()]
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit(f"missing required HC GATK oracle inputs: {missing}")

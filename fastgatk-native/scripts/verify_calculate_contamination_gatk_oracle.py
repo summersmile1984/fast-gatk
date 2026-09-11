@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 FIXTURES = (
@@ -54,6 +55,7 @@ def main() -> int:
     java = root / "third_party/jdk17/bin"
     fixture_root = root / "gatk-source/src/test/resources/org/broadinstitute/hellbender/tools/calculatecontamination"
     if not native.is_file() or not gatk.is_file() or not java.joinpath("java").is_file():
+        oracle_guard.oracle_not_verified('verify_calculate_contamination_gatk_oracle.py', gatk, java.joinpath('java'))
         raise AssertionError("native/GATK/JDK oracle artifacts are required")
 
     report = []

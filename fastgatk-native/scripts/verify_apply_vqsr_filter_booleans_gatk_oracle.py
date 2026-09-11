@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -75,6 +76,7 @@ def invoke(executable: list[str], input_vcf: Path, recal_vcf: Path,
 def main() -> int:
     required = (JAVA, GATK, BINARY)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_apply_vqsr_filter_booleans_gatk_oracle.py', JAVA, GATK)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("ApplyVQSR filter boolean oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "GATK oracle unavailable"}))

@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from verify_filter_mutect_orientation_gatk_oracle import prior_table  # noqa: E402
+import oracle_guard
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -49,6 +50,7 @@ def main() -> int:
     ))
     required = (java, gatk, reference, binary)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_filter_mutect_orientation_joint_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK orientation joint oracle unavailable")
         print(json.dumps({

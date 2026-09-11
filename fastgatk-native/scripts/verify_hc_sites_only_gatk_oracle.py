@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def records(path: Path) -> tuple[list[str], list[list[str]]]:
@@ -44,6 +45,7 @@ def main() -> int:
     bam = root / "gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam"
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     if not all(path.is_file() for path in (native, java, gatk, bam, reference)):
+        oracle_guard.oracle_not_verified('verify_hc_sites_only_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("HaplotypeCaller sites-only oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "native or pinned GATK assets unavailable"}))

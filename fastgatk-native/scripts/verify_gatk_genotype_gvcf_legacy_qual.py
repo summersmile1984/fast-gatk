@@ -16,6 +16,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def read_lines(path: Path) -> list[str]:
@@ -53,6 +54,7 @@ def main() -> int:
     if not native.exists() or not bam.exists() or not reference.exists():
         raise SystemExit("missing native build or GATK fixtures; run build_native.sh first")
     if not gatk_jar.exists():
+        oracle_guard.oracle_not_verified('verify_gatk_genotype_gvcf_legacy_qual.py', gatk_jar)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing GATK oracle jar: {gatk_jar}")
         print(json.dumps({"status": "skipped", "reason": "GATK jar not present"}))

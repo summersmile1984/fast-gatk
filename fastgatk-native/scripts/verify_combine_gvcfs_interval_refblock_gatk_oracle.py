@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import oracle_guard
 
 
 HEADER = """##fileformat=VCFv4.2
@@ -65,6 +66,7 @@ def main() -> int:
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     required = (java, gatk, native, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_combine_gvcfs_interval_refblock_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled GATK interval/reference-block oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

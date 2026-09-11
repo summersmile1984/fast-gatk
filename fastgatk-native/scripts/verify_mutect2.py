@@ -11,6 +11,7 @@ import subprocess
 import tarfile
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def main() -> int:
@@ -930,7 +931,7 @@ def main() -> int:
         plain_manifest_payload = json.loads(plain_manifest.read_text(encoding="utf-8"))
         assert plain_manifest_payload["compatibility"]["vcf_index"] is True
         assert plain_manifest_payload["compatibility"]["create_output_variant_index"] is True
-        if (root / "third_party/jdk17/bin/java").is_file() and (root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar").is_file():
+        if oracle_guard.oracle_ready('verify_mutect2.py', root / 'third_party/jdk17/bin/java', root / 'third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar'):
             query_output = work / "combined-plain-query.vcf"
             query = subprocess.run([
                 str(root / "third_party/jdk17/bin/java"), "-Xmx1g", "-jar",
@@ -1087,7 +1088,7 @@ def main() -> int:
         # synthetic SAM and keeps this check independent of the large fixture.
         java = root / "third_party/jdk17/bin/java"
         gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
-        if java.is_file() and gatk.is_file():
+        if oracle_guard.oracle_ready('verify_mutect2.py', java, gatk):
             synthetic_reference.with_suffix(".dict").write_text(
                 "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:40\n", encoding="utf-8")
             gatk_no_sample = subprocess.run([

@@ -15,6 +15,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str]) -> None:
@@ -39,6 +40,7 @@ def main() -> int:
     reference = root / "gatk-source/src/test/resources/Homo_sapiens_assembly38_chrM_only.fasta"
     bam = fixture / "issue3845_bug.bam"
     if not all(path.is_file() for path in (native, java, gatk, reference, bam)):
+        oracle_guard.oracle_not_verified('verify_hc_issue3845_gatk_oracle.py', java, gatk)
         raise SystemExit("missing HC issue3845 oracle assets")
 
     with tempfile.TemporaryDirectory(prefix="fastgatk-hc-issue3845-") as directory:

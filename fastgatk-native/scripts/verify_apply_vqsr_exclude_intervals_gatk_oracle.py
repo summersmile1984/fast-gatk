@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -97,6 +98,7 @@ def main() -> None:
     if not BINARY.exists():
         raise SystemExit(f"missing native binary: {BINARY}")
     if not JAVA.exists() or not GATK.exists():
+        oracle_guard.oracle_not_verified('verify_apply_vqsr_exclude_intervals_gatk_oracle.py', JAVA, GATK)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("ApplyVQSR interval oracle requires the pinned GATK 4.6.2.0 jar")
         print(json.dumps({"status": "skip", "reason": "pinned GATK unavailable"}))

@@ -78,6 +78,7 @@ import random
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 REFERENCE_LENGTH = 1500
 HOMOPOLYMER_START = 600          # 1-based, 10 x 'A' -> 600..609
@@ -391,6 +392,7 @@ def main() -> int:
 
     assets = [native, Path(java), gatk]
     if not all(path.is_file() for path in assets):
+        oracle_guard.oracle_not_verified('verify_hc_span_del_qual_oracle.py', Path(java), gatk)
         missing = sorted(str(path) for path in assets if not path.is_file())
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE"):
             raise SystemExit(f"missing oracle assets: {missing}")

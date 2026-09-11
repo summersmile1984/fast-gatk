@@ -17,6 +17,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
+import oracle_guard
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BINARY = pathlib.Path(os.environ.get(
@@ -73,6 +74,7 @@ def scores(path: pathlib.Path) -> list[float]:
 
 def main() -> int:
     if not BINARY.exists() or not JAVA.exists() or not GATK.exists():
+        oracle_guard.oracle_not_verified('verify_variant_recalibrator_annotation_order_gatk_oracle.py', JAVA, GATK)
         raise SystemExit("VariantRecalibrator annotation-order oracle inputs are required")
     with tempfile.TemporaryDirectory(prefix="fastgatk-variant-recalibrator-order-oracle-") as temporary:
         work = pathlib.Path(temporary)

@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 HEADER = """##fileformat=VCFv4.2
@@ -52,6 +53,7 @@ def main() -> int:
         str(root / "fastgatk-native/build/fastgatk-combine-gvcfs")))
     reference = root / "gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
     if not all(path.is_file() for path in (java, gatk, binary, reference)):
+        oracle_guard.oracle_not_verified('verify_combine_gvcfs_plless_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("PL-less CombineGVCFs oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

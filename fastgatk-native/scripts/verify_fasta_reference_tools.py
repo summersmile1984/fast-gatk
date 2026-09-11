@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -86,7 +87,7 @@ def compare_outputs(native: Path, oracle: Path) -> None:
 def main() -> int:
     assert REF.exists() and (REF.with_suffix(REF.suffix + ".fai")).exists()
     assert FASTA_BIN.exists() and ALTERNATE_BIN.exists()
-    java_oracle = JAVA.exists() and GATK_JAR.exists()
+    java_oracle = oracle_guard.oracle_ready('verify_fasta_reference_tools.py', JAVA, GATK_JAR)
     with tempfile.TemporaryDirectory(prefix="fastgatk-fasta-") as directory:
         work = Path(directory)
         native = work / "reference.native.fasta"

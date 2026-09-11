@@ -15,6 +15,7 @@ import tarfile
 import tempfile
 import zlib
 from pathlib import Path
+import oracle_guard
 
 
 def archive_member(path: Path, suffix: str) -> str:
@@ -228,7 +229,7 @@ def main() -> int:
         assert reordered_summary["iterator_intervals"] == 1
 
         oracle = {"status": "skip", "reason": "bundled GATK/JDK oracle not present"}
-        if gatk.exists() and java.exists():
+        if oracle_guard.oracle_ready('verify_collect_f1r2_counts.py', gatk, java):
             oracle_env = env.copy()
             oracle_env["JAVA_HOME"] = str(java.parent.parent)
             oracle_env["PATH"] = str(java.parent) + os.pathsep + oracle_env.get("PATH", "")

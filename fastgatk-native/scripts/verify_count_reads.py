@@ -10,6 +10,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -418,7 +419,7 @@ def main() -> int:
         java = ROOT / "third_party/jdk17/bin/java"
         jar = ROOT / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
         java_oracle = False
-        if java.is_file() and jar.is_file():
+        if oracle_guard.oracle_ready('verify_count_reads.py', java, jar):
             oracle = subprocess.run([str(java), "-jar", str(jar), "CountReads", "-I", str(BAM)],
                                     text=True, capture_output=True)
             if oracle.returncode == 0:

@@ -15,6 +15,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def run(command: list[str]) -> None:
@@ -40,6 +41,7 @@ def main() -> int:
     bam = fixture / "issue3845_bug.bam"
     required = (java, gatk, native, reference, bam)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_mutect2_issue3845_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("bundled Mutect2 issue3845 oracle assets are required")
         print(json.dumps({"status": "skip", "reason": "bundled GATK oracle unavailable"}))

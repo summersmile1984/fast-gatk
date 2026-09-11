@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 def data_rows(path: pathlib.Path) -> list[tuple[str, int, int]]:
@@ -174,7 +175,7 @@ def main() -> int:
         java = root / "third_party/jdk17/bin/java"
         jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
         java_checked = False
-        if java.exists() and jar.exists():
+        if oracle_guard.oracle_ready('verify_filter_intervals.py', java, jar):
             java_output = work / "java.interval_list"
             result = subprocess.run([
                 str(java), "-jar", str(jar), "FilterIntervals", "-L", str(intervals),
@@ -239,7 +240,7 @@ def main() -> int:
             raise AssertionError({"expected_count": expected_count, "native_count": data_rows(count_output)})
 
         count_java_checked = False
-        if java.exists() and jar.exists():
+        if oracle_guard.oracle_ready('verify_filter_intervals.py', java, jar):
             count_java_output = work / "java-count-filtered.interval_list"
             count_java_result = subprocess.run([
                 str(java), "-jar", str(jar), "FilterIntervals", "-L", str(count_intervals),

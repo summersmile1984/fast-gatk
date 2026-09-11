@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 SAM = """@HD\tVN:1.6\tSO:coordinate
@@ -283,7 +284,7 @@ def main() -> int:
         # part of this semantic check.
         java = root / "third_party/jdk17/bin/java"
         gatk_jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_mark_duplicates.py', java, gatk_jar):
             oracle_output = work / "picard-oracle.sam"
             oracle_metrics = work / "picard-oracle.metrics"
             oracle = subprocess.run([

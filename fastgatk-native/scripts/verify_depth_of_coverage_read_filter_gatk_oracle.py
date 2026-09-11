@@ -16,6 +16,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -30,6 +31,7 @@ GATK = ROOT / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.
 
 def main() -> None:
     if not NATIVE.exists() or not REFERENCE.exists() or not JAVA.exists() or not GATK.exists():
+        oracle_guard.oracle_not_verified('verify_depth_of_coverage_read_filter_gatk_oracle.py', JAVA, GATK)
         raise SystemExit("missing DepthOfCoverage read-filter oracle assets")
     with tempfile.TemporaryDirectory(prefix="fastgatk-depth-of-coverage-filter-oracle-") as temporary:
         work = pathlib.Path(temporary)

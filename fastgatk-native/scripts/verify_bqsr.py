@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 from collections import Counter
 from pathlib import Path
+import oracle_guard
 
 
 def run_json(command: list[str], extra_env: dict[str, str] | None = None) -> dict:
@@ -430,7 +431,7 @@ def main() -> int:
         java = root / "third_party/jdk17/bin/java"
         gatk_jar = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
         oracle = {"status": "skip", "reason": "bundled GATK/JDK oracle not present"}
-        if java.exists() and gatk_jar.exists():
+        if oracle_guard.oracle_ready('verify_bqsr.py', java, gatk_jar):
             gatk_report = work / "oracle-gatk-recal.tsv"
             gatk_full_report = work / "oracle-gatk-full-recal.tsv"
             gatk_indel_report = work / "oracle-gatk-indel-recal.tsv"

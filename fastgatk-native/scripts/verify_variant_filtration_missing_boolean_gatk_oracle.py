@@ -15,6 +15,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 VCF = """##fileformat=VCFv4.2
@@ -55,6 +56,7 @@ def main() -> int:
     java = root / "third_party/jdk17/bin/java"
     gatk = root / "third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar"
     if not all(path.is_file() for path in (native, java, gatk)):
+        oracle_guard.oracle_not_verified('verify_variant_filtration_missing_boolean_gatk_oracle.py', java, gatk)
         if os.environ.get("FASTGATK_REQUIRE_GATK_ORACLE") == "1":
             raise SystemExit("VariantFiltration missing-value oracle inputs are required")
         print(json.dumps({"status": "skip", "reason": "GATK oracle unavailable"}))

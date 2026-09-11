@@ -15,6 +15,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 def main() -> int:
@@ -30,6 +31,7 @@ def main() -> int:
     reference = root / "reference.fa"
     required = (importer, bridge, java, jar, gvcf, reference)
     if not all(path.is_file() for path in required):
+        oracle_guard.oracle_not_verified('verify_genomicsdb_native_storage_boundary.py', java, jar)
         if os.environ.get("FASTGATK_REQUIRE_GENOMICSDB_BRIDGE") == "1":
             missing = [str(path) for path in required if not path.is_file()]
             raise SystemExit(f"missing native storage-boundary assets: {missing}")

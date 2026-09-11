@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import oracle_guard
 
 
 HEADER = """##fileformat=VCFv4.2
@@ -144,7 +145,7 @@ def main() -> int:
         assert symbolic_metadata["telemetry"]["symbolic_split_records"] == 2
         assert symbolic_metadata["telemetry"]["symbolic_info_fields_cleared"] > 0
         assert symbolic_metadata["telemetry"]["symbolic_format_fields_cleared"] > 0
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_left_align.py', java, gatk_jar):
             symbolic_plain = work / "symbolic-multiallelic.vcf"
             symbolic_plain.write_text(
                 gzip.open(symbolic_source, "rt", encoding="utf-8").read(), encoding="utf-8")
@@ -268,7 +269,7 @@ def main() -> int:
                 assert bounded_metadata["telemetry"]["left_shift_bases"] == 0
             else:
                 assert bounded_metadata["telemetry"]["oversized_indel_records"] == 0
-            if java.is_file() and gatk_jar.is_file():
+            if oracle_guard.oracle_ready('verify_left_align.py', java, gatk_jar):
                 bounded_gatk = work / f"long-{label}-gatk.vcf"
                 bounded_gatk_result = subprocess.run([
                     str(java), "-Xmx1g", "-jar", str(gatk_jar), "LeftAlignAndTrimVariants",
@@ -330,7 +331,7 @@ def main() -> int:
         assert triploid_manifest["telemetry"]["max_ploidy"] == 3
         assert triploid_manifest["telemetry"]["pl_remap_kernel_calls"] == 2
         assert triploid_manifest["telemetry"]["allele_field_remap_kernel_calls"] == 2
-        if java.is_file() and gatk_jar.is_file():
+        if oracle_guard.oracle_ready('verify_left_align.py', java, gatk_jar):
             gatk_triploid = work / "gatk-triploid-split.vcf"
             gatk_triploid_result = subprocess.run([
                 str(java), "-Xmx1g", "-jar", str(gatk_jar), "LeftAlignAndTrimVariants",

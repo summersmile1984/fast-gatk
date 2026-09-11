@@ -15,6 +15,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import oracle_guard
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -100,6 +101,7 @@ def main() -> int:
     if not NATIVE.exists():
         raise SystemExit(f"missing native binary: {NATIVE}")
     if not JAVA.exists() or not JAR.exists():
+        oracle_guard.oracle_not_verified('verify_call_copy_ratio_segments_gatk_oracle.py', JAVA, JAR)
         raise SystemExit("missing pinned GATK 4.6.2.0 runtime")
     with tempfile.TemporaryDirectory(prefix="fastgatk-call-copy-ratio-gatk-") as directory:
         work = pathlib.Path(directory)
