@@ -62,7 +62,10 @@ def main() -> int:
         assert output.exists() and Path(f"{output}.tbi").exists()
         text = gzip.open(output, "rt", encoding="utf-8").read()
         records = [line.split("\t") for line in text.splitlines() if line and not line.startswith("#")]
-        assert len(records) == 3
+        # GATK emits two rows here, not three: the low-quality concrete call at
+        # POS 20 is dropped outright (see the assertion at the end of this
+        # block).  Measured on pinned GATK 4.6.2.0.
+        assert len(records) == 2
         assert records[0][7] == "END=10"
         format_names = records[0][8].split(":")
         format_values = records[0][9].split(":")
@@ -78,9 +81,18 @@ def main() -> int:
         # Missing GQ is materialized from the complete PL vector after
         # compaction (the compacted PL has min/second = 0/20).
         assert records[1][9].split(":")[-1] == "20"
-        # The low-quality site was converted into a hom-ref reference block.
-        assert records[2][4] == "<NON_REF>"
-        assert "END=20" in records[2][7]
+        # The low-quality site is DROPPED, not converted into a hom-ref
+        # reference block at POS 20.  GATK's regenotypeVC() re-genotypes
+        # concrete variants under --drop-low-quals before shouldBeReblocked()
+        # is consulted (ReblockGVCF.java:415-424 precedes the call at :427;
+        # the calling confidence is armed only in drop mode at :327), and
+        # lowQualVariantToGQ0HomRef() returns null -- dropping the record --
+        # whenever drop mode is on and the variant is not a monomorphic
+        # hom-ref call with concrete ALTs (:542-545).  So --rgq-threshold
+        # cannot turn that site into a GQ0 block.  Measured on pinned GATK
+        # 4.6.2.0 with the exact flags above: two rows, at POS 1 (END=10) and
+        # POS 12; there is no POS 20 row at all.
+        assert [record[1] for record in records] == ["1", "12"]
         metadata = json.loads(manifest.read_text(encoding="utf-8"))
         assert metadata["compatibility"]["gq_bands"] is True
         assert metadata["compatibility"]["reference_block_merge"] is True
@@ -258,10 +270,6 @@ def main() -> int:
         interval_file_metadata = json.loads(interval_file_manifest.read_text(encoding="utf-8"))
         assert interval_file_metadata["telemetry"]["interval_list_inputs"] == 1
         assert interval_file_metadata["telemetry"]["interval_list_records"] == 2
-        # Reblocking must use the VCF Number=G rank for the sample ploidy,
-        # not the diploid triangular shortcut.  With three alleles and
-        # triploid GT, the old 20-entry PL is compacted to 10 entries after
-        # dropping the unused concrete ALT while retaining <NON_REF>.
         triploid_source = work / "triploid.g.vcf.gz"
         triploid_output = work / "triploid.reblocked.g.vcf.gz"
         with gzip.open(triploid_source, "wt", encoding="utf-8") as stream:
@@ -280,6 +288,16 @@ def main() -> int:
             triploid_output, "rt", encoding="utf-8").read().splitlines()
             if line and not line.startswith("#")]
         assert len(triploid_records) == 1
+        # KNOWN DIVERGENCE (not fixed in this round): GATK's shouldBeReblocked
+        # (ReblockGVCF.java:514-535) decides variant versus reference block from
+        # the *minimum-likelihood PL genotype*, not from the called GT -- it
+        # decodes minElementIndex(PL) (:524) at the sample ploidy (:525-527) and
+        # reblocks when that genotype holds no concrete ALT (:529).  PL[0]=0
+        # decodes to 0/0/0 here, so pinned GATK 4.6.2.0 emits
+        # "chr1 30 . A <NON_REF> . . END=30 GT:DP:GQ:MIN_DP:PL 0/0/0:17:10:17:0,10,20,30"
+        # while native keeps the variant.  The assertions below therefore
+        # describe current native output, NOT GATK parity; the strict gate
+        # verify_reblock_gvcf_triploid_gatk_oracle.py fails until this is fixed.
         assert triploid_records[0][4] == "C,<NON_REF>"
         triploid_values = triploid_records[0][9].split(":")
         assert triploid_values[0] == "0/1/1"

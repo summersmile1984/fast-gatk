@@ -654,3 +654,78 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 只扫描了 java/jar 存在性守卫，未覆盖其它静默跳过机制（裸 except、吞掉非零返回码）；
 `FASTGATK_REQUIRE_GATK_ORACLE` 运行只能证明**到达了守卫**的脚本找到了 oracle，
 被更早 return 挡住的守卫不会被触及。
+
+## 会话累计（第 26 轮更新）：15 个已证真 bug 已修并各自上锁
+
+双后端全量 **299/299**（在 `run_regression.sh` 默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`、
+零陈旧告警的前提下取得）。已注册严格 GATK 门禁 **18 道**。
+
+| # | 缺陷 | 守护门禁 |
+| --- | --- | --- |
+| 1 | D2 双倍体：`-L` 窗口依赖的 `RAW_MQandDP`/`SB` | `hc-window-invariance-gatk-oracle` |
+| 2 | D2 非双倍体实例 | `hc-ploidy-window-invariance-gatk-oracle` |
+| 3 | Track B：`--alleles` 重叠强制事件被抑制 | `hc-alleles-overlap-gate-oracle` |
+| 4 | spanning-deletion AF 先验（`*` 应取 SNP 先验） | `hc-span-del-qual-gatk-oracle` |
+| 5 | gVCF 参考置信度 `*` 先验 | `hc-gvcf-symbolic-prior-gatk-oracle` |
+| 6-8 | `*` 长度先验同类三处 | `arbitrary-ploidy-span-del-prior` / `polyploid-gvcf-span-del-prior` / `spanning-prior-genotype-gq` |
+| 9 | AF/MLEAF 零值格式化（`0.000` vs `0.00`） | `af-zero-format-gatk-oracle` |
+| 10 | gVCF 具体变异记录误带 INFO/END | `gvcf-indel-end-gatk-oracle` |
+| 11 | BQSR `culprit` 应为「最差注释名」而非模型来源串 | `variant-recalibrator-culprit-gatk-oracle` |
+| 12 | SelectVariants ref-only 记录保留（依 `--exclude-non-variants`） | `select-variants-refonly-gatk-oracle` |
+| 13-14 | VariantFiltration 等位基因过滤语义（含 flag 路径的 FILTER 列） | `variant-filtration-asfilterstatus` / `variant-filtration-flag-only` |
+| 15 | ReblockGVCF `--drop-low-quals`：再基因分型须**先于** `--rgq-threshold` 转换 | `reblock-gvcf-droplowqual-gatk-oracle` |
+
+### 测量完整性（本会话新增的保障）
+
+- 静默 skip 审计：117 个可 skip 脚本中的 32 个候选实跑，0 skip。
+- **oracle 完整性（第 21 轮）**：176 个已注册脚本 / 187 个测试曾把 GATK 比对包在**从不断言 jar 存在**的
+  守卫里（其中 51 个无逃生口）；实测当天均未失真（路径全部解析到 vendored jar），属**潜在**风险。
+  已以共享助手 `oracle_guard.py` 改为 fail-closed，并让 `run_regression.sh` 默认强制
+  `FASTGATK_REQUIRE_GATK_ORACLE=1`。
+- `run_regression.sh` 陈旧性检查原先与 `fastgatk-hc-call` 单文件比较，会把 HC 不链接的源文件
+  误报为陈旧（假告警会训练人忽略告警）；已改为与构建目录中**最新**产物比较。
+
+### 已确认仍未修（按优先级）
+
+1. **`verify_reblock_gvcf.py` 三倍体重分块**（case B）：**分歧确认为真**（GATK 重分块为
+   `0/0/0 END=30` 4 项 PL，native 为 `0/1/1` 10 项），修复**已实现并用 pinned GATK 验证过**，
+   但**刻意回退**——因为落地它会使同一测试文件中另一块（trim/gap/NON_REF-AD，`:441-480`）**无法满足**，
+   而那块是三个 native 特性（reverse trimming、deletion gap、NON_REF AD）**唯一**的覆盖。
+   建议路径：与其一起修正该夹具的 PL 向量（其 `PL[0]=0` 使 GATK 也重分块）与 INFO-DP 规则，
+   并重新推导约 25 个值。门禁 `verify_reblock_gvcf_triploid_gatk_oracle.py` 已存在但**刻意未注册**
+   （strict 会红）。
+2. **`verify_genotype_gvcf.py:391`**：native 发射 `*,G` 跨接删除记录，GATK 默认 0 条
+   （`-all-sites` 下 `ALT='.'`）——仍未修。
+3. **forced-alleles 符号 `*`/LowQual 发射缺口**：需 5 项协同改动（FILTER 列通路、符号 `*` ALT、
+   Number=G/R 重排、注释重算等），属成规模功能缺口；门禁
+   `verify_hc_forced_alleles_emission_gate_oracle.py` 已存在但**刻意未注册**。
+4. **`gvcf-max-alt-alleles-1` 参考块 PL/GQ**：定位到强制等位基因下 plausible-indel 信息量分类，
+   4 个对照已建立；因涉及 RCM 与 haplotype realignment 管道而非最小改动，未修。
+5. **零杂合度参数校验分歧**：GATK 接受 `--heterozygosity 0` 而 native exit 2；
+   放宽校验非最小改动（GATK 自身在该值下退化），且会激活已知未修的 `estimate_mle_allele_counts` 回退分歧。
+6. VariantFiltration 后续：flag + 无表达式 + 无 mask 被 GATK 接受但 native CLI 拒绝；
+   mask/cluster 区间保真（indel/符号未证）；JEXL 裸标识符与 null 方法语义；
+   native 的 `START` 别名、`CHROM`/`FILTER` 属性、`QUAL='.'` 按 `-10` 处理等既有 flag 无关缺口。
+7. 各处已测但**刻意不门控**的子分歧：SelectVariants 的 FORMAT/INFO 键序与 AF 精度、
+   ReblockGVCF 的 QUAL/键序/ref-block FILTER、BQSR 60 记录夹具的模型数值差（55/60 行逐字节相同）。
+8. **Mutect2**：14 个 owner 选择站点中 6 处理论易感，但**未能在任何夹具上复现**（44/44 行与 GATK 一致、
+   590 owners、跨 5 个 `-L` 起点稳定）——属潜伏风险，非已证缺陷。
+
+### 方法论沉淀（可复用）
+
+1. **判据化**：哨兵候选 ⇔ 未进 PairHMM 请求表 ⇒ likelihood 行 `-inf`；故「消费行 ⇒ 免疫，只查下标 ⇒ 中招」。
+   据此普查 HC 15 站点 / Mutect2 14 站点。
+2. **根类化**：GATK「按等位基因长度选常量」vs native「固定值」——一个根类贡献 5 个 bug；
+   从「一处」推到「一类」再推到「修干净」。
+3. **测试契约审计**：发现 6 处测试把**偏离 GATK 的行为**当契约（已修 4 处）。
+   处置判据：修复 parity 缺陷若使既有测试变红，先判断该断言固定的是 **GATK 行为**还是 **native 自身行为**；
+   后者是测试债，应随修复一起纠正——**不要因为红了就放弃修复**（第 19 轮 verify_indel.py 实例）。
+4. **门禁不注册等于没有门禁**：每次新增 oracle 后立刻做一次「脚本 vs CMakeLists」机械比对。
+5. **verifier 自身也会错**：本会话多次由委派方或我自己的复核推翻先前结论
+   （拼接器假设、agent 的 `*` 靶子、我标反的数值方向、D2 的 twin 在另一个 owner、R2 的 fix_site）。
+   故：**agent 结论必须先用插桩/实验独立复核再作为行动依据**；处方同样要被验证。
+6. **夹具优先**：7 处「不可达」分歧靠夹具构造打开 3 处；关键是非显然的输入条件
+   （`*` 需在 AF 矩阵但不在被判基因型；GQ 先验需 `USE_POSTERIOR_PROBABILITIES`）。
+7. **bug-for-bug 对齐 + 标注意图推测**：GATK 的若干行为疑似其自身 bug（如 VariantFiltration 的
+   无 INFO 拆分上下文、ReblockGVCF 的 5 参数 builder 副作用）。parity 项目应**逐 bug 对齐**，
+   但**必须在文档中标明「这是测得行为、不是我们认同的设计」**。

@@ -1893,47 +1893,26 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                 // summary and must flow into GVCFBlock unchanged.  Only a
                 // variant that is newly converted because of a threshold is
                 // rewritten to the synthetic [0,0,0] hom-ref call.
-                // GATK applies the explicit RGQ/PL[0] threshold independently
-                // of --drop-low-quals.  The latter controls dropping GQ0
-                // records, whereas --rgq-threshold-to-no-call converts a
-                // low-reference-confidence variant into a GQ0 hom-ref block.
-                const bool convert_low_quality = (options.drop_low_quals ||
-                    options.rgq_threshold > 0) && low_quality && !reference_block;
-                if (convert_low_quality || tree_low_quality) {
-                    if (convert_low_quality) ++converted_low_quality;
-                    if (tree_low_quality) ++converted_tree_score;
-                    convert_to_ref_block(output_header, copy, end, min_dps,
-                                         min_dp >= 0 ? min_dp : depth);
-                } else if (options.drop_low_quals &&
-                           std::all_of(gqs.begin(), gqs.end(), [](const int value) { return value < 0; }) &&
-                           !options.allow_missing_hom_ref_data) {
-                    bcf_destroy(copy);
-                    continue;
-                }
+                //
+                // GATK's regenotypeVC() re-genotypes a concrete variant under
+                // --drop-low-quals *before* shouldBeReblocked() is consulted
+                // (ReblockGVCF.java:415-424 precedes the call at :427; the
+                // calling confidence is armed only in drop mode at :327).  A
+                // site the genotyping engine cannot call is dropped there, so
+                // the PL[0] < rgqThreshold conversion (:528) is a *later*
+                // filter and must never resurrect it as a GQ0 hom-ref block.
+                // Native therefore runs its drop-mode re-genotyping emulation
+                // first as well.
                 bcf_unpack(copy, BCF_UN_ALL);
-                bool now_block = has_non_ref(copy) && !has_concrete_alt(copy);
-                // ReblockingGVCF.regenotypeVC drops an existing hom-ref
-                // block when --drop-low-quals is enabled and its GQ is zero
-                // (or below the explicit RGQ threshold).  Do this before
-                // global block merging; otherwise a low-quality span would
-                // incorrectly bridge two retained blocks.
-                const bool drop_existing_block = options.drop_low_quals && now_block &&
-                    std::all_of(gqs.begin(), gqs.end(), [&](const int value) {
-                        return value < 0 || value == 0 || value < options.rgq_threshold;
-                    });
-                if (drop_existing_block) {
-                    bcf_destroy(copy);
-                    ++dropped_low_quality_blocks;
-                    continue;
-                }
-                if (options.drop_low_quals && !now_block && has_concrete_alt(copy)) {
+                bool now_block = reference_block;
+                bool regenotyped_to_block = false;
+                if (options.drop_low_quals && !now_block && has_concrete_alt(record)) {
                     // GATK re-genotypes concrete variants in drop mode with
                     // the standard confidence threshold.  A lightweight
                     // equivalent at this boundary uses PL[0] and the
                     // PL-derived GQ: low-confidence ALT calls are dropped,
                     // while a confidently hom-ref PL row is projected to a
-                    // REF/<NON_REF> block below.  Explicit RGQ threshold
-                    // conversions above still take precedence.
+                    // REF/<NON_REF> block below.
                     long long reference_confidence = 0;
                     bool any_non_ref_best = false;
                     bool all_ref_best = true;
@@ -1970,7 +1949,41 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                         // block-merging logic below.
                         bcf_unpack(copy, BCF_UN_ALL);
                         now_block = has_non_ref(copy) && !has_concrete_alt(copy);
+                        regenotyped_to_block = now_block;
                     }
+                }
+                // GATK applies the explicit RGQ/PL[0] threshold independently
+                // of --drop-low-quals.  The latter controls dropping GQ0
+                // records, whereas --rgq-threshold-to-no-call converts a
+                // low-reference-confidence variant into a GQ0 hom-ref block.
+                const bool convert_low_quality = (options.drop_low_quals ||
+                    options.rgq_threshold > 0) && low_quality && !now_block;
+                if ((convert_low_quality || tree_low_quality) && !now_block) {
+                    if (convert_low_quality) ++converted_low_quality;
+                    if (tree_low_quality) ++converted_tree_score;
+                    convert_to_ref_block(output_header, copy, end, min_dps,
+                                         min_dp >= 0 ? min_dp : depth);
+                } else if (!regenotyped_to_block && options.drop_low_quals &&
+                           std::all_of(gqs.begin(), gqs.end(), [](const int value) { return value < 0; }) &&
+                           !options.allow_missing_hom_ref_data) {
+                    bcf_destroy(copy);
+                    continue;
+                }
+                bcf_unpack(copy, BCF_UN_ALL);
+                now_block = has_non_ref(copy) && !has_concrete_alt(copy);
+                // ReblockingGVCF.regenotypeVC drops an existing hom-ref
+                // block when --drop-low-quals is enabled and its GQ is zero
+                // (or below the explicit RGQ threshold).  Do this before
+                // global block merging; otherwise a low-quality span would
+                // incorrectly bridge two retained blocks.
+                const bool drop_existing_block = options.drop_low_quals && now_block &&
+                    std::all_of(gqs.begin(), gqs.end(), [&](const int value) {
+                        return value < 0 || value == 0 || value < options.rgq_threshold;
+                    });
+                if (drop_existing_block) {
+                    bcf_destroy(copy);
+                    ++dropped_low_quality_blocks;
+                    continue;
                 }
                 bool compacted_this_record = false;
                 int shortest_dropped_allele = -1;
