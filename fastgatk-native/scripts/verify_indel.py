@@ -170,7 +170,12 @@ def main() -> int:
         info = {item.split("=", 1)[0]: item.split("=", 1)[1]
                 for item in deletion_fields[7].split(";") if "=" in item}
         assert deletion_fields[1] == "10"
-        assert int(info["END"]) == 11
+        # GATK emits a concrete gVCF variant record verbatim: INFO/END belongs to
+        # reference blocks only (GVCFBlock.java sets it; GVCFBlockCombiner.submit
+        # adds a variant VC unchanged).  This assertion used to require END=11 on
+        # this concrete deletion candidate, i.e. it pinned native-specific
+        # behaviour that diverged from GATK.  Assert the GATK contract instead.
+        assert "END" not in info, f"concrete gVCF variant record must not carry INFO/END: {info}"
         for fields in deletion_records:
             if fields[4] != "<NON_REF>":
                 continue

@@ -4335,11 +4335,6 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
                                      const PhysicalPhase& physical_phase,
                                      bool covered_by_upstream_deletion) {
         if (group.candidates.empty()) return;
-        const bool has_indel = std::any_of(group.candidates.begin(), group.candidates.end(),
-            [&](const auto* candidate) {
-                return candidate_reference(*candidate).size() !=
-                       candidate_alternate(*candidate).size();
-            });
         const auto tid = static_cast<std::size_t>(std::max<std::int32_t>(0, group.tid));
         const std::string chrom = tid < header.contigs.size() ? header.contigs[tid]
                                                                : std::to_string(group.tid);
@@ -4654,12 +4649,19 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
                 out << candidate_alternate(*group.candidates[i]);
             }
             if (include_spanning_deletion) out << ",*";
-            const auto reference_end = position + static_cast<int>(group.candidates.front()->reference_allele.empty()
-                ? 1 : group.candidates.front()->reference_allele.size()) - 1;
             const auto candidate_qual = calls[best] == nullptr ? std::string(".") :
                 (gvcf_frequency.has_value() ? qual_text(gvcf_frequency->qual)
                                              : qual_text(calls[best]->qual));
             out << ",<NON_REF>\t" << candidate_qual << "\t.\t";
+            // A concrete gVCF candidate carries no INFO/END in GATK.  The
+            // reference-confidence writer hands its VariantContext straight to
+            // the block combiner (`GVCFBlockCombiner.submit`, which ends in
+            // `toOutput.add(vc)` for a variant genotype) and only
+            // `GVCFBlock.toVariantContext` ever sets the END attribute, so an
+            // indel call is serialized exactly like a SNP call.  The caller's
+            // own `getEnd()` still spans the deletion for the combiner's
+            // contiguity test, but it is not part of the record.  Emitting it
+            // here added an END key GATK never writes.
             bool info_started = false;
             const auto append_annotation = [&](const char* name, double value, int precision) {
                 const auto text = annotation_text(value, precision);
@@ -4669,10 +4671,6 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
                     info_started = true;
                 }
             };
-            if (!bp_resolution && has_indel) {
-                out << "END=" << reference_end;
-                info_started = true;
-            }
             append_annotation("BaseQRankSum", annotations.base_q_rank_sum, 3);
             if (info_started) out << ';';
             out << "DP=" << variant_depth << ";MLEAC=";
@@ -4998,8 +4996,6 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
             out << candidate_alternate(*group.candidates[i]);
         }
         if (include_spanning_deletion) out << ",*";
-        const auto reference_end = position + static_cast<int>(group.candidates.front()->reference_allele.empty()
-            ? 1 : group.candidates.front()->reference_allele.size()) - 1;
         // GVCF candidate sites are ordinary VariantContext records in GATK:
         // retain the site QUAL, use an unfiltered '.', and serialize only the
         // standard candidate INFO/FORMAT fields.  The native-only AC/AF/MQ/
@@ -5021,11 +5017,10 @@ std::string gvcf(const fastgatk::io::HtsReader& reader,
                 : (calls[best]->genotype == 0
                     ? std::string("0") : qual_text(calls[best]->qual)));
         out << ",<NON_REF>\t" << candidate_qual << "\t.\t";
+        // No INFO/END on a concrete gVCF candidate: see the note in the other
+        // gVCF candidate writer above (GATK's GVCFBlockCombiner emits a variant
+        // record verbatim and only GVCFBlock sets END).
         bool info_started = false;
-        if (!bp_resolution && has_indel) {
-            out << "END=" << reference_end;
-            info_started = true;
-        }
         const auto append_annotation = [&](const char* name, double value, int precision) {
             const auto text = annotation_text(value, precision);
             if (!text.empty()) {
