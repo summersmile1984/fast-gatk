@@ -309,3 +309,28 @@ reference_block / alleles / INFO 键列表`；一次 11 坐标的小窗口运行
 **注意**：第 68 轮汇合点（抑制器入口）的插桩已给出 `span=0 mono=0 block=0 alleles=1`，
 说明这些行在到达抑制器时**三个标志全为 0**；因此**要么**它们从未被打标，**要么**标志在中途被清
 （例如 `reference_block = false` 这类赋值）。编码器处的插桩会顺带回答这个问题。
+
+## 第 72 轮：编码器处插桩**成功**——确认三标志全 0 且带 INFO，候选来源收敛到两处
+
+在编码器接收处（`[&](GenotypeComputed computed) -> std::optional<GenotypeEncoded>`，两处遍历各一个）
+插桩 `FASTGATK_DEBUG_ENC=1`，跑 `-L 20:10008960-10008970`：
+
+```
+[ENC] pos=10008965 span=0 mono=0 block=0 nall=1 a1=. info=yes
+[ENC] pos=10008966 span=0 mono=0 block=0 nall=1 a1=. info=yes
+...（10008965-10008970 各一条）
+```
+
+即这些行在**输出时刻**同样 `span=0 mono=0 block=0`、`allele_count=1`、且**带 INFO**。
+结合第 71 轮「在子集 `uncovered` 分支打标无效」，可判定这些行**不经过**该分支。
+
+**剩余的两个候选（下一步只需分别验证一次）**：
+1. 解码阶段的块逐坐标展开——但第 67 轮在该处打标**有效设置**后残差未变，
+   故除非标志在那之后被清（`reference_block = false` 这类赋值），否则可排除；
+2. `split_reference_blocks_at_variants()` 的分段行——它设 `reference_block = true`，
+   而输出时刻 `block=0`，说明中途有清标志的赋值；**这是目前最可能的来源**。
+
+**下一步的具体做法（作用域已确认安全）**：在 `:3815` 的 `split.reference_block = true;`
+**之后**插一行读回打印（`fprintf(stderr, "[SPLIT] pos=%d\n", split.pos)`），
+再在编码器处打印 `block`；若分割行在编码器处 `block=0`，则确认「标志被中途清除」，
+随后把抑制挂到**分段行**的判据上（例如给分段行单独加一个不会被清的标志）。
