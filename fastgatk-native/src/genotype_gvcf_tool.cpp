@@ -4683,6 +4683,82 @@ std::string input_pass_filter_line(const std::string& path) {
     return found;
 }
 
+// htsjdk writes a VCF header in SORTED order, so reproducing GATK's output
+// header byte for byte means reproducing htsjdk's header sort as well as its
+// content.  The comparator, read out of the pinned jar with
+// `javap -p -c third_party/gatk-package/gatk-4.6.2.0/
+// gatk-package-4.6.2.0-local.jar ...`, is:
+//
+//   htsjdk.variant.vcf.VCFHeaderLine.compareTo (every line type but contigs)
+//     return toString().compareTo(o.toString());
+//   htsjdk.variant.vcf.VCFContigHeaderLine.compareTo (overrides it)
+//     if (o instanceof VCFContigHeaderLine)
+//         return contigIndex.compareTo(((VCFContigHeaderLine) o).contigIndex);
+//     return super.compareTo(o);            // == toString().compareTo(...)
+//   htsjdk.variant.vcf.VCFHeader.getMetaDataInSortedOrder()
+//     return makeGetMetaDataSet(new TreeSet<>(mMetaData));
+//   htsjdk.variant.variantcontext.writer.VCFWriter.writeHeader(header, writer,
+//                                                              version, name)
+//     writer.write("##fileformat=" + version + "\n");
+//     for (VCFHeaderLine line : header.getMetaDataInSortedOrder()) {
+//         if (VCFHeaderVersion.isFormatString(line.getKey())) continue;
+//         writer.write("##" + line + "\n");
+//     }
+//     writer.write("#" + HEADER_FIELDS + samples + "\n");
+//
+// So, precisely:
+//   1. `##fileformat` is written first, out of the header version, and is NOT
+//      part of the sort;
+//   2. every other line is ordered by VCFHeaderLine.toString() -- the full line
+//      text without the leading `##` (`key + "=" + value`) -- compared as Java
+//      String.compareTo, i.e. by key first and then by the rest of the line
+//      (ASCII byte order == UTF-16 code-unit order for every header line seen);
+//   3. two contig lines compare by `contigIndex`, the index the line was given
+//      when the INPUT header was parsed, i.e. the input's own contig
+//      declaration order -- measured: an input declaring chr1, chr10, chr2
+//      against a reference dictionary ordered chr2, chr10, chr1 comes back
+//      chr1, chr10, chr2, and the reverse.  A contig line against a non-contig
+//      line falls back to plain text, so the contig block keeps the input's
+//      order but moves to where `##contig=...` sorts among the rest: after
+//      every `##INFO=` and before `##source=`;
+//   4. `#CHROM` is written last, after the sorted block.
+// `##GATKCommandLine` and `##source` are ordinary lines in that sort (measured:
+// GATKCommandLine between `##FORMAT=` and `##INFO=`, source last); native does
+// not write a GATKCommandLine, and `##source` is already placed by the sort.
+std::vector<std::string> gatk_htsjdk_sorted_header(std::vector<std::string> lines) {
+    const std::size_t total = lines.size();
+    std::vector<std::string> fileformat;
+    std::vector<std::string> chrom;
+    std::vector<std::string> contigs;
+    std::vector<std::string> others;
+    for (auto& line : lines) {
+        if (line.rfind("##fileformat=", 0) == 0) {
+            fileformat.push_back(std::move(line));
+        } else if (line.rfind("#CHROM", 0) == 0) {
+            chrom.push_back(std::move(line));
+        } else if (line.rfind("##contig=", 0) == 0) {
+            contigs.push_back(std::move(line));
+        } else {
+            others.push_back(std::move(line));
+        }
+    }
+    std::sort(others.begin(), others.end());
+    // Every contig line begins with this prefix and no non-contig line does, so
+    // the first non-contig line that sorts after the prefix is exactly where the
+    // contig block belongs (compareTo against a contig line is a text compare,
+    // and all contig lines agree up to and including the prefix).
+    const std::string contig_prefix = "##contig=";
+    const auto at = std::lower_bound(others.begin(), others.end(), contig_prefix);
+    std::vector<std::string> sorted;
+    sorted.reserve(total);
+    sorted.insert(sorted.end(), fileformat.begin(), fileformat.end());
+    sorted.insert(sorted.end(), others.begin(), at);
+    sorted.insert(sorted.end(), contigs.begin(), contigs.end());
+    sorted.insert(sorted.end(), at, others.end());
+    sorted.insert(sorted.end(), chrom.begin(), chrom.end());
+    return sorted;
+}
+
 std::string gatk_compatible_header_text(const std::string& formatted,
                                         const std::string& input_pass_filter) {
     std::vector<std::string> lines;
@@ -4859,6 +4935,17 @@ std::string gatk_compatible_header_text(const std::string& formatted,
         });
         output.insert(chrom, "##source=GenotypeGVCFs");
     }
+    // GATK's output header is htsjdk's SORTED header, not the input's order with
+    // the tool's own lines appended, so the position the group insertions above
+    // produced is not the position GATK writes: the whole header is re-sorted
+    // exactly the way htsjdk's writer sorts it (see
+    // gatk_htsjdk_sorted_header() above).  The insertions above still decide
+    // which lines are present -- in particular the duplicate `##INFO=<ID=DP,...>`
+    // and `##FORMAT=<ID=AD,...>` pairs, whose relative order at this point does
+    // not matter because the sort orders them by their own text, as GATK's
+    // `Description="Approximate read depth; ..."` precedes `Description="Read
+    // depth"`.
+    output = gatk_htsjdk_sorted_header(std::move(output));
     std::ostringstream result;
     for (const auto& line : output) result << line << '\n';
     return result.str();
