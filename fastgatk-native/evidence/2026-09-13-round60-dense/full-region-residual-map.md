@@ -181,3 +181,23 @@ merger 的合并语义——把**所有覆盖该坐标的记录**（跨接变异
 （沿用本会话第 49 轮用过的 Java 探针手法）：构造该条记录，调用
 `ReferenceConfidenceVariantContextMerger.merge(...)` 与 `mergeRefConfidenceGenotypes(...)`，
 打印返回 VC 的 alleles/GT/AD/PL，与 GATK 输出 `1184,62,0` 对齐后再写 native 实现。
+
+## 第 66 轮：C/E 类（REF-only 行）的两次尝试与结论
+
+目标是复用第 62 轮的抑制器消掉 C 类（9 条 REF-only 行的多余 INFO）与 E 类（2 条 REF-only 行
+多余的 `PGT:PID:PS`）。两次尝试与实测：
+
+| 尝试 | 结果 |
+| --- | --- |
+| 把抑制条件扩到 `finalized_monomorphic_ref`（只挂在两个「最终」出口） | 整段残差仍 84（C 类 9 条照旧）——**该路径不经过这两个出口** |
+| 再把抑制器挂到两个 `finalized_monomorphic_ref` 早退出口，并额外清除 `PGT/PID/PS` | E 类的**FORMAT 部分确实修好**（那 2 行从「INFO+FORMAT 不同」变为「仅 INFO 不同」），但 C 类 INFO 仍不为所动（9 → 11，总数仍 84） |
+
+**结论**：C/E 类所在的 REF-only 行**不是** `finalized_monomorphic_ref`，而是 dense 模式下
+**参考块逐坐标展开**产生的行（`reference_block = true`，见解码阶段 `include_non_variant_sites && reference_only`
+分支）。因此：
+1. 对它们的抑制必须以「块展开行」为判据（例如新增 `Record::materialized_reference_only` 标志），
+   而不是 `finalized_monomorphic_ref`；
+2. 清除 `PGT/PID/PS` 的那一步是**正确**的（实测那 2 行的 FORMAT 因此与 GATK 一致），
+   但必须与 INFO 抑制一起落地并上锁，单独一半会把「INFO+FORMAT 不同」变成「仅 INFO 不同」而总数不变。
+
+两次改动均已**回退**（不留未验证、未上锁的代码）；结论与判据留在本节，供下一步一次性做完。
