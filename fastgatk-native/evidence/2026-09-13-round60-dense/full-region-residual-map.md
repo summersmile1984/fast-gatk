@@ -439,3 +439,32 @@ C/E 行。也就是说：第 68–75 轮所有"窄窗口插桩 → 判定 C/E �
 `pos == <某个真正的 C/E 位点>`（例如 `10008964` / `10077008`），并**用整段命令运行**
 （`-L 20:10000000-10099999`，约 26 s）；在该条件下打印编码器处的 INFO 键列表与各标志，
 即可得到 C/E 行的真实状态。第 74 轮的函数级插桩同样要在整段命令下重跑复核。
+
+## 第 77 轮：改正探针后**一次命中**诊断，修复仍差最后一步
+
+按第 76 轮的更正，把插桩条件改成 `pos == 10008964 || pos == 10077008` 并用**整段命令**运行
+（`-L 20:10000000-10099999`）：
+
+```
+[ENC] pos=10008964 span=1 mono=1 block=0 nall=1 ninfo=8
+      keys: BaseQRankSum DP ExcessHet MLEAC MLEAF MQRankSum RAW_MQandDP ReadPosRankSum
+[ENC] pos=10077008 span=0 mono=0 block=0 nall=1 ninfo=4 keys: END DP RCQ RCP
+```
+
+**结论（C 类，10008964）**：这类行同时是 `materialized_spanning_locus=1` **和**
+`finalized_monomorphic_ref=1`，所以在计算阶段走的是**`finalized_monomorphic_ref` 早退分支**——
+而第 62 轮加入的抑制器**只挂在两个最终出口**上，早退分支根本不经过它。**这就是前七轮"打标无效"的真正原因**
+（不是标志没设上，而是**调用点没覆盖这条路径**）。
+
+**修复尝试（本轮）**：在早退分支加一行 `suppress_materialized_spanning_annotations(...)`，
+并把抑制条件扩到 `finalized_monomorphic_ref`（同时清 `PGT/PID/PS`）→ **整段残差仍 84，C 类 11 行未变**。
+
+⇒ 说明**清除动作本身在这些行上没生效**（而非调用点问题）。最可能的原因：这些记录的 INFO
+在那一刻尚未 `bcf_unpack(BCF_UN_INFO)`，或 `bcf_update_info_float(..., nullptr, 0)` 对它们返回 -1
+（我在实现里一直用 `(void)` 忽略了返回值）。**下一步（很具体）**：
+1. 在抑制器里打印每次 `bcf_update_info_float(...)` 的返回值与 `record.value->n_info`（前后对比），
+   确认删没删掉；
+2. 若返回 -1，改用 `bcf_unpack(record.value, BCF_UN_INFO)` + 按声明类型调用
+   `bcf_update_info_float/int32`，或直接在**编码阶段**（`GenotypeEncoded` 分支，文本格式化之前）
+   处理——那里的记录同样是 `computed.record.value`，且第 62 轮对跨位点行的成功案例证明
+   「在正确路径上清除」是有效的。
