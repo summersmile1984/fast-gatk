@@ -818,3 +818,42 @@ if (drop_read_level || drop_excess_het) {
 2. 用新判据替换：在 `materialize_spanning_loci()` 内合成记录时置一个**独立**标志
    （例如 `synthetic_no_start`），并把文本层的 `drop_read_level/drop_excess_het` 改为由它驱动；
    预期 10041698 这类行不再被删（INFO 恢复与 GATK 一致），REF-only 残差 13 → 7。
+
+## 第 92 轮：矛盾解开 + 规则**完全确定**（两个开关的判据不同）
+
+**矛盾解开（0-based vs 1-based 的坑）**：改用 0-based 位置重新插桩：
+
+```
+[FL2] pos0=10008963 bcpos0=10008963 span=1 mono=1 block=0 nall=1   ← 文本 POS 10008964
+[FL2] pos0=10041697 bcpos0=10041697 span=0 mono=1 block=0 nall=1   ← 文本 POS 10041698
+```
+
+⇒ 第 88 轮那次 `[FL] span=0 mono=0` 是**匹配到了另一条记录**（`record.pos` 是 0-based，
+我却拿 1-based 的文本 POS 去比），那次读数作废。真实情况是：
+**10041698 是 `span=0 mono=1`**（真实记录退化为 REF-only），**10008964 是 `span=1 mono=1`**（物化覆盖位点）。
+
+**据此把两个开关的判据完全确定**（与三处实测全部吻合）：
+
+| 观测 | GATK 行为 | 结论 |
+| --- | --- | --- |
+| 10008964（span=1 mono=1） | INFO 只有 `DP;MLEAC=.;MLEAF=.`（无 rank sum、无 ExcessHet） | 两者都丢 |
+| 10041698（span=0 mono=1） | 保留 rank sum/MQ **且保留 `ExcessHet=0.00`** | 两者都留 |
+| `*` 跨位点行（span=1 mono=0，第 85 轮） | 保留 `ExcessHet` | 读级注释丢、ExcessHet 留 |
+
+⇒ **`drop_read_level = materialized_spanning_locus`**；
+⇒ **`drop_excess_het = materialized_spanning_locus && finalized_monomorphic_ref`**。
+
+**实现要点（下一轮，两行赋值）**：把 `:6732` 与 `:7503` 两处
+
+```cpp
+const bool drop_read_level = computed.record.materialized_spanning_locus;
+const bool drop_excess_het = computed.record.materialized_spanning_locus &&
+                             computed.record.finalized_monomorphic_ref;
+```
+
+写进去（第 86 轮的文本函数与擦除逻辑不用动）。预期：`*`/`*` 回到 40（不再误伤）、
+REF-only 的 INFO 类（10041698/10098308/10099270/10077008/10077010 五行）INFO 恢复一致，
+残差 **81 → 76 左右**（其余为 GT/GQ 与 `QUAL=Infinity` 两类）。
+
+> 本轮两次尝试应用该规则时**都因锚点文本已变而未写入**（第一次把两开关都设成 span，
+> 实测 `*` 行涨到 109；第二次的 old 文本不匹配），随后 `git checkout` 回退到第 86 轮已验证状态。
