@@ -1057,6 +1057,27 @@ GATK 自带的 chr20 HaplotypeCaller gVCF（1291 条）里有 **139 个**这样�
 只剩 `owned-star-only-locus-dense-negative-zero-qual`（regenotyped 行的 QD 符号零，1e-16 级）
 仍标为 REPORTED ONLY、不参与退出码。
 
+### 真实语料验证（chr20，GATK 自带 gVCF）
+
+见 `fastgatk-native/evidence/2026-09-13-round52-dense/real-corpus-chr20-verification.md`。
+窗口 `20:10000000-10003000`（dense，两侧同 `-L`）：
+
+| 指标 | 结果 |
+| --- | --- |
+| GATK 有而 native 没有的位点 | **0**（修复前这一整类坐标整行缺失） |
+| `*` 行逐字节不一致的位点 | **0**（本轮新增的行与 GATK 完全一致） |
+| 其余不一致 | 69 个 REF-only 行 + 9 个 other，均为**既有**分歧（下） |
+| native 多出的位点 | 20 个，全在窗口末端之后，`ALT='.'`（既有分歧） |
+
+同一语料暴露的两处**既有**分歧（与本轮无关，已测量、未修）：
+
+1. **dense 的参考块展开不遵守 `-L`**：窗口 `20:10050000-10051000`（1000 bp、无删除等位基因，
+   本轮 pass 不触发）GATK 恰好输出 1001 行（每坐标一行），native 输出 4809 行
+   （界内 4362 行 = 同一位点多行，界外另 447 行）。窗口 1 多出的 20 行是同一机制。
+2. **块展开行的 REF 取错来源**：窗口 1 中 69 个位点两侧都是 REF-only 行但 REF 字母不同——
+   **GATK 用该位点自身记录的 REF（`T`/`C`/`A`），native 用 FASTA 碱基**（该参考在这些位置确为 `N`）。
+   例：`20:10000000` 的 gVCF 记录为 `T <NON_REF>`，GATK 输出 `T`，native 输出 `N`。
+
 ### 本轮未覆盖（下一步）
 
 1. **流式路径**：pass 目前只接在聚合路径（默认路径）。`--stream-by-locus` 的等价接入点未做，
