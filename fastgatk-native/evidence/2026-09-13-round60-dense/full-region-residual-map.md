@@ -468,3 +468,31 @@ C/E 行。也就是说：第 68–75 轮所有"窄窗口插桩 → 判定 C/E �
    `bcf_update_info_float/int32`，或直接在**编码阶段**（`GenotypeEncoded` 分支，文本格式化之前）
    处理——那里的记录同样是 `computed.record.value`，且第 62 轮对跨位点行的成功案例证明
    「在正确路径上清除」是有效的。
+
+## 第 78 轮：抑制失效的**根因**找到——`bcf_update_info_*` 的删除调用返回 0 但**不删除**
+
+按第 77 轮的两步走：在抑制器里先 `bcf_unpack(record.value, BCF_UN_INFO)`，再打印每次清除的返回值与
+`n_info`；同时在 `finalized_monomorphic_ref` 早退分支补上抑制调用（该路径第 77 轮已确认必须覆盖）。
+整段运行、只看 10008964：
+
+```
+[MQrm] tag=MQ             rc=0 ninfo=8
+[MQrm] tag=BaseQRankSum   rc=0 ninfo=8
+[MQrm] tag=MQRankSum      rc=0 ninfo=8
+[MQrm] tag=ReadPosRankSum rc=0 ninfo=8
+```
+
+**四次调用全部 `rc=0`（报告成功），而 `n_info` 始终是 8——一条都没删掉。**
+这解释了前面所有"打标/条件都对、残差却不动"的现象：**不是判据问题，而是清除动作本身无效**。
+
+（整段残差仍 84，与之一致。）
+
+**下一步（很具体）**：
+1. 不要再用 `bcf_update_info_float(hdr, line, tag, NULL, 0)` 这条路去"删除"——
+   在此 htslib 版本上它显然不是删除语义（返回 0 但 `n_info` 不变，更像是把值置为 missing）；
+2. 改用**文本层过滤**：native 的 GATK 兼容输出有自己的文本组装/格式化路径
+   （`format_gatk_float_value()` 与 `gatk_compatible_record_text()`），其中已按 **key** 分派
+   （例如 `key == "MQ" || key == "QD"` 决定精度）；在那里对「物化行/REF-only 行」按 key 丢弃
+   这四个键**最直接**，且不受 htslib INFO 删除语义影响；
+3. 判据可以随行携带（本会话已有的两个标志不足以覆盖，需要在文本层知道该行是物化行——
+   可由记录的两个标志组合或再加一个标志传入文本组装函数）。
