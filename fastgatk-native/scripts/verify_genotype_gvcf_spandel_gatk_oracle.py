@@ -398,6 +398,74 @@ key, the input-allele counting rule (pruning must not change the value), the
 REF-only dense row, two samples, and the control that neither the key nor its
 declaration appears without the flag.
 
+Two records at one locus: the input shape GATK does not support
+--------------------------------------------------------------
+``GenotypeGVCFs`` takes exactly ONE input track -- "1) a single single-sample
+GVCF 2) a single multi-sample GVCF created by CombineGVCFs or 3) a GenomicsDB
+workspace created by GenomicsDBImport" (``GenotypeGVCFs.java:65-66``); a second
+``-V`` is refused outright ("Argument 'V/variant' cannot be specified more than
+once", measured).  In that documented input there is exactly **one record per
+(contig, position, REF)** per locus, because CombineGVCFs merges the per-sample
+records of a locus before writing (``CombineGVCFs extends
+MultiVariantWalkerGroupedOnStart``, ``CombineGVCFs.java:82``, one merged
+``vcfWriter.add(mergedVC)`` per locus at ``:412-420``; measured: two
+single-sample GVCFs with ``G`` and ``T`` at chr1:2 combine into the single
+record ``chr1 2 . A T,G,<NON_REF>``).
+
+What GATK does when that invariant is violated depends on the traversal mode,
+and neither mode merges the records:
+
+* **default** (no ``--include-non-variant-sites`` and no
+  ``--force-output-intervals``): ``GenotypeGVCFs.onTraversalStart()`` calls
+  ``changeTraversalModeToByVariant()`` (``GenotypeGVCFs.java:284-285``), so
+  ``VariantLocusWalker.traverse()`` takes its by-variant branch and calls
+
+      apply(variant, Collections.singletonList(variant), ...)
+                                          // VariantLocusWalker.java:132-142
+
+  i.e. **each record is its own locus**, the merger receives a one-element list
+  (``GenotypeGVCFsEngine.java:128`` -> ``:136``) and one output row is written
+  per input record (``GenotypeGVCFs.java:320-331``).  Two records at chr1:2
+  therefore produce **two rows**, and each row carries the other sample as a
+  bare ``./.`` because that record held no call for it.
+* **group-by-locus** (``--include-non-variant-sites`` or
+  ``--force-output-intervals``): ``apply()`` receives every variant overlapping
+  the one-base locus (``VariantLocusWalker.java:154-172``) and then
+  ``GenotypeGVCFsEngine.getVariantSubsetToProcess()`` **throws**:
+
+      // since this tool only accepts a single input source, there should never be
+      // more than one variant at a given starting locus
+      throw new IllegalStateException(
+              String.format(
+                      "Variant input contains more than one variant starting at location: %s",
+                      new SimpleInterval(matchingStart.get(0))));
+                                          // GenotypeGVCFsEngine.java:349-368
+
+  Measured: exit 3, no data row.  So the merge that
+  ``ReferenceConfidenceVariantContextMerger.merge()`` performs over several
+  records (a locus-level union: ``collectTargetAlleles()`` at ``:325-348``) is
+  reachable only in this mode, and only for records that do **not** start at the
+  locus (a spanning event, ``:150-151``) -- never for two records that start
+  there.
+
+Native instead coalesces every record sharing a ``record_key`` of
+``rid:pos:REF`` (``genotype_gvcf_tool.cpp:1180-1187``; aggregate group loop
+``:6538-6650`` and streaming group loop ``:5859-5880``/``:5969-5972``), keeps
+the FIRST record of the group, drops every later record whose sample set
+overlaps an already-accepted one (``:6639-6646``, streaming ``:5969-5972``) and
+publishes one row per group.  That is the CombineGVCFs
+model, not GenotypeGVCFs' by-variant model, so on an input with two records at
+one locus the two tools cannot agree: GATK writes one row per record, native one
+row per locus.  On the documented input -- one record per locus, ALT union
+already computed -- the two models coincide and the rows are byte-identical,
+which is what ``cross-sample-alt-union-single-record`` gated below pins.
+
+The three ``same-position-two-records-*`` cases are therefore REPORTED ONLY:
+they pin the measured GATK truth for the unsupported shape (including its
+``NDA=1`` rows and the group-by-locus rejection) without asserting parity, so
+the gate records the divergence and still passes.  See
+``.diag/round-crosssample-merge.md`` for the full measurement.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -913,6 +981,55 @@ GATK_NDA_COVERED_STAR_ONLY_DENSE_ROWS = [
      "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;NDA=1;QD=4.63\t"
      "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100"),
     "chr1\t3\t.\tA\t.\tInfinity\t.\tDP=20;MLEAC=.;MLEAF=.;NDA=1\tGT\t./.",
+]
+
+# ---------------------------------------------------------------------------
+# Cross-sample ALT sets at one locus: one record vs. two records
+# ---------------------------------------------------------------------------
+# The SUPPORTED shape: ONE record per locus whose ALT set already carries every
+# sample's allele -- what CombineGVCFs writes (measured: two single-sample GVCFs
+# through CombineGVCFs produce exactly one record `A  T,G,<NON_REF>`).  Both
+# tools agree on it byte for byte; this is the gated half.
+CROSS_SAMPLE_ALT_UNION_RECORD = (
+    "chr1\t2\t.\tA\tG,T,<NON_REF>\t.\tPASS\tDP=40\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\t"
+    "2/2:20:0,0,20:200,200,200,200,200,0\n"
+)
+GATK_CROSS_SAMPLE_ALT_UNION_ROW = (
+    "chr1\t2\t.\tA\tG,T\t277.88\t.\t"
+    "AC=1,2;AF=0.250,0.500;AN=4;DP=40;ExcessHet=0.0000;"
+    "MLEAC=1,2;MLEAF=0.250,0.500;QD=6.95\t"
+    "GT:AD:DP:GQ:PL\t0/1:0,20,0:20:99:100,0,100,100,100,100\t"
+    "2/2:0,0,20:20:99:200,200,200,200,200,0")
+
+# The UNSUPPORTED shape: TWO records starting at the same locus, each carrying
+# one sample.  GATK's default traversal is by-variant (GenotypeGVCFs.java:284-285
+# -> VariantLocusWalker.java:132-142), so it never merges them: it genotyped each
+# record on its own and wrote one row per record, with the other sample rendered
+# as a bare `./.`.  Native coalesces the group by (rid, pos, REF)
+# (genotype_gvcf_tool.cpp:1180-1187) and writes one merged row, so these cases
+# are REPORTED ONLY -- see the docstring section "Two records at one locus".
+SAME_POSITION_TWO_RECORDS_RECORD = (
+    "chr1\t2\t.\tA\tG,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\t./.:.:.:.\n"
+    "chr1\t2\t.\tA\tT,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t./.:.:.:.\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+)
+GATK_SAME_POSITION_TWO_RECORDS_ROWS = [
+    ("chr1\t2\t.\tA\tG\t92.64\t.\t"
+     "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
+     "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100\t./."),
+    ("chr1\t2\t.\tA\tT\t92.64\t.\t"
+     "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
+     "GT:AD:DP:GQ:PL\t./.\t0/1:0,20:20:99:100,0,100"),
+]
+# The same two rows with --annotate-with-num-discovered-alleles: NDA=1 on each,
+# because each row is genotyped from ONE input record whose merged ALT set holds
+# exactly one allele (GenotypingEngine.java:464-465 measures `vc`, and `vc` here
+# is that single record -- the merger never runs in this traversal mode).
+GATK_SAME_POSITION_TWO_RECORDS_NDA_ROWS = [
+    row.replace("MLEAF=0.500;", "MLEAF=0.500;NDA=1;")
+    for row in GATK_SAME_POSITION_TWO_RECORDS_ROWS
 ]
 
 CASES = [
@@ -1473,6 +1590,87 @@ CASES = [
         "gated": True,
         "expect": [GATK_NDA_TWO_SAMPLES_ROW],
     },
+    {
+        "case": "cross-sample-alt-union-single-record",
+        "why": "the SUPPORTED cross-sample shape, gated: one record at chr1:2 "
+               "whose ALT set already holds both samples' alleles (G for the "
+               "0/1 sample, T for the 2/2 one), i.e. exactly what CombineGVCFs "
+               "writes for two single-sample GVCFs (measured: `chr1 2 . A "
+               "T,G,<NON_REF>`).  Both tools emit one row with ALT=G,T and the "
+               "per-sample genotypes in it, byte for byte -- this is the "
+               "boundary case that shows native's locus-level coalescing "
+               "(genotype_gvcf_tool.cpp:1180-1187) is exact whenever the input "
+               "has one record per locus, which is the only shape "
+               "GenotypeGVCFs.java:65-66 documents and the one its group-by-"
+               "locus traversal asserts (:359-364)",
+        "body": CROSS_SAMPLE_ALT_UNION_RECORD,
+        "header": HEADER_TWO_SAMPLES,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_CROSS_SAMPLE_ALT_UNION_ROW],
+    },
+    {
+        "case": "same-position-two-records-cross-sample-alt",
+        "why": "REPORTED ONLY -- the input shape GATK does not support.  Two "
+               "records starting at chr1:2, one per sample, with DIFFERENT ALT "
+               "sets.  GATK's default traversal is by-variant "
+               "(GenotypeGVCFs.java:284-285 -> VariantLocusWalker.java:132-142), "
+               "so nothing is merged across records: each record is genotyped "
+               "alone and written as its own row, and the record that does not "
+               "carry the other sample leaves it as a bare `./.`.  Native "
+               "coalesces the two records (record_key = rid:pos:REF, "
+               "genotype_gvcf_tool.cpp:1180-1187; aggregate group loop :6538-"
+               "6650) and writes ONE row (ALT=G, second record's sample "
+               "dropped by the overlapping-sample rule at :6594-6600).  The "
+               "input is not producible by the documented pipeline: "
+               "CombineGVCFs collapses these two records into one "
+               "(`A T,G,<NON_REF>`, pinned by the gated case above) and "
+               "GenotypeGVCFs takes a single input track (GenotypeGVCFs.java:"
+               "65-66).  See .diag/round-crosssample-merge.md",
+        "body": SAME_POSITION_TWO_RECORDS_RECORD,
+        "header": HEADER_TWO_SAMPLES,
+        "args": [],
+        "gated": False,
+        "expect": GATK_SAME_POSITION_TWO_RECORDS_ROWS,
+    },
+    {
+        "case": "same-position-two-records-cross-sample-alt-nda",
+        "why": "REPORTED ONLY -- the same unsupported shape with "
+               "--annotate-with-num-discovered-alleles, which is how the shape "
+               "was first measured (.diag/round-nda.md section 6, first "
+               "bullet): GATK writes TWO rows, each carrying NDA=1, because "
+               "the value GenotypingEngine.java:464-465 reads is the ALT count "
+               "of the single record that row was genotyped from.  Native "
+               "writes one row with NDA=2 (the coalesced union).  Same root "
+               "cause and same scope as the case above",
+        "body": SAME_POSITION_TWO_RECORDS_RECORD,
+        "header": HEADER_TWO_SAMPLES,
+        "args": [NDA_FLAG],
+        "gated": False,
+        "expect": GATK_SAME_POSITION_TWO_RECORDS_NDA_ROWS,
+    },
+    {
+        "case": "same-position-two-records-dense-unsupported",
+        "why": "REPORTED ONLY -- GATK's OTHER traversal mode rejects the shape "
+               "outright.  --include-non-variant-sites (or any "
+               "--force-output-intervals) turns off the by-variant switch "
+               "(GenotypeGVCFs.java:284-285), so apply() receives every variant "
+               "overlapping the locus; GenotypeGVCFsEngine.getVariantSubsetTo"
+               "Process() then insists on at most ONE variant starting at the "
+               "locus and throws `IllegalStateException: Variant input contains "
+               "more than one variant starting at location: chr1:2-2` "
+               "(:349-368, the comment at :359-360: 'since this tool only "
+               "accepts a single input source, there should never be more than "
+               "one variant at a given starting locus').  GATK exits 3 and "
+               "writes no data row, so there is no GATK output contract for "
+               "this input to match; native exits 0 with its merged row",
+        "body": SAME_POSITION_TWO_RECORDS_RECORD,
+        "header": HEADER_TWO_SAMPLES,
+        "args": ["--include-non-variant-sites"],
+        "gated": False,
+        "gatk_expected_exit": 3,
+        "expect": [],
+    },
 ]
 
 
@@ -1594,6 +1792,7 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
         "gatk_exit": gatk_result.returncode,
         "native_exit": native_result.returncode,
         "expect": case["expect"],
+        "gatk_expected_exit": case.get("gatk_expected_exit", 0),
         "gatk_rows": gatk_rows,
         "native_rows": native_rows,
         "gatk_filter_header_lines": gatk_filters,
@@ -1619,7 +1818,11 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
     }
     if index_result.returncode != 0:
         result["violations"].append(f"GATK IndexFeatureFile exited {index_result.returncode}")
-    if gatk_result.returncode != 0:
+    # A case may pin a GATK run that is *expected* to fail (the group-by-locus
+    # rejection of an input with two records starting at one locus); the exit
+    # code is then an observation, not a violation.
+    if (gatk_result.returncode != 0
+            and gatk_result.returncode != case.get("gatk_expected_exit")):
         result["violations"].append(f"GATK exited {gatk_result.returncode}")
     if native_result.returncode != 0:
         result["violations"].append(f"native exited {native_result.returncode}")
