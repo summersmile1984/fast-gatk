@@ -791,3 +791,30 @@ if (drop_read_level || drop_excess_het) {
 - 键在入口就已不在 ⇒ 与第一项相同。
 
 第 86 轮的修复**保留**（位点级 +3/−0，无回归）；本轮的核对与结论已归档，改动为 0。
+
+## 第 91 轮：函数内部插桩给出决定性结论——**两个开关对两族都是 1**，现有标志无法区分
+
+在 `gatk_compatible_record_text()` 内部插桩（打印两个开关取值、擦除前后键列表、入口第 8 列）：
+
+```
+[TXT2] pos=10008964 drl=1 deh=1 before: BaseQRankSum DP ExcessHet MLEAC MLEAF MQRankSum ReadPosRankSum|INFO=BaseQRankSum=1.026;DP=63;…
+[TXT2] after: DP MLEAC MLEAF
+[TXT2] pos=10041698 drl=1 deh=1 before: BaseQRankSum DP ExcessHet MLEAC MLEAF MQRankSum ReadPosRankSum|INFO=BaseQRankSum=1.887;DP=80;…
+[TXT2] after: DP MLEAC MLEAF
+```
+
+**结论**：两族的 `drop_read_level`/`drop_excess_het` **都是 1**，擦除也都生效（键列表都从 7 项变 3 项）。
+也就是说：
+
+- 第 86 轮的条件对 10041698 这类行**判成了"应删"**（GATK 实际保留）⇒ 规则的**判据本身**不成立；
+- 第 88 轮 `[FL]` 探针在该位点读到 `span=0 mono=0`，与这里 `drl=1`（即 `span||mono` 为真）**矛盾**
+  ⇒ 那次的读数不可靠（很可能同一位点上有两条记录，或读到的是另一条实例）；
+- 第 87 轮"把条件收窄为 span 后行为不变"也因此**不能作为判据有效的证据**。
+
+**下一步（两条，按顺序）**：
+1. 先用一次插桩确认 `[FL]` 矛盾：在**编码 lambda 入口**同时打印
+   `pos`、`materialized_spanning_locus`、`finalized_monomorphic_ref`、**`record.value->pos`**、
+   `alleles[0..1]`，并**不要用 `sort -u`**（避免去重掩盖同 POS 的多条记录）；
+2. 用新判据替换：在 `materialize_spanning_loci()` 内合成记录时置一个**独立**标志
+   （例如 `synthetic_no_start`），并把文本层的 `drop_read_level/drop_excess_het` 改为由它驱动；
+   预期 10041698 这类行不再被删（INFO 恢复与 GATK 一致），REF-only 残差 13 → 7。
