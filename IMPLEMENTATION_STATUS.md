@@ -1341,6 +1341,34 @@ QD 分子改为优先使用 `record.call_confidence`（未取整 double），**�
 同一探测暴露的 `INFO LowQual=.../RGQ=...` 形状差异仍属**候选分歧**：该形状不是真实语料的形状，
 需先确认是否有真实输入能触发，已留在下一步。
 
+## 第 60 轮：整段真实语料的 dense 残差地图（更正 3 kb 窗口的乐观印象）
+
+第 52–57 轮的比对只覆盖 3 kb 窗口（恰好全绿）。本轮把 dense 比对扩到**整个语料区间**
+（`-L 20:10000000-10099999`，覆盖全部 1291 条记录）：
+
+| | GATK | native |
+| --- | --- | --- |
+| 行数 / 位点 | 100000 / 100000 | 99993 / 99993 |
+| 仅 GATK 有的位点 | — | **7** |
+| 仅 native 有的位点 | — | 0 |
+| 共有但行不同 | — | **153** |
+
+即整段 100 kb 上残差 **160 个位点（0.16%）**，且没有任何 native 独有的位点。分类：
+
+| # | GATK | native | 不同列 | 条数 | 说明 |
+| --- | --- | --- | --- | --- | --- |
+| A | `*` | `*` | INFO | **109** | native 在 `*` 行上多写 `BaseQRankSum`/`MQ`/`MQRankSum`/`ReadPosRankSum`；GATK 只发布它重算的那些 |
+| B | `*` | `.` | REF/ALT/QUAL/FILTER/INFO | **30** | GATK 保留 `*`，native 走 REF-only 物化路径 |
+| C | `.` | `.` | INFO | 9 | A 的 REF-only 版本 |
+| D | `.` | `.` | QUAL+INFO | 3 | monomorphic-recovery 的 QUAL：GATK `163.67` vs native `Infinity` |
+| E | `.` | `.` | INFO+FORMAT | 2 | REF-only 行上 native 多写 `PGT:PID:PS` |
+| F | 有 | 无 | — | **7** | GATK 的 `QUAL=Infinity` REF-only 行 native 整条没有（与 D 同源） |
+
+证据与逐类实例：`fastgatk-native/evidence/2026-09-13-round60-dense/full-region-residual-map.md`。
+
+**更正**：3 kb 窗口全绿属采样偏差，不能代表整段；本条已写入「仍未达成 1:1」清单。
+A 类占 71% 且看起来是单点修复，列为下一轮首选。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
 **最新基线（第 57 轮，主会话亲自运行）：commit `9a2e3a5`（QD 分子用未取整 double；两后端均已重建）上
@@ -1381,7 +1409,10 @@ OpenMP 309/309（1473.5s）、Serial 309/309（1480.8s），零陈旧告警，
    它们是尚未修复分歧的活证据，不应被注册成会永久变红的测试。
 
 **仍未达成 1:1**（按剩余体量排序，均已在正文各节记录并可复现）：
-1. **单记录形状上的 `INFO LowQual=.../RGQ=...` 差异**（第 58 轮发现，候选分歧）：
+1. **dense 残差 A 类（第 60 轮量出，占残差 71%）**：`*` 行上 native 多写
+   `BaseQRankSum`/`MQ`/`MQRankSum`/`ReadPosRankSum`——单点修复可消掉整段约 2/3 的残差；
+   其余类见 `evidence/2026-09-13-round60-dense/full-region-residual-map.md`（B 30 条、C 9、D 3、E 2、F 7）；
+2. **单记录形状上的 `INFO LowQual=.../RGQ=...` 差异**（第 58 轮发现，候选分歧）：
    该形状不是真实语料的形状，需先确认是否有真实输入能触发；
 2. 第 52 轮记下的 **dense 跨位点物化的剩余两半**：流式 `--stream-by-locus` 的等价接入点、
    非删除跨接记录的 REF-only 形状（`GT:AD ./. :0` / `QUAL 192.21` 两种）；
