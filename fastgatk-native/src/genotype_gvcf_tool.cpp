@@ -3179,6 +3179,25 @@ void normalize_sample_pl(Record& record) {
     }
 }
 
+// A locus this tool MATERIALIZED because a spanning record covers it has no reads
+// of its own, so pinned GATK publishes only the annotations it recomputes there
+// (AC/AF/AN/DP/ExcessHet/FS/MLEAC/MLEAF/QD/SOR).  The read-level annotations of
+// the spanning record are NOT carried over, but this tool's clone-based
+// materialization and its merge/annotation stages put them back, so they have to
+// be dropped at the output boundary -- clearing them inside
+// materialize_spanning_loci() was measured to have no effect.
+// Measured on GATK's own chr20 corpus over 20:10000000-10099999: 109 materialized
+// '*' rows where native published MQ (and 86 of them also BaseQRankSum, MQRankSum
+// and ReadPosRankSum) that GATK omits.
+void suppress_materialized_spanning_annotations(const bcf_hdr_t* output_header,
+                                               Record& record) {
+    if (!record.materialized_spanning_locus || record.value == nullptr) return;
+    for (const char* tag : {"MQ", "BaseQRankSum", "MQRankSum", "ReadPosRankSum"}) {
+        if (bcf_hdr_id2int(output_header, BCF_DT_ID, tag) < 0) continue;
+        (void)bcf_update_info_float(output_header, record.value, tag, nullptr, 0);
+    }
+}
+
 bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
                                      Record& record,
                                      Options& options,
@@ -6692,6 +6711,7 @@ int run_streaming_genotype_gvcf(Options& options,
                 update_excess_het_annotation(output_header, record);
                 update_inbreeding_coeff_annotation(output_header, record);
                 apply_gatk_annotation_compatibility(output_header, record, options);
+                suppress_materialized_spanning_annotations(output_header, record);
                 GenotypeComputed computed;
                 computed.record = std::move(record);
                 return computed;
@@ -7456,6 +7476,7 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 update_excess_het_annotation(output_header, record);
                 update_inbreeding_coeff_annotation(output_header, record);
                 apply_gatk_annotation_compatibility(output_header, record, options);
+                suppress_materialized_spanning_annotations(output_header, record);
                 GenotypeComputed computed;
                 computed.record = std::move(record);
                 return computed;
