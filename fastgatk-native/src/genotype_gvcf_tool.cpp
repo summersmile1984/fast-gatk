@@ -3213,6 +3213,25 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
         else
             ++pruned;
     }
+    // GenotypingEngine.java:172-175 -- a locus whose only survived ALT is the
+    // spanning deletion is refused outright unless the traversal emits all
+    // active sites, i.e. unless --include-non-variant-sites is set:
+    //
+    //   if (! emitAllActiveSites() && outputAlternativeAlleles.alleles.size() == 1
+    //           && Allele.SPAN_DEL.equals(outputAlternativeAlleles.alleles.get(0)))
+    //       return null;
+    //
+    // The refusal sits BEFORE recordDeletions() at :178-179, so a refused locus
+    // must not contribute to the emitted-deletion state either, and before any
+    // site annotation.  An ORPHAN '*' never reaches this point: it is removed
+    // from the subset as a spurious spanning deletion (:314), leaving the
+    // REF-only case handled below.
+    if (!options.include_non_variant_sites && output_alleles.size() == 2 &&
+        output_alleles[1] == "*") {
+        bcf_destroy(record.value);
+        record.value = nullptr;
+        return false;
+    }
     if (pruned == 0) {
         upstream_deletions.record(record, output_alleles);
         // The emitted allele list is the merged one, and the trim still applies.
@@ -4412,6 +4431,19 @@ void update_gatk_standard_annotations(const bcf_hdr_t* output_header, Record& re
     }
     if (restricted_depth > 0) depth = restricted_depth;
     if (depth > 0 && std::isfinite(record.value->qual)) {
+        // GATK's QualByDepth divides the DOUBLE it reads back from the record
+        // (`-10.0 * vc.getLog10PError()`, QualByDepth.java:78+86), while this
+        // tool's published QUAL is that double rounded to two decimals.  The two
+        // differ only in the SIGN OF ZERO for a zero-confidence locus, and GATK
+        // itself is not consistent there: measured in one and the same fixture,
+        // the '*'-only locus at 3 comes out QD=-0.00 and the one at 4 comes out
+        // QD=0.00 (the sign survives from a ~1e-16 round-off in the AF
+        // calculator, whose direction is not reproducible without matching
+        // GATK's arithmetic order).  A presentation-layer sign fix was tried and
+        // reverted: it made the 3 case match and the 4 case diverge, which the
+        // registered reverse-trim gate caught.  Keeping the rounded numerator is
+        // therefore the measured-better choice until the AF kernel's near-zero
+        // result can be aligned.
         const float qd = static_cast<float>(gatk_fix_high_qd(
             record.value->qual / static_cast<double>(depth), random));
         if (bcf_update_info_float(output_header, record.value, "QD", &qd, 1) != 0)

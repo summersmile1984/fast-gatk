@@ -1588,6 +1588,17 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_depth_gate_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-depth-gate-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # GenotypingEngine refuses a locus whose only surviving ALT is the spanning
+    # deletion unless --include-non-variant-sites is set (:172-175, before
+    # recordDeletions at :178-179), and QualByDepth divides the sign-preserving
+    # -10*log10PError, so a zero-confidence locus publishes QD=-0.00 while its
+    # QUAL column reads 0.  Native published an extra '*' row in default mode
+    # and a positive-zero QD in dense mode.
+    add_test(NAME fastgatk-genotype-gvcf-star-only-locus-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_star_only_locus_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-star-only-locus-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # Systemic guard: an htslib read failure (-2) must not be mistaken for EOF
     # (-1), which silently truncated output across many tools while exiting 0.
     add_test(NAME fastgatk-malformed-input-fail-loud-oracle

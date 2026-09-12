@@ -92,7 +92,9 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 49 轮，当前树） | **305/305 通过**（1566.2s） | **305/305 通过**（1531.5s） | `56e2ea6` + 本轮 reverse-trim 修复（即下一次提交的内容），运行时未提交变更 5 项；零陈旧告警；强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`；证据 `.diag/regression/20260912-235455/` |
+| 全量回归（第 51 轮，当前树） | **307/307 通过**（1458.9s） | **307/307 通过**（1422.5s） | `a0a30b7` + star-only 拒绝修复（即下一次提交的内容），运行时未提交变更 3 项；零陈旧告警；强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`；证据 `.diag/regression/20260913-012345/` |
+| 全量回归（第 50 轮） | 306/306 通过（1497.9s） | 306/306 通过（1538.3s） | `640678b` + depth-gate 修复 |
+| 全量回归（第 49 轮） | 305/305 通过（1566.2s） | 305/305 通过（1531.5s） | `56e2ea6` + reverse-trim 修复 |
 | 全量回归（第 48 轮） | 304/304 通过（1622.6s） | 304/304 通过（1444.9s） | commit `0862251`，工作树未提交变更 0 项 |
 | 全量回归（第 44 轮） | 303/303 通过（1431.4s） | 303/303 通过（1453.3s） | commit `c971cf3`；此后生产代码又改了 2 次（`dce568f`、`f0a8277`），故必须重跑 |
 | 全量回归（第 42 轮） | 302/302 通过 | 302/302 通过 | commit `b3cd293` |
@@ -774,7 +776,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–50 轮增量（累计 **32** 个已证真 bug 已修并上锁）
+## 第 36–51 轮增量（累计 **33** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -790,6 +792,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 30 | 删除归属改为追踪**已发射**等位基因 | 判定为状态记账；顺带修出两处此前未知分歧（含反向）（`f0a8277`） |
 | 31 | GenotypeGVCFs **反向 trim**（第 49 轮） | 见下节 |
 | 32 | GenotypeGVCFs 缺 `INFO/DP > 0` 前置条件（第 50 轮） | 见下文「第 50 轮」一节 |
+| 33 | 只含跨接删除的位点在默认模式必须被拒绝（第 51 轮） | 见下文「第 51 轮」一节 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -936,18 +939,80 @@ dense 模式同一输入下 GATK 的直通形状是 `chr1 2 . AAAA AACA . . DP=0
 但方向相反（不是多输出而是少注释）；真实 HC gVCF 恒带 `INFO/DP`，故可达性同样接近 0。
 
 
+## 第 51 轮：只含跨接删除的位点必须被拒绝（第 33 个已修 bug）
+
+### 规则（源码逐行核对）
+
+`GenotypingEngine.calculateGenotypes()` 在把已归属的 `*` 留在输出等位基因子集里之后，
+**在登记任何删除状态之前**直接拒绝该位点：
+
+```java
+// return a null call if we aren't forcing site emission and the only alt allele is a spanning deletion
+if (! emitAllActiveSites() && outputAlternativeAlleles.alleles.size() == 1
+        && Allele.SPAN_DEL.equals(outputAlternativeAlleles.alleles.get(0))) {
+    return null;                                   // :172-175
+}
+final List<Allele> outputAlleles = outputAlternativeAlleles.outputAlleles(vc.getReference());
+recordDeletions(vc, outputAlleles);                // :178-179
+```
+
+`emitAllActiveSites()` 就是 `EMIT_ALL_ACTIVE_SITES` 遍历，在 GenotypeGVCFs 里等价于
+`--include-non-variant-sites`。故规则**按模式分裂**：默认模式拒绝、dense 模式发射；
+而 ORPHAN `*`（无覆盖删除）根本走不到这里——它已在 `:314` 作为 spurious spanning deletion 被剪掉。
+
+### 实测（主会话亲自跑 pinned GATK 4.6.2.0）
+
+| fixture | GATK | native（修前） |
+| --- | --- | --- |
+| 默认：`2 AAA A,<NON_REF>` + `3 A *,<NON_REF>`（`*` 被覆盖，纯合） | **仅 1 行**（位点 2） | 2 行（多出 `chr1 3 . A * 0 LowQual …`） |
+| 默认：同上但 `*` 为杂合 | **仅 1 行** | 2 行 |
+| dense：同上（`--include-non-variant-sites`） | 发射 `3 A *`（例外） | 发射（仅 QD 符号差异，见下） |
+| dense：`3 A *,G,<NON_REF>`（有具体 ALT 存活，对照） | 一致 | 一致 |
+| 默认：orphan `*`（无覆盖删除，对照） | 无记录 | 无记录（本来就对） |
+
+### 修复与门禁
+
+在 `apply_gatk_output_allele_subset()` 中、**任何 `upstream_deletions.record()` 之前**判定
+`!include_non_variant_sites && output_alleles.size()==2 && output_alleles[1]=="*"` → 丢弃记录。
+顺序是硬约束：GATK 的拒绝发生在 `:178-179` 之前，所以被拒绝的位点**不得**登记删除状态。
+
+门禁 `fastgatk-genotype-gvcf-star-only-locus-gatk-oracle`（5 用例，双后端通过）。
+
+### 同轮被**当场否证**的修复（记录在案）
+
+同一轮我先尝试修 dense 下 `*`-only 行的 `QD=-0.00`，判据是「GATK 的 QD 分子是未取整的
+`-10*log10PError`（`QualByDepth.java:78/:86`），而 native 拿四舍五入后的 QUAL 当分子」，
+于是改了两处：QD 分子**与**浮点文本格式器（对 QD 保留负零）。
+
+**注册门禁当场把它否证**：同一个 fixture 里 GATK 在位置 3 写 `QD=-0.00`、在位置 4 写 `QD=0.00`
+（两行 QUAL 都渲染成 `0`）。也就是说符号来自 AF 计算器 **约 1e-16 的舍入方向**，不是呈现规则。
+实测 native 该行的 `call_confidence = +4.82e-16`（p 略小于 1），GATK 落在另一侧（p 略大于 1，
+Java 的 `log10PError` 因此为正 → 分子 `-4.8e-16`）。要逐字节复现这个符号必须复刻
+GATK 的浮点运算顺序（内核级），Host 呈现层做不到。
+
+处置：两处改动**全部回退**（`git diff` 现在只剩 `*` 拒绝那一段），该分歧记为
+「已测量、机制已定位、未修」，证据留在未注册的
+`verify_genotype_gvcf_dense_materialize_gatk_oracle.py` 的 REPORTED ONLY 用例里；
+新门禁中这一行只比前 7 列（CHROM..FILTER）并在 `why` 里写明原因。
+
+> 教训：**符号零这类 1e-16 级差异必须用「多于一处的位点」验证**，否则会把
+> 「换一个例子又反了」的伪修复当成修复。这次是**注册门禁自己抓到的**——
+> 反向 trim 门禁的位置 4 行从 `QD=0.00` 变成了 `QD=-0.00`。
+
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
-**最新基线（第 50 轮，主会话亲自运行）：commit `640678b` + depth-gate 修复
+**最新基线（第 51 轮，主会话亲自运行）：commit `a0a30b7` + star-only 拒绝修复
 （即下一次提交的内容；运行时工作树未提交变更 3 项，全部为本轮修复/门禁/文档）上
-OpenMP 306/306（1497.9s）、Serial 306/306（1538.3s），零陈旧告警，
+OpenMP 307/307（1458.9s）、Serial 307/307（1422.5s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-证据块（可直接复核）：`.diag/regression/20260913-003111/summary.txt`
-（306 = 304 + `fastgatk-genotype-gvcf-reverse-trim-gatk-oracle`
-+ `fastgatk-genotype-gvcf-depth-gate-gatk-oracle`）。
+证据块（可直接复核）：`.diag/regression/20260913-012345/summary.txt`
+（307 = 304 + reverse-trim 门禁 + depth-gate 门禁 + `fastgatk-genotype-gvcf-star-only-locus-gatk-oracle`）。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
+第 50 轮 `a0a30b7` 上 306/306（1497.9s / 1538.3s）——当时写成"下一次提交即 content"，
+对应提交 `640678b` 之后的 depth-gate 修复；
 第 49 轮 `640678b` 上 305/305（1566.2s / 1531.5s）；
 `0862251` 上 304/304（1622.6s / 1444.9s，工作树干净）；
 `c971cf3` 上 303/303；`b3cd293` 上 302/302。
@@ -955,14 +1020,14 @@ OpenMP 306/306（1497.9s）、Serial 306/306（1538.3s），零陈旧告警，
 
 这条基线的意义：此前数轮的全量结果由委派方运行、我只做了 md5/时序核对；
 自 `c971cf3` 起补上了「最终提交树上由主会话亲自测得」的那一步，因此
-**「306/306 在强制 oracle 存在下成立」这一宣称有同源证据。**
+**「307/307 在强制 oracle 存在下成立」这一宣称有同源证据。**
 
 配套的可信度条件（均已在本会话建立）：
 1. `run_regression.sh` 默认要求 GATK oracle 在场（缺失即响亮失败），
    并只与**最新产物**比较陈旧性（消除假告警）；
 2. 176 个脚本经 `oracle_guard.py` 改为 fail-closed（原可静默降级为「与自身比较」）；
-3. 本会话新注册 25 道严格 GATK 门禁（另有 1 道 `-diagnostic` 门禁以 exit 0 记录差异、
-   刻意不使全量变红），覆盖本会话 32 个修复中的关键行为；
+3. 本会话新注册 26 道严格 GATK 门禁（另有 1 道 `-diagnostic` 门禁以 exit 0 记录差异、
+   刻意不使全量变红），覆盖本会话 33 个修复中的关键行为；
 4. 5 道刻意未注册（`verify_hc_forced_alleles_emission_gate_oracle.py`、
    `verify_reblock_gvcf_triploid_gatk_oracle.py`、
    `verify_genotype_gvcf_dense_materialize_gatk_oracle.py` 等），因其**按设计必须失败**——
@@ -976,7 +1041,10 @@ OpenMP 306/306（1497.9s）、Serial 306/306（1538.3s），零陈旧告警，
    需先重做其约 25 个派生值）；
 4. 退出码类分歧（空等位基因 `--alleles` GATK exit 3 vs 本实现 exit 0；
    SAM 文本路径受 htslib `sam_read1_sam` 折叠解析失败为 -1 所限，不可修）；
-5. 第 50 轮记下的同根反向残差：输入无 `INFO/DP` 时 GATK 发布算出的 `INFO/DP` 与 QD，native 两者都不写。
+5. 第 50 轮记下的同根反向残差：输入无 `INFO/DP` 时 GATK 发布算出的 `INFO/DP` 与 QD，native 两者都不写；
+6. 第 51 轮记下的符号零残差：dense 下 `*`-only 行的 `QD` 符号取决于 AF 计算器 ~1e-16 的舍入方向，
+   GATK 自身在同一 fixture 内不一致（位置 3 为 `-0.00`、位置 4 为 `0.00`）；已测量、机制已定位，
+   需在内核层复刻 GATK 的浮点运算顺序才可能对齐，Host 呈现层已证明修不好（伪修复被注册门禁否证）。
 
 此外还有一批**已测量但尚未设门禁**的残差（多 contig 顺序、非 ASCII Description、
 NaN 补集、「同一位点两条记录」、跨位点替换的 REF-only 物化、默认模式 `*`-only 行、
