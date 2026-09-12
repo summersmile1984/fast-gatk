@@ -1124,6 +1124,30 @@ struct Record {
     // already-derived `cohort.qual` so that boundary can be reproduced.
     double cohort_log10_p_no_variant = 0.0;
     bool cohort_quality_available = false;
+    // GenotypingEngine.calculateGenotypes() tests the RECOMPUTED site
+    // confidence, not the source FILTER and not the published QUAL token:
+    //
+    //   final double phredScaledConfidence = (-10.0 * log10Confidence) + 0.0;
+    //   ...
+    //   if ( ! passesCallThreshold(phredScaledConfidence) ) {
+    //       builder.filter(GATKVCFConstants.LOW_QUAL_FILTER_NAME);
+    //   }
+    //
+    // (GenotypingEngine.java:163 and :184-186, with passesCallThreshold()
+    // defined as `conf >= standardConfidenceForCalling` at :430-432).  The same
+    // double is handed to builder.log10PError() at :183, but htsjdk renders
+    // QUAL with two decimals, so the token can read at or above the cutoff
+    // while the filter is applied: measured on the weak-locus fixture, the
+    // confidence lies inside [23.135, 23.1358) while the published token is
+    // 23.14.  Keep the raw double so the writer boundary can reproduce the
+    // decision exactly, and keep the PRE-posterior one, because :184-186 runs
+    // before the optional posterior QUAL update at :192-199.
+    // `call_confidence_available` separates "the genotyping engine computed a
+    // confidence" from "the record never reached it" -- a passthrough
+    // reference-confidence block has a missing QUAL and GATK applies no filter
+    // to it.
+    double call_confidence = 0.0;
+    bool call_confidence_available = false;
 };
 
 // The joint-materialization pass is Host/HTSlib heavy, but its final
@@ -2171,6 +2195,12 @@ void update_cohort_af_annotations(const bcf_hdr_t* output_header, Record& record
     record.value->qual = gatk_qual_output(cohort.qual);
     record.cohort_log10_p_no_variant = cohort.log10_p_no_variant;
     record.cohort_quality_available = true;
+    // The site confidence GenotypingEngine tests at :184-186 (and publishes as
+    // QUAL at :183) for a non-monomorphic site is
+    // -10 * AFresult.log10ProbOnlyRefAlleleExists(), i.e. the raw
+    // `cohort.qual` before gatk_qual_output()'s two-decimal rendering.
+    record.call_confidence = -10.0 * cohort.log10_p_no_variant;
+    record.call_confidence_available = true;
     std::vector<int32_t> mle_ac(static_cast<std::size_t>(record.allele_count - 1), 0);
     for (std::size_t allele = 1; allele < cohort.integer_allele_counts.size(); ++allele)
         mle_ac[allele - 1] = cohort.integer_allele_counts[allele];
@@ -2846,9 +2876,18 @@ void materialize_gatk_monomorphic_ref_call(const bcf_hdr_t* output_header,
     // for HaplotypeCaller's gVCF blocks.
     if (record.cohort_quality_available) {
         const auto complement = gatk_log10_one_minus_pow10(record.cohort_log10_p_no_variant);
-        if (std::isfinite(complement))
+        if (std::isfinite(complement)) {
             record.value->qual = gatk_qual_output(-10.0 * complement);
-        else if (std::isinf(complement) && complement < 0.0)
+            // The confidence GenotypingEngine tests at :184-186 for a
+            // monomorphic site is -10 * log10ProbVariantPresent(), i.e. the
+            // same double, before the two-decimal rendering above.  A NaN
+            // complement (log10Confidence > 0, unreachable for a real
+            // posterior) keeps the previous leave-unchanged behaviour and is
+            // NOT recorded, so that degenerate shape stays exactly where the
+            // measured contract had it.
+            record.call_confidence = -10.0 * complement;
+            record.call_confidence_available = true;
+        } else if (std::isinf(complement) && complement < 0.0) {
             // GenotypingEngine.java:158-163 assigns that same
             // log10ProbVariantPresent() straight into the record
             // (builder.log10PError(log10Confidence) at :183), so when the
@@ -2863,6 +2902,12 @@ void materialize_gatk_monomorphic_ref_call(const bcf_hdr_t* output_header,
             // (log10Confidence > 0) keeps the previous leave-unchanged
             // behaviour.
             record.value->qual = std::numeric_limits<float>::infinity();
+            // +Infinity passes every finite --standard-min-confidence-
+            // threshold-for-calling, so the filter decision is recorded as
+            // well: GATK's passesCallThreshold(-10 * -Infinity) is true.
+            record.call_confidence = std::numeric_limits<double>::infinity();
+            record.call_confidence_available = true;
+        }
     }
 
     record.alleles = {reference};
@@ -4215,6 +4260,43 @@ void apply_gatk_annotation_compatibility(const bcf_hdr_t* output_header,
     if (record.value->d.n_flt > 0 &&
         bcf_update_filter(output_header, record.value, nullptr, 0) != 0)
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot clear inherited FILTER");
+    // ... and then GATK's OWN decision, which is the only filter a
+    // GenotypeGVCFs record can carry:
+    //
+    //   if ( ! passesCallThreshold(phredScaledConfidence) ) {
+    //       builder.filter(GATKVCFConstants.LOW_QUAL_FILTER_NAME);
+    //   }
+    //
+    // (GenotypingEngine.java:184-186, passesCallThreshold() = `conf >=
+    // standardConfidenceForCalling` at :430-432, LOW_QUAL_FILTER_NAME =
+    // "LowQual" at GATKVCFConstants.java:179).  It must be applied AFTER the
+    // clear above, otherwise the clear would wipe it.
+    //
+    // The comparison uses the RAW recomputed confidence recorded by the engine
+    // stage, never `record.value->qual`: the published token is that double
+    // rounded to two decimals, so the measured weak-locus row (confidence in
+    // [23.135, 23.1358), QUAL column 23.14) is filtered at
+    // --standard-min-confidence-threshold-for-calling 23.1358 while its QUAL
+    // already reads 23.14.  `call_confidence` is the PRE-posterior value,
+    // because :184-186 precedes the --use-posteriors-to-calculate-qual update
+    // at :192-199.  Records that never reached the genotyping engine (a
+    // passthrough reference-confidence block) carry no confidence and stay
+    // unfiltered, which is what GATK emits for them.  The filter is
+    // site-level: `builder.filter()` takes no allele, GenotypeGVCFs never calls
+    // AlleleFilterUtils.addAlleleAndSiteFilters() (the per-allele intersection
+    // at AlleleFilterUtils.java:115-120 belongs to VariantFiltration/Mutect2),
+    // and `--invalidate-previous-filters` is not a GenotypeGVCFs option at all
+    // (measured: GATK exits 1 with "is not a recognized option").
+    if (record.call_confidence_available &&
+        !(record.call_confidence >= options.standard_confidence_for_calling)) {
+        int low_qual = bcf_hdr_id2int(output_header, BCF_DT_ID, "LowQual");
+        if (low_qual < 0)
+            throw std::runtime_error(
+                "OUTPUT_CONTRACT_FAILURE: cannot write LowQual FILTER: the id is not "
+                "declared in the output header");
+        if (bcf_update_filter(output_header, record.value, &low_qual, 1) != 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write LowQual FILTER");
+    }
     // RAW_MQandDP is the reducible input annotation used to derive MQ; GATK's
     // finalized GenotypeGVCFs records do not retain it.  RCQ/RCP are native
     // cross-sample diagnostics rather than standard GATK INFO fields.
@@ -4519,6 +4601,27 @@ int write_vcf_text_line(htsFile* output, const std::string& line) {
 // (GenotypingEngine.java:184-186).
 constexpr const char* kGatkLowQualFilterLine =
     "##FILTER=<ID=LowQual,Description=\"Low quality\">";
+
+// GATK declares that filter unconditionally in every GenotypeGVCFs header
+// (`headerLines.add(GATKVCFHeaderLines.getFilterLine(
+// GATKVCFConstants.LOW_QUAL_FILTER_NAME))` is the last add() of
+// GenotypeGVCFsEngine.setupVCFWriter(), :416, with the text from
+// GATKVCFHeaderLines.java:89).  The declaration has to be in the bcf_hdr_t and
+// not only in the header text written by gatk_compatible_header_text(),
+// because GenotypingEngine.java:184-186 puts that id into a record's FILTER
+// column and HTSlib resolves the id against this header.  Appending it here
+// cannot change the emitted header text:
+// gatk_compatible_header_text() re-collects the ##FILTER group from whatever
+// the header contains, de-duplicates against this exact line, sorts the group
+// and re-inserts it at the position the input's own filter lines occupied.
+// Both output writers build their header through this call (the streaming
+// setup via add_genotype_output_header_fields, the aggregate setup inline).
+void ensure_gatk_low_qual_filter_declaration(bcf_hdr_t* output_header,
+                                             const Options& options) {
+    if (!options.gatk_annotation_compatibility) return;
+    if (bcf_hdr_id2int(output_header, BCF_DT_ID, "LowQual") >= 0) return;
+    bcf_hdr_append(output_header, kGatkLowQualFilterLine);
+}
 
 // HTSlib's synthetic PASS declaration, injected into every header it parses.
 constexpr const char* kHtslibSyntheticPassFilterLine =
@@ -5395,6 +5498,7 @@ void add_genotype_output_header_fields(bcf_hdr_t* output_header,
                                        const Options& options) {
     bcf_hdr_append(output_header,
                    "##fastgatk_genotype_gvcfs_status=reference-block-materialization");
+    ensure_gatk_low_qual_filter_declaration(output_header, options);
     if (bcf_hdr_id2int(output_header, BCF_DT_ID, "GQ") < 0)
         bcf_hdr_append(output_header,
                        "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=Genotype quality>");
@@ -6294,6 +6398,7 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 output_header = bcf_hdr_dup(header);
                 if (!output_header) { bcf_hdr_destroy(header); bcf_close(input); throw std::runtime_error("RESOURCE_EXHAUSTED: cannot duplicate VCF header"); }
                 bcf_hdr_append(output_header, "##fastgatk_genotype_gvcfs_status=reference-block-materialization");
+                ensure_gatk_low_qual_filter_declaration(output_header, options);
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "GQ") < 0)
                     bcf_hdr_append(output_header, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=Genotype quality>");
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "RGQ") < 0)

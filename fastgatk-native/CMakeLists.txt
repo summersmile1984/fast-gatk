@@ -1581,6 +1581,13 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_header_order_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-header-order-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # GATK applies its own site-level FILTER=LowQual to a dense row whose
+    # recomputed (pre-posterior) call confidence is below the cutoff.
+    add_test(NAME fastgatk-genotype-gvcf-lowqual-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_lowqual_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-lowqual-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # NOTE: verify_reblock_gvcf_triploid_gatk_oracle.py is deliberately NOT registered:
     # its divergence is confirmed real (GATK reblocks the triploid record to 0/0/0
     # END=30 with 4 PLs) but the fix is blocked by an unrelated, GATK-untrue block in
