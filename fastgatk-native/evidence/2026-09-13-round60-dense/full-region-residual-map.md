@@ -534,3 +534,40 @@ finalized_monomorphic_ref`），**编译通过**，整段复验：残差仍 **84
 
 **本轮结论**：C/E 类的问题已从"来源不明"推进到"**已排除两条修复路径（htslib 删除、文本层 INFO 过滤）**，
 并明确了下一次插桩要回答的一个二选一问题"。这是可继续的具体状态，而不是卡住。
+
+## 第 81 轮：文本函数**确实看到**这些键；但两种传标志的写法都无效，剩下的写法已明确
+
+**取证（整段命令 + 只 grep 10008964）**：在 `gatk_compatible_record_text()` 入口打印第 8 列：
+
+```
+[TXT] INFO=BaseQRankSum=1.026;DP=63;ExcessHet=0;MLEAC=.;MLEAF=.;MQRankSum=1.844;ReadPosRankSum=0.666
+（输出行： BaseQRankSum=1.03;DP=63;ExcessHet=0.0000;MLEAC=.;MLEAF=.;MQRankSum=1.84;ReadPosRankSum=0.666）
+```
+
+⇒ 该函数**确实**处理这一行、且 `fields[7]` 里**确实**带着这四个键（所以第 80 轮"文本层过滤"
+的思路本身是对的）。
+
+**两种写法实测均无效**（整段残差都维持 84）：
+
+| 写法 | 轮次 | 结果 |
+| --- | --- | --- |
+| 传入 `computed.record.materialized_spanning_locus \|\| finalized_monomorphic_ref` | 80 | ✗ |
+| 传入 `encoded.record.…`（move 之后的对象） | 81 | ✗ |
+
+**结论**：调用点取到的标志在那一刻不可靠（move-from / 标志未随对象传递）。
+**唯一还没试过、且证据最充分的写法**：在**编码 lambda 的入口**（`std::move` 之前）先把标志
+捕获进一个局部布尔量，再把该局部量传给文本函数——第 77 轮的插桩正是打在那一行，
+当时读到 `span=1 mono=1`，**证明该处标志为真**：
+
+```cpp
+[&](GenotypeComputed computed) -> std::optional<GenotypeEncoded> {
+    GenotypeEncoded encoded;
+    const bool drop_read_level = computed.record.materialized_spanning_locus ||
+                                 computed.record.finalized_monomorphic_ref;   // ← 新增（move 之前）
+    encoded.record = std::move(computed.record);
+    ...
+    encoded.text = gatk_compatible_record_text(<formatted>, drop_read_level);    // ← 用局部量
+```
+配合 `gatk_compatible_record_text(..., bool drop_read_level = false)` 与 INFO 组装循环内的
+key 跳过（这两处第 80 轮已写好并编译通过，可直接复用）。预期整段残差 **84 → 73**。
+（本轮最后一次尝试因锚点已被上一轮改掉而未写入，改动已回退，树保持已验证状态。）
