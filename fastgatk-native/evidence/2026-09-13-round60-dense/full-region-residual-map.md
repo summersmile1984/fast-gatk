@@ -218,3 +218,28 @@ merger 的合并语义——把**所有覆盖该坐标的记录**（跨接变异
 `materialized_spanning_locus / materialized_reference_only / finalized_monomorphic_ref /
 reference_block / alleles / allele_count`，一次运行即可确定来源；
 确认后把抑制挂到正确的判据上，并用整段语料复验（预期 84 → 73）。三次尝试均已回退。
+
+## 第 68 轮：用插桩把 C/E 类的候选标志**逐个排除**
+
+在抑制器入口插桩（`FASTGATK_DEBUG_MAT=1`，打印 `pos / span / mono / block / alleles / alt`），
+跑 `-L 20:10008960-10008970` 得到：
+
+```
+[MATDBG] pos=10008965 span=0 mono=0 block=0 alleles=1 alt=.
+[MATDBG] pos=10008966 span=0 mono=0 block=0 alleles=1 alt=.
+[MATDBG] pos=10008967 span=0 mono=0 block=0 alleles=1 alt=.
+...
+```
+
+即 C/E 类这些 REF-only 行：
+
+- **不是** `materialized_spanning_locus`（span=0）——第 66 轮尝试已否证；
+- **不是** `finalized_monomorphic_ref`（mono=0）——第 66 轮尝试已否证；
+- **不是** `reference_block`（block=0）——第 67 轮新增的 `materialized_reference_only` 也因此挂不上（它在解码展开处打标，而那些行 block=0）；
+- `alleles=1`（ALT='.'），且 10008965 是 `10008952` 那条多等位记录跨度的**最后一个坐标**，
+  10008966 起才有输入块记录。
+
+**因此下一轮的正确做法**：插桩要打在**创建点**而不是汇合点——在三个可能产生 REF-only 行的位置
+各打一个不同的标记（解码阶段的块展开、`split_reference_blocks_at_variants()` 的分段、
+分组阶段的 `materialize_reference_only()` 调用），一次运行即可看出这些行由哪一处产生；
+确认后再把抑制挂到正确判据上（预期整段残差 84 → 73）。插桩已回退。
