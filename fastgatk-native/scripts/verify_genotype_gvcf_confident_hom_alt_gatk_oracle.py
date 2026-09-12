@@ -108,6 +108,40 @@ MULTI_ALLELIC_PL_PROJECTION = (
     "GT:AD:DP:GQ:PL\t1/2:0,6,6,6,0:18:9:"
     "2172,655,493,249,0,82,352,33,9,214,876,512,167,254,730\n")
 
+# GATK's own chr20 corpus shape at 20:10068160 needs its COVERING deletion record
+# to be present: without it the '*' is an orphan, gets pruned as a spurious
+# spanning deletion and the whole row changes shape (measured: the ALT collapses
+# to 'G', GT becomes 1|1 and QD becomes 28.00).  Both records are carried, shifted
+# onto a small contig whose bases match their REFs.
+HEADER_PGT_SB = HEADER.replace(
+    "##FORMAT=<ID=PL",
+    '##FORMAT=<ID=PGT,Number=1,Type=String,Description="Physical phasing">\n'
+    '##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing id">\n'
+    '##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phasing set">\n'
+    '##FORMAT=<ID=SB,Number=4,Type=Integer,Description="Strand bias table">\n'
+    '##INFO=<ID=BaseQRankSum,Number=1,Type=Float,Description="BQRS">\n'
+    '##INFO=<ID=MQRankSum,Number=1,Type=Float,Description="MQRS">\n'
+    '##INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description="RPRS">\n'
+    '##INFO=<ID=ExcessHet,Number=1,Type=Float,Description="Excess het">\n'
+    '##INFO=<ID=MLEAC,Number=A,Type=Integer,Description="MLEAC">\n'
+    '##INFO=<ID=MLEAF,Number=A,Type=Float,Description="MLEAF">\n'
+    '##INFO=<ID=RAW_MQandDP,Number=2,Type=Integer,Description="Raw MQ and DP">\n'
+    "##FORMAT=<ID=PL")
+QD_TIE_BREAK_SEQUENCE = "AA" + "GTGTATATATATATGTA" + "A" * 81
+
+QD_TIE_BREAK_RECORDS = (
+    "chr1\t3\t.\tGTGTATATATATA\tG,<NON_REF>\t97.60\t.\t"
+    "BaseQRankSum=-0.842;DP=28;ExcessHet=0.0000;MLEAC=1,0;MLEAF=0.500,0.00;"
+    "MQRankSum=0.328;RAW_MQandDP=89764,28;ReadPosRankSum=0.524\t"
+    "GT:AD:DP:GQ:PGT:PID:PL:PS:SB\t"
+    "0|1:3,4,0:7:57:0|1:10068158_GTGTATATATATA_G:105,0,57,114,69,183:10068158:0,3,2,2\n"
+    "chr1\t5\t.\tGTATATATATATGTA\tG,*,<NON_REF>\t56.01\t.\t"
+    "DP=32;ExcessHet=0.0000;MLEAC=1,1,0;MLEAF=0.500,0.500,0.00;"
+    "RAW_MQandDP=101405,32\t"
+    "GT:AD:DP:GQ:PGT:PID:PL:PS:SB\t"
+    "1|2:0,2,4,0:6:53:1|0:10068158_GTGTATATATATA_G:"
+    "706,158,131,98,0,53,489,171,104,458:10068158:0,0,2,4\n")
+
 CASES = [
     {
         "case": "confident-hom-alt-is-emitted",
@@ -154,17 +188,52 @@ CASES = [
                    "AC=2;AF=1.00;AN=2;DP=65;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;"
                    "QD=25.36\tGT:AD:DP:GQ:PL\t1/1:0,6:18:99:2090,167,0"],
     },
+    {
+        "case": "qd-uses-the-unrounded-confidence",
+        "why": "QualByDepth divides the unrounded -10*log10PError double "
+               "(QualByDepth.java:78+86), not the two-decimal float32 QUAL the "
+               "writer publishes; this corpus locus sits exactly on the "
+               "two-decimal tie (unrounded 9.3345911138702871 -> 9.33, rounded "
+               "float32 9.3349997202555333 -> 9.34) and was the last difference "
+               "left on GATK's own chr20 corpus.  The covering deletion record is "
+               "part of the fixture because the '*' must be OWNED for GATK to "
+               "publish this row shape at all",
+        "body": QD_TIE_BREAK_RECORDS,
+        "header": HEADER_PGT_SB,
+        "reference": "QD_TIE_BREAK",
+        "args": [],
+        "expect": [
+            "chr1\t3\t.\tGTGTATATATATA\tG\t97.60\t.\t"
+            "AC=1;AF=0.500;AN=2;BaseQRankSum=-8.420e-01;DP=28;ExcessHet=0.0000;"
+            "FS=3.680;MLEAC=1;MLEAF=0.500;MQ=56.62;MQRankSum=0.328;QD=13.94;"
+            "ReadPosRankSum=0.524;SOR=0.061\t"
+            "GT:AD:DP:GQ:PGT:PID:PL:PS\t"
+            "0|1:3,4:7:57:0|1:10068158_GTGTATATATATA_G:105,0,57:10068158",
+            "chr1\t5\t.\tGTATATATATATGTA\tG,*\t56.01\t.\t"
+            "AC=1,1;AF=0.500,0.500;AN=2;DP=32;ExcessHet=0.0000;FS=0.000;"
+            "MLEAC=1,1;MLEAF=0.500,0.500;MQ=56.29;QD=9.33;SOR=1.329\t"
+            "GT:AD:DP:GQ:PGT:PID:PL:PS\t"
+            "1|2:0,2,4:6:53:1|0:10068158_GTGTATATATATA_G:"
+            "706,158,131,98,0,53:10068158",
+        ],
+    },
 ]
 
 
+def _write_fasta(path: pathlib.Path, sequence: str) -> pathlib.Path:
+    path.write_text(">chr1\n" + sequence + "\n", encoding="utf-8")
+    path.with_name(path.name + ".fai").write_text(
+        f"chr1\t{len(sequence)}\t6\t{len(sequence)}\t{len(sequence) + 1}\n",
+        encoding="utf-8")
+    path.with_suffix(".dict").write_text(
+        f"@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:{len(sequence)}\n", encoding="utf-8")
+    return path
+
+
 def write_reference(work: pathlib.Path) -> pathlib.Path:
-    reference = work / "reference.fa"
-    reference.write_text(">chr1\n" + "A" * 100 + "\n", encoding="utf-8")
-    reference.with_name(reference.name + ".fai").write_text(
-        "chr1\t100\t6\t100\t101\n", encoding="utf-8")
-    reference.with_suffix(".dict").write_text(
-        "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:100\n", encoding="utf-8")
-    return reference
+    # The tie-break fixture needs a contig whose bases match both of its records.
+    _write_fasta(work / "reference-qd.fa", QD_TIE_BREAK_SEQUENCE)
+    return _write_fasta(work / "reference.fa", "A" * 100)
 
 
 def read_lines(path: pathlib.Path) -> list[str]:
@@ -190,7 +259,9 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
              java: pathlib.Path, jar: pathlib.Path, native: pathlib.Path,
              timeout: int) -> dict:
     source = work / f"{case['case']}.g.vcf"
-    source.write_text(HEADER + case["body"], encoding="utf-8")
+    source.write_text(case.get("header", HEADER) + case["body"], encoding="utf-8")
+    if case.get("reference") == "QD_TIE_BREAK":
+        reference = work / "reference-qd.fa"
     index_result = invoke([str(java), "-Xmx1g", "-jar", str(jar),
                            "IndexFeatureFile", "-I", str(source)],
                           f"GATK IndexFeatureFile [{case['case']}]", timeout)
