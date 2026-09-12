@@ -777,3 +777,26 @@ BCF 输入与 GenomicsDB/`gendb://` 路径亦有意未处理。
 4. **`javap` 是可用证据源**：多轮用 `javap -c/-constants` 从 pinned jar 证实 GATK/htsjdk 行为
    （5 参数 builder 不拷贝 filters、`%f` 渲染无穷、字典单例）。这是介于「读源码」与「跑实验」
    之间的第三种证据。
+
+## 收尾基线（第 42 轮，主会话亲自运行）
+
+**已在 commit `b3cd293`（工作树干净、无源码比产物新）上取得双后端
+OpenMP 302/302（1378.0s）、Serial 302/302（1390.5s），零陈旧告警，
+且运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
+
+这条基线的意义：此前数轮的全量结果由委派方运行、我只做了 md5/时序核对；
+本次补上了「最终提交树上由主会话亲自测得」的那一步，因此
+**「302/302 在强制 oracle 存在下成立」这一宣称现在有同源证据。**
+
+配套的可信度条件（均已在本会话建立）：
+1. `run_regression.sh` 默认要求 GATK oracle 在场（缺失即响亮失败），
+   并只与**最新产物**比较陈旧性（消除假告警）；
+2. 176 个脚本经 `oracle_guard.py` 改为 fail-closed（原可静默降级为「与自身比较」）；
+3. 21 道严格 GATK 门禁已注册，覆盖本会话 27 个修复中的关键行为；
+4. 4 道刻意未注册（`verify_hc_forced_alleles_emission_gate_oracle.py`、
+   `verify_reblock_gvcf_triploid_gatk_oracle.py` 等），因其**按设计必须失败**——
+   它们是尚未修复分歧的活证据，不应被注册成会永久变红的测试。
+
+**仍未达成 1:1**：27 个已修之外，header 纯顺序差异、多输入 header 合并、
+`FILTER=LowQual` 阈值通路、删除归属重构（按已发射等位基因）、ReblockGVCF case B、
+以及退出码类分歧（空等位基因 / SAM 文本路径不可修）均仍在。详见上文各节。
