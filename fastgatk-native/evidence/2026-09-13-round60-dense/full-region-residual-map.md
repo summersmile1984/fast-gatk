@@ -756,3 +756,38 @@ FIXED by round86: 3   BROKEN by round86: 0
 而 10041698 是 span=0/mono=0 —— 说明**现有标志无法区分二者**，需要一个新标志）。
 一旦该判据到位，那 6 个位点的 INFO 会恢复与 GATK 一致，届时若 GT/GQ 问题也修好，
 它们将从"不匹配"变成"匹配"（REF-only 残差 13 → 7）。
+
+## 第 90 轮：代码核对后矛盾仍在——唯一没做过的那个插桩就是下一步
+
+核对已提交（第 86 轮）的代码，逻辑与设计一致：
+
+```cpp
+if (drop_read_level || drop_excess_het) {
+    ordered.erase(std::remove_if(..., [&](const auto& entry) {
+        if (drop_read_level && (entry.key == "MQ" || entry.key == "BaseQRankSum" ||
+                               entry.key == "MQRankSum" || entry.key == "ReadPosRankSum")) return true;
+        return drop_excess_het && entry.key == "ExcessHet";
+    }), ordered.end());
+}
+```
+两处开关分别在**编码 lambda 入口**（`:6732`/`:7503`）由
+`materialized_spanning_locus` 与 `finalized_monomorphic_ref` 取值，并传给文本函数（`:6746`/`:7517`）。
+
+而 10041698 在该 lambda 上的标志实测为 `span=0 mono=0`（第 88 轮插桩）：
+**按此代码它不该被删除，但它的键在修复后确实不见了**（第 88 轮的三版对照）。
+
+⇒ 矛盾未解。已知的排除项：
+- 不是调用点/传参写法（三种都试过）；
+- 不是 erase 的条件写错（本轮逐行核对）；
+- 不是该 lambda 取错对象（插桩就打在同一个 lambda 里、`std::move` 之前）。
+
+**唯一从未做过的插桩（下一步就做这一个）**：把探针放进 `gatk_compatible_record_text()`
+**内部**，对目标 POS 打印 ① 两个开关的取值、② 擦除**前**的键列表、③ 擦除**后**的键列表、
+④ 函数入口收到的第 8 列。一次整段运行即可给出四种可能中的一种：
+- 开关为假却键消失 ⇒ 键是在**调用本函数之前**就没了的（回到计算阶段，需查 `ordered` 的来源）；
+- 开关为真 ⇒ 说明同一位点上存在**两条**记录（一条 `span=1` 一条 `span=0`），
+  编码器插桩因 `sort -u` 或同一 POS 只打印了其中一条 —— 那就按 POS 分别打印每条记录的标志；
+- 键在擦除后仍在 ⇒ `remove_if` 的谓词没匹配到（键名有前后缀）；
+- 键在入口就已不在 ⇒ 与第一项相同。
+
+第 86 轮的修复**保留**（位点级 +3/−0，无回归）；本轮的核对与结论已归档，改动为 0。
