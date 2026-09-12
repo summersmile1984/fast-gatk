@@ -154,3 +154,30 @@ merger 的合并语义——把**所有覆盖该坐标的记录**（跨接变异
 
 > 方法教训：先做**模型验证**（用真实数据反推目标值）再写实现，可以避免像第 61 轮那样
 > 先写再被证否；本轮用 5 个候选模型换来一个更深的正确认识。
+
+## 第 65 轮：第 64 轮的「与参考块合并」假设被**证伪**，投影模型仍未对上
+
+**证伪**：直接枚举覆盖 10008953 的输入记录——该坐标**没有**参考块覆盖，唯一覆盖它的是
+`10008952 CACACACACACACA > C,CCA,CCACACACACA,CCACACACACACA,<NON_REF>`（跨 10008952-10008965）。
+周边记录为 `10008945/10008950/10008951` 的块（END 分别止于 10008947/10008950/10008951）与
+`10008948 TA > T,<NON_REF>`（跨 10008948-10008949），**都不覆盖 10008953**。
+故第 64 轮把该位点解释为「与参考块合并」是错的。
+
+**模型仍不对上**：在该单记录投影下再试 `<NON_REF>` 的三种归并方式
+
+| 模型（删除类 {C,CCA,CCACACACACA,CCACACACACACA} → `*`） | 预测 PL | 与 GATK `1184,62,0` |
+| --- | --- | --- |
+| `<NON_REF>` → 参考 | `1149,539,0` | ✗（首值接近、中值差很多） |
+| `<NON_REF>` → `*` | `1717,539,0` | ✗ |
+| `<NON_REF>` → 丢弃（NO_CALL） | `1717,539,0` | ✗ |
+
+**结论**：GATK 在 `*` 位点的样本投影不是「按索引映射后做 log-sum」这么简单；
+`ReferenceConfidenceVariantContextMerger.mergeRefConfidenceGenotypes()` 还会经
+`getIndexesOfRelevantAllelesForGVCF` / `newToOldGenotypeMap` / `generateAD` 与
+`GenotypeLikelihoods` 的归一化，其中对 NO_CALL 拷贝是否按参考处理、以及 AD 如何
+在塌缩后的等位基因上合并，都还没有实测钉住。
+
+**下一步（本轮给出的方法与判据）**：不要再靠反推猜模型，改为**直接对 pinned jar 里的 merger 做探针**
+（沿用本会话第 49 轮用过的 Java 探针手法）：构造该条记录，调用
+`ReferenceConfidenceVariantContextMerger.merge(...)` 与 `mergeRefConfidenceGenotypes(...)`，
+打印返回 VC 的 alleles/GT/AD/PL，与 GATK 输出 `1184,62,0` 对齐后再写 native 实现。
