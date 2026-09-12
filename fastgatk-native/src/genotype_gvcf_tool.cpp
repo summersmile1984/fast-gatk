@@ -3152,6 +3152,33 @@ void apply_gatk_reverse_trim(const bcf_hdr_t* output_header, Record& record) {
     record.alleles = std::move(trimmed);
 }
 
+// htsjdk rebuilds the subsetted genotypes through GenotypeLikelihoods, which
+// normalises each sample's phred-scaled likelihood row so that its minimum is 0.
+// The projection itself preserves the source row's offset, so a multi-allelic
+// source whose best genotype does not survive the output-allele subset would
+// otherwise be published shifted by that offset.  Measured on GATK's own chr20
+// corpus: `20:10002458` GATK `2090,167,0` vs native `2172,249,82` (a uniform +82,
+// the projected row's own minimum) and `20:10024300` +45.
+void normalize_sample_pl(Record& record) {
+    if (record.pl.empty() || record.ploidy <= 0 || record.allele_count < 2) return;
+    const auto width = genotype_width(record.allele_count, record.ploidy);
+    if (width == 0 || record.pl.size() % width != 0) return;
+    const auto sample_count = record.pl.size() / width;
+    const auto usable = [](const int32_t value) {
+        return value != bcf_int32_missing && value != bcf_int32_vector_end && value >= 0;
+    };
+    for (std::size_t sample = 0; sample < sample_count; ++sample) {
+        const auto begin = record.pl.begin() + static_cast<std::ptrdiff_t>(sample * width);
+        const auto end = begin + static_cast<std::ptrdiff_t>(width);
+        int32_t minimum = std::numeric_limits<int32_t>::max();
+        for (auto value = begin; value != end; ++value)
+            if (usable(*value)) minimum = std::min(minimum, *value);
+        if (minimum == std::numeric_limits<int32_t>::max() || minimum == 0) continue;
+        for (auto value = begin; value != end; ++value)
+            if (usable(*value)) *value -= minimum;
+    }
+}
+
 bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
                                      Record& record,
                                      Options& options,
@@ -3252,6 +3279,9 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     }
     if (pruned == 0) {
         upstream_deletions.record(record, output_alleles);
+        // Nothing was pruned, but htsjdk still rebuilds the genotypes for the
+        // output allele list, which normalises each PL row to its minimum.
+        normalize_sample_pl(record);
         // The emitted allele list is the merged one, and the trim still applies.
         apply_gatk_reverse_trim(output_header, record);
         return true;
@@ -3473,6 +3503,7 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     publish_format("MIN_DP", record.min_dp);
     publish_format("AD", record.ad);
     publish_format("SB", record.sb);
+    normalize_sample_pl(record);
     publish_format("PL", record.pl);
     publish_format("PP", record.pp);
     // The vectors are no longer indexed by the published ALT list.  They are

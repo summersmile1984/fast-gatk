@@ -99,6 +99,15 @@ ILL_CONDITIONED_HOM_REF = (
     "chr1\t2\t.\tA\tG,<NON_REF>\t.\t.\tDP=40\t"
     "GT:AD:DP:GQ:PL\t0/0:40,0,0:40:99:0,3867,3867,3867,3867,3867\n")
 
+# A multi-allelic source whose best genotype does not survive the output-allele
+# subset: the projected PL row keeps the source's offset, and htsjdk normalises it
+# through GenotypeLikelihoods.  The PL values are the real row of GATK's own chr20
+# corpus record at 20:10002458 (five alleles, diploid, best genotype (1,2)).
+MULTI_ALLELIC_PL_PROJECTION = (
+    "chr1\t2\t.\tA\tT,TT,TTTT,<NON_REF>\t2154.96\t.\tDP=65\t"
+    "GT:AD:DP:GQ:PL\t1/2:0,6,6,6,0:18:9:"
+    "2172,655,493,249,0,82,352,33,9,214,876,512,167,254,730\n")
+
 CASES = [
     {
         "case": "confident-hom-alt-is-emitted",
@@ -131,6 +140,19 @@ CASES = [
         "body": ILL_CONDITIONED_HOM_REF,
         "args": [],
         "expect": [],
+    },
+    {
+        "case": "multi-allelic-projected-pl-is-normalized",
+        "why": "htsjdk rebuilds the subsetted genotypes through "
+               "GenotypeLikelihoods, which normalises each PL row to its minimum; "
+               "the projection alone keeps the source offset, so native used to "
+               "publish `2172,249,82` where GATK publishes `2090,167,0` (the same "
+               "defect on 2 of GATK's own chr20 loci: +82 and +45)",
+        "body": MULTI_ALLELIC_PL_PROJECTION,
+        "args": [],
+        "expect": ["chr1\t2\t.\tA\tTT\t2155\t.\t"
+                   "AC=2;AF=1.00;AN=2;DP=65;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;"
+                   "QD=25.36\tGT:AD:DP:GQ:PL\t1/1:0,6:18:99:2090,167,0"],
     },
 ]
 
