@@ -729,3 +729,51 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 7. **bug-for-bug 对齐 + 标注意图推测**：GATK 的若干行为疑似其自身 bug（如 VariantFiltration 的
    无 INFO 拆分上下文、ReblockGVCF 的 5 参数 builder 副作用）。parity 项目应**逐 bug 对齐**，
    但**必须在文档中标明「这是测得行为、不是我们认同的设计」**。
+
+## 第 27–35 轮增量（累计 23 个已证真 bug 已修并上锁）
+
+第 26 轮之前见上一节；以下为之后新增的 8 个修复（编号 16–23）：
+
+| # | 缺陷 | 要点 |
+| --- | --- | --- |
+| 16 | GenotypeGVCFs「输出等位基因子集塌缩到 REF」**崩溃** | 非字段差异而是中止（`invalid genotype PL remap dimensions`）；Kokkos 内核拒绝 `target_allele_count < 2`，与 `*` 无关（普通 `A G,<NON_REF>` 同样崩） |
+| 17 | 孤立 `*` 剪除后存活具体 ALT 的**基因型投影** | 上一轮「按 PL 重推」假设**被证伪**：GATK 走 PREFER_PLS 第二支，投影**源基因型**（`bestMatchToOriginalGT`），保留拷贝顺序与相位、不赋 GQ |
+| 18 | 跨接删除**归属判定边界** | `span.begin <= pos` 应为 `<`（`GenotypingEngine.java:369`）；native 的归属集合取自**输入记录**而非**已发射等位基因** |
+| 19 | 「仅跨接删除」记录：已归属的 `*` 被**豁免 AF 阈值** | GATK 对 `*` 与具体 ALT 一视同仁施加 `passesThreshold()` |
+| 20 | dense 模式 REF-only 行 `QUAL=Infinity` | GATK 值**确为 `+Infinity`**（Java `%f` 打成字面 `Infinity`）；native 算出了 `-Infinity` 补数却被 `std::isfinite` 守卫丢弃 |
+| 21 | dense FILTER 列 `RGQ` vs `.` | **两层**：native 从不重建 FILTER 状态（继承源叶子）；且继承的字典索引对着**输出** header 解析，HTSlib 单字典 + 解析期自动注册 → 陈旧索引指向首个追加 id |
+| 22 | 输出 header 缺 `##FILTER=LowQual` | GATK **无条件**声明（`GenotypeGVCFsEngine.java:416`） |
+| 23 | 输入 `##FILTER=PASS` 行被剥离 | **真实原因是 HTSlib 注入合成 PASS 行并把输入那行当重复销毁**；纯朴修复（直接删剥离）**经实测否决**——会对未声明 PASS 的输入也输出 PASS |
+
+### 新暴露的**整类**边界：header 级分歧（此前无任何门禁覆盖）
+
+门禁只比数据行，因此整类 header 差异长期不可见。第 22/23 轮的门禁**先只隔离出 header**
+（修前 22 处 header-only violation、数据行全绿）——这个现象本身就是盲区的证据。已完整记录：
+
+- `##FILTER` 组的**绝对位置**（GATK 2 vs native 3），根源是**整体 header 排序**分歧
+  （GATK = htsjdk 排序，native = 输入顺序 + 自有 INFO 排序）；
+- `##contig` 位置（native 1 vs GATK 28）；
+- `##GATKCommandLine`（GATK 写、native 不写）；
+- GATK 额外写的标准行：`##INFO=BaseQRankSum/MQRankSum/ReadPosRankSum`、第二个 `##INFO=AD`/`##INFO=DP`、第二个 `##FORMAT=AD`；
+- htsjdk 给每个 `Description` 加引号并改写 MLEAC/MLEAF 措辞。
+- `##fileformat`(VCFv4.2) 与 `##source` 两侧一致。
+
+> 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
+
+### 多输入的结构性缺口（新测得）
+
+native 的 header 保留行一律取自 **首个输入**（`input_paths.front()`），而 **GATK 合并全部 `-V` 的 header**。
+故仅由后续 shard 声明的行（如 `##FILTER=PASS`）仍会漏掉——属结构性，非单点小修。
+BCF 输入与 GenomicsDB/`gendb://` 路径亦有意未处理。
+
+### 方法论补充（第 27–35 轮）
+
+1. **纯朴修复必须先实测**：第 23 轮的「直接删剥离」看起来完全合理，实测却对未声明 PASS 的输入
+   也输出 PASS。**能被测量否决的假设，必须在合入前测量**。
+2. **门禁的覆盖面本身是风险**：「只比数据行」漏掉整类 header 差异（第 22 轮）。
+   新增门禁时应问「它看不见什么」。
+3. **一次修复可能解除另一处的掩盖**：第 19 轮修好 `*` 阈值后，第 18 轮标记的
+   「输入记录 vs 已发射等位基因」结构性差异**立刻显现**——修复会暴露被掩盖的缺陷。
+4. **`javap` 是可用证据源**：多轮用 `javap -c/-constants` 从 pinned jar 证实 GATK/htsjdk 行为
+   （5 参数 builder 不拷贝 filters、`%f` 渲染无穷、字典单例）。这是介于「读源码」与「跑实验」
+   之间的第三种证据。
