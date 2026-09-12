@@ -4637,10 +4637,24 @@ void update_gatk_standard_annotations(const bcf_hdr_t* output_header, Record& re
         // different: it has no input record of its own, its confidence is
         // exactly zero, and pinned GATK publishes QD=-0.00 for every measured
         // instance of that shape (4/4), so -0.0 is reproduced there.
+        // QualByDepth divides the UNROUNDED double it reads back from the record
+        // (`-10.0 * vc.getLog10PError()`, QualByDepth.java:78+86), while the
+        // published QUAL token is that double rounded to two decimals and stored
+        // as float32.  Dividing the rounded value instead can land exactly on a
+        // two-decimal tie: measured on GATK's own chr20 corpus at 20:10068160,
+        // the rounded float gives 9.3349997202555333 (rendering as 9.34 after the
+        // float32 round-trip) where GATK publishes 9.33 from 9.3345911138702871.
+        // `call_confidence` IS that unrounded -10*log10PError double.
+        // Magnitudes indistinguishable from zero are excluded: there the sign of
+        // zero comes from a ~1e-16 round-off in the AF calculator that GATK does
+        // not reproduce consistently (rounds 51/53), so the rounded QUAL is kept.
+        const bool confidence_usable = record.call_confidence_available &&
+            std::abs(record.call_confidence) > 1.0e-9;
         const double qd_numerator =
             (record.materialized_spanning_locus && record.value->qual == 0.0F)
                 ? -0.0
-                : static_cast<double>(record.value->qual);
+                : (confidence_usable ? record.call_confidence
+                                     : static_cast<double>(record.value->qual));
         const float qd = static_cast<float>(gatk_fix_high_qd(
             qd_numerator / static_cast<double>(depth), random));
         if (bcf_update_info_float(output_header, record.value, "QD", &qd, 1) != 0)
