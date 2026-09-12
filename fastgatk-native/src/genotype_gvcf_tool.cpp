@@ -1230,60 +1230,74 @@ struct VariantSpan {
     int end = -1;
 };
 
-bool record_has_concrete_deletion(const Record& record) {
-    if (record.alleles.empty()) return false;
-    const auto& reference = record.alleles.front();
-    if (reference.empty() || reference.front() == '<') return false;
-    for (std::size_t index = 1; index < record.alleles.size(); ++index) {
-        const auto& alternate = record.alleles[index];
-        if (alternate.empty() || alternate == "*" || alternate == "<NON_REF>" ||
-            alternate.front() == '<')
-            continue;
-        if (alternate.size() < reference.size()) return true;
-    }
-    return false;
-}
+// GATK's per-traversal record of the deletions it has EMITTED, i.e.
+// ``GenotypingEngine.upstreamDeletionsLoc`` (GenotypingEngine.java:52), a
+// PriorityQueue<Locatable> ordered by interval end whose only production
+// mutation sites are ``recordDeletions()`` (:343-357) and its lazy cull
+// (:344-346).  ``clearUpstreamDeletionsLoc()`` (:330-332) is
+// ``@VisibleForTesting`` and is never called from production code, so the state
+// accumulates across the whole ordered walk.
+//
+// ``recordDeletions(vc, emittedAlleles)`` runs at :179, i.e. AFTER the output
+// allele subset was decided at :155, and appends
+// ``new SimpleInterval(contig, vc.getStart(), vc.getStart() + deletionSize)``
+// with ``deletionSize = vc.getReference().length() - allele.length()`` for every
+// EMITTED allele with a positive deletion size.  Three consequences the previous
+// input-derived span list could not reproduce:
+//   * a deletion allele of a locus GATK dropped (or pruned) is never recorded;
+//   * the recorded interval ends at ``start + (refLen - altLen)``, not at
+//     ``start + refLen``;
+//   * the symbolic '*' is an ordinary allele here -- its length is 1 -- so a
+//     locus whose emitted set contains a '*' records an interval of its own.
+// ``deletionSize`` (and hence the recorded interval) is invariant under
+// ``GATKVariantContextUtils.reverseTrimAlleles()``, which only clips trailing
+// bases, so the untrimmed merged record gives the same interval GATK computes.
+//
+// ``isVcCoveredByDeletion()`` (:365-371) then requires
+//     loc.getStart() < vc.getStart() && vc.getStart() <= loc.getEnd()
+// which in native's 0-based, half-open coordinates is
+//     span.begin < record.pos && record.pos < span.end
+// with ``end = pos + (refLen - altLen) + 1``.  The start test is STRICT, so the
+// very locus being genotyped can never be covered by its own deletion.
+struct EmittedDeletions {
+    // Min-heap by interval end: GATK's PriorityQueue iteration order aside, the
+    // heap is what makes the lazy cull cheap while the coverage test scans it.
+    std::vector<VariantSpan> heap;
 
-// GATK only honours a spanning deletion that some *previously emitted* deletion
-// owns: GenotypingEngine.isVcCoveredByDeletion() requires
-// ``loc.getStart() < vc.getStart() && vc.getStart() <= loc.getEnd()``
-// (GenotypingEngine.java:365-371) and the deletion is recorded only after the
-// current locus has been subsetted (GenotypingEngine.java:178-179 calls
-// recordDeletions() *after* calculateOutputAlleleSubset()).  A deletion allele of
-// the very locus being genotyped therefore never owns that locus' own '*', which
-// is why the boundary test below is strict on the start (``span.begin <
-// record.pos``) rather than inclusive.
-bool spanning_deletion_supported_at(const Record& record,
-                                    const std::vector<VariantSpan>& deletion_spans) {
-    if (record.rid < 0) return false;
-    for (const auto& span : deletion_spans) {
-        if (span.rid == record.rid && span.begin < record.pos && record.pos < span.end)
-            return true;
+    static bool later_end(const VariantSpan& left, const VariantSpan& right) {
+        return left.end > right.end;
     }
-    return false;
-}
 
-bool group_has_supported_spanning_deletion(const std::vector<Record>& group,
-                                           const std::vector<VariantSpan>& deletion_spans) {
-    for (const auto& record : group) {
-        if (std::find(record.alleles.begin(), record.alleles.end(), "*") != record.alleles.end() &&
-            spanning_deletion_supported_at(record, deletion_spans))
-            return true;
+    // GenotypingEngine.java:344-346: drop the head while it cannot cover the
+    // current locus any more (or sits on another contig).
+    void cull(int rid, int pos) {
+        while (!heap.empty() &&
+               (heap.front().rid != rid || heap.front().end <= pos)) {
+            std::pop_heap(heap.begin(), heap.end(), later_end);
+            heap.pop_back();
+        }
     }
-    return false;
-}
 
-bool group_range_has_supported_spanning_deletion(
-    const std::vector<Record>& records, std::size_t begin, std::size_t end,
-    const std::vector<VariantSpan>& deletion_spans) {
-    for (std::size_t index = begin; index < end; ++index) {
-        const auto& record = records[index];
-        if (std::find(record.alleles.begin(), record.alleles.end(), "*") != record.alleles.end() &&
-            spanning_deletion_supported_at(record, deletion_spans))
-            return true;
+    bool covers(int rid, int pos) const {
+        for (const auto& span : heap)
+            if (span.rid == rid && span.begin < pos && pos < span.end) return true;
+        return false;
     }
-    return false;
-}
+
+    // recordDeletions() over the alleles a locus actually emitted.
+    void record(const Record& record, const std::vector<std::string>& emitted) {
+        if (record.rid < 0 || record.alleles.empty()) return;
+        cull(record.rid, record.pos);
+        const int reference_length = static_cast<int>(record.alleles.front().size());
+        for (const auto& allele : emitted) {
+            const int deletion_size = reference_length - static_cast<int>(allele.size());
+            if (deletion_size <= 0) continue;
+            heap.push_back(VariantSpan{record.rid, record.pos,
+                                       record.pos + deletion_size + 1});
+            std::push_heap(heap.begin(), heap.end(), later_end);
+        }
+    }
+};
 
 std::string reference_base(faidx_t* reference_index, const bcf_hdr_t* header,
                            int rid, int position) {
@@ -2971,15 +2985,38 @@ bool gatk_prefer_pls_row_is_uninformative(const std::vector<int32_t>& pl,
 // before the ordinary site/standard-annotation passes.
 bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
                                      Record& record,
-                                     const Options& options) {
+                                     Options& options,
+                                     EmittedDeletions& upstream_deletions) {
     // Keep the historical native diagnostic profile lossless for assignment
     // and kernel regression. GenotypeGVCFs' production-compatible profile is
     // the path where GATK's final AF-based allele pruning is observable.
     if (!options.gatk_annotation_compatibility) return true;
+    // GenotypingEngine asks isVcCoveredByDeletion(vc) while it builds the output
+    // allele subset (:314) and records what the locus emitted only afterwards
+    // (:178-179), so what is consulted here is the state of the EARLIER loci.
+    // Both paths of this tool decide what a locus emits in the compute stage of
+    // their pipeline, which runs on a single worker thread in traversal order
+    // (runtime/pipeline.hpp), so that is where GATK's per-traversal state is
+    // maintained.  This is why the '*' ownership answer cannot be computed by
+    // the union/merge step, which runs ahead of every emission decision.
+    const bool carries_spanning_deletion =
+        std::find(record.alleles.begin(), record.alleles.end(), "*") !=
+        record.alleles.end();
+    if (carries_spanning_deletion) {
+        const bool covered = upstream_deletions.covers(record.rid, record.pos);
+        record.orphan_spanning_deletion = !covered;
+        if (!covered) ++options.orphan_spanning_deletion_loci;
+    } else {
+        record.orphan_spanning_deletion = false;
+    }
     if (record.allele_count < 2 || record.alleles.size() < 2 ||
         record.cohort_log10_p_allele_absent.size() !=
-            static_cast<std::size_t>(record.allele_count))
+            static_cast<std::size_t>(record.allele_count)) {
+        // No subset was computed, so every allele of the merged record is
+        // emitted; a reference-only record contributes nothing to the state.
+        upstream_deletions.record(record, record.alleles);
         return true;
+    }
     const auto threshold = -0.1 * options.standard_confidence_for_calling;
     std::vector<std::string> output_alleles;
     output_alleles.reserve(record.alleles.size());
@@ -2999,25 +3036,31 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
         //
         // (GenotypingEngine.java:316, with isPlausible = passesThreshold() at
         // :312 and isSpuriousSpanningDeletion = isSpanningDeletion(allele) &&
-        // !isVcCoveredByDeletion(vc) at :314).  An owned '*' is therefore NOT
-        // exempt from the standard-confidence threshold: a '*' that a concrete
-        // deletion covers but whose allele count does not pass is pruned like
-        // any other ALT.  The upstream deletion ownership check happens in the
-        // caller's reference-confidence merge and reaches this point only as
-        // ``record.orphan_spanning_deletion``, which is the merged-context form
-        // of !isVcCoveredByDeletion(vc) and only ever marks records carrying a
-        // '*'; it must not gate a concrete ALT.
+        // !isVcCoveredByDeletion(vc) at :314, answered by the emitted-deletion
+        // state consulted at the top of this function).  An owned '*' is
+        // therefore NOT exempt from the standard-confidence threshold: a '*'
+        // that a concrete deletion covers but whose allele count does not pass
+        // is pruned like any other ALT.  The flag only ever marks records
+        // carrying a '*'; it must not gate a concrete ALT.
         const bool owned = !spanning_deletion || !record.orphan_spanning_deletion;
         if (owned && plausible)
             output_alleles.push_back(allele);
         else
             ++pruned;
     }
-    if (pruned == 0) return true;
+    if (pruned == 0) {
+        upstream_deletions.record(record, output_alleles);
+        return true;
+    }
     ++genotype_kernel_telemetry.output_allele_pruning_calls;
     genotype_kernel_telemetry.output_alleles_pruned += pruned;
     if (output_alleles.size() == 1) {
+        // No ALT survived, so the emitted allele list is the reference alone and
+        // recordDeletions() has nothing to record at this locus
+        // (GenotypingEngine.java:349-355 skips a zero deletion size).
         if (!options.include_non_variant_sites) {
+            // GATK returns null at :167-169 before :179, so an unemitted locus
+            // must not contribute to the state either.
             bcf_destroy(record.value);
             record.value = nullptr;
             return false;
@@ -3028,6 +3071,10 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
         materialize_gatk_monomorphic_ref_call(output_header, record);
         return true;
     }
+    // GenotypingEngine.java:178-179: the deletions of the alleles this locus
+    // actually emits are recorded *after* the ownership test above and before
+    // the genotypes are subsetted.
+    upstream_deletions.record(record, output_alleles);
     // Preserve force-no-call states inherited from an earlier merge, but do
     // not let this final structural projection alone decide the new call.
     // GenotypingEngine re-evaluates PREFER_PLS after it has projected the
@@ -5688,7 +5735,6 @@ int run_streaming_genotype_gvcf(Options& options,
     std::uint64_t indexed_interval_queries = 0;
     int expected_sample_count = -1;
     std::vector<VariantSpan> variant_spans;
-    std::vector<VariantSpan> deletion_spans;
 
     try {
         if (!options.reference.empty()) reference_index = fai_load(options.reference.c_str());
@@ -5799,18 +5845,11 @@ int run_streaming_genotype_gvcf(Options& options,
                 bcf_unpack(record, BCF_UN_ALL);
                 if (!in_regions(header, record, regions, excluded_regions)) continue;
                 bool concrete = false;
-                bool concrete_deletion = false;
-                const char* reference_allele = record->n_allele > 0
-                    ? record->d.allele[0] : nullptr;
                 for (int allele = 1; allele < record->n_allele; ++allele) {
                     const auto* alternate = record->d.allele[allele];
                     if (alternate == nullptr || std::strcmp(alternate, "<NON_REF>") == 0)
                         continue;
                     concrete = true;
-                    if (reference_allele != nullptr && alternate[0] != '<' &&
-                        std::strcmp(alternate, "*") != 0 &&
-                        std::strlen(alternate) < std::strlen(reference_allele))
-                        concrete_deletion = true;
                 }
                 if (!concrete) continue;
                 const auto* name = record->rid >= 0 ? bcf_hdr_id2name(header, record->rid) : nullptr;
@@ -5819,8 +5858,6 @@ int run_streaming_genotype_gvcf(Options& options,
                 int end = static_cast<int>(record->pos + std::max<hts_pos_t>(1, record->rlen));
                 if (end <= record->pos) end = record->pos + 1;
                 variant_spans.push_back(VariantSpan{output_rid, static_cast<int>(record->pos), end});
-                if (concrete_deletion)
-                    deletion_spans.push_back(VariantSpan{output_rid, static_cast<int>(record->pos), end});
             }
             // A record htslib could not parse (-2) must not read as end of
             // input (-1); the probe would otherwise index a truncated file.
@@ -6062,6 +6099,10 @@ int run_streaming_genotype_gvcf(Options& options,
 
         GatkJavaRandom gatk_random;
         std::uint64_t output_record_count = 0;
+        // GenotypingEngine's per-traversal emitted-deletion state
+        // (GenotypingEngine.java:52).  It is read and written only by the
+        // single compute worker below, which visits loci in traversal order.
+        EmittedDeletions upstream_deletions;
         const auto stage_capacity = std::max<std::uint64_t>(
             64ULL * 1024ULL * 1024ULL, resources.safe_memory_budget_bytes());
         using Pipeline = fastgatk::runtime::ThreeStagePipeline<
@@ -6094,9 +6135,11 @@ int run_streaming_genotype_gvcf(Options& options,
 
                     std::vector<std::string> union_alleles{group.front().alleles.front()};
                     bool has_non_ref = false;
-                    const bool keep_spanning_deletion =
-                        !options.gatk_annotation_compatibility ||
-                        group_has_supported_spanning_deletion(group, deletion_spans);
+                    // A '*' is left in the merged allele union either way: GATK
+                    // decides whether it is a spurious spanning deletion inside
+                    // calculateOutputAlleleSubset() (:314), i.e. after the union
+                    // exists and after the earlier loci have reported what they
+                    // emitted.  See apply_gatk_output_allele_subset().
                     for (const auto& record : group) {
                         for (std::size_t allele = 1; allele < record.alleles.size(); ++allele) {
                             const auto& name = record.alleles[allele];
@@ -6104,14 +6147,6 @@ int run_streaming_genotype_gvcf(Options& options,
                             if (std::find(union_alleles.begin() + 1, union_alleles.end(), name) == union_alleles.end())
                                 union_alleles.push_back(name);
                         }
-                    }
-                    if (!keep_spanning_deletion &&
-                        std::any_of(group.begin(), group.end(), [](const auto& record) {
-                            return std::find(record.alleles.begin(), record.alleles.end(), "*") !=
-                                   record.alleles.end();
-                        })) {
-                        ++options.orphan_spanning_deletion_loci;
-                        for (auto& record : group) record.orphan_spanning_deletion = true;
                     }
                     if (has_non_ref) union_alleles.push_back("<NON_REF>");
                     std::vector<std::string> concrete;
@@ -6200,7 +6235,8 @@ int run_streaming_genotype_gvcf(Options& options,
                 annotate_num_discovered_alleles(output_header, record, options);
                 (void)apply_gatk_max_alternate_alleles(output_header, record, options);
                 update_cohort_af_annotations(output_header, record, options);
-                if (!apply_gatk_output_allele_subset(output_header, record, options))
+                if (!apply_gatk_output_allele_subset(output_header, record, options,
+                                                     upstream_deletions))
                     return std::nullopt;
                 if (record.finalized_monomorphic_ref) {
                     // The REF-only call is complete: GATK emits it directly from
@@ -6747,12 +6783,6 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
         // block's REF base is not recoverable from its single start allele at
         // an interior split coordinate.
         split_reference_blocks_at_variants(output_header, reference_index, records);
-        std::vector<VariantSpan> deletion_spans;
-        for (const auto& record : records) {
-            if (record_has_concrete_deletion(record))
-                deletion_spans.push_back(VariantSpan{
-                    record.rid, record.pos, record_span_end(output_header, record)});
-        }
         std::sort(records.begin(), records.end(), [](const Record& left, const Record& right) {
             if (left.rid != right.rid) return left.rid < right.rid;
             if (left.pos != right.pos) return left.pos < right.pos;
@@ -6768,10 +6798,10 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
             // likelihoods are projected away.
             std::vector<std::string> union_alleles{records[begin].alleles.front()};
             bool has_non_ref = false;
-            const bool keep_spanning_deletion =
-                !options.gatk_annotation_compatibility ||
-                group_range_has_supported_spanning_deletion(records, begin, end,
-                                                             deletion_spans);
+            // See the streaming merge: the '*' stays in the union and its
+            // ownership is decided where GATK decides it, in the compute stage
+            // (apply_gatk_output_allele_subset), from the deletions earlier
+            // loci actually emitted.
             for (std::size_t index = begin; index < end; ++index) {
                 for (std::size_t allele = 1; allele < records[index].alleles.size(); ++allele) {
                     const auto& name = records[index].alleles[allele];
@@ -6782,17 +6812,6 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                     if (std::find(union_alleles.begin() + 1, union_alleles.end(), name) == union_alleles.end())
                         union_alleles.push_back(name);
                 }
-            }
-            if (!keep_spanning_deletion && std::any_of(
-                    records.begin() + static_cast<std::ptrdiff_t>(begin),
-                    records.begin() + static_cast<std::ptrdiff_t>(end),
-                    [](const auto& record) {
-                        return std::find(record.alleles.begin(), record.alleles.end(), "*") !=
-                               record.alleles.end();
-                    })) {
-                ++options.orphan_spanning_deletion_loci;
-                for (std::size_t index = begin; index < end; ++index)
-                    records[index].orphan_spanning_deletion = true;
             }
             if (has_non_ref) union_alleles.push_back("<NON_REF>");
             std::vector<std::string> concrete_alleles;
@@ -6908,6 +6927,10 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
         std::uint64_t output_record_count = 0;
         std::vector<Record> pipeline_records = std::move(records);
         std::size_t decode_index = 0;
+        // GenotypingEngine's per-traversal emitted-deletion state
+        // (GenotypingEngine.java:52).  It is read and written only by the
+        // single compute worker below, which visits loci in traversal order.
+        EmittedDeletions upstream_deletions;
         const auto stage_capacity = std::max<std::uint64_t>(
             64ULL * 1024ULL * 1024ULL, resources.safe_memory_budget_bytes());
         using Pipeline = fastgatk::runtime::ThreeStagePipeline<
@@ -6932,7 +6955,8 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 annotate_num_discovered_alleles(output_header, record, options);
                 (void)apply_gatk_max_alternate_alleles(output_header, record, options);
                 update_cohort_af_annotations(output_header, record, options);
-                if (!apply_gatk_output_allele_subset(output_header, record, options))
+                if (!apply_gatk_output_allele_subset(output_header, record, options,
+                                                     upstream_deletions))
                     return std::nullopt;
                 if (record.finalized_monomorphic_ref) {
                     // The REF-only call is complete: GATK emits it directly from

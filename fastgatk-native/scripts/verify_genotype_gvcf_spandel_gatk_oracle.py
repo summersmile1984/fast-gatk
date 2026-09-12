@@ -88,10 +88,28 @@ subset was already decided at ``:155``.  Two consequences are pinned here:
    ``*`` at 4) prunes, ``...-covering-upstream`` (deletion spans 2-4, ``*`` at 4)
    keeps ``*`` and publishes ``1/2``.
 
-Native's ownership state is a pre-computed list of every input record carrying a
-concrete deletion allele, tested with ``span.begin <= record.pos && record.pos <
-span.end``; the inclusive start made a record's own deletion own its own ``*``.
-The fix makes the start strictly exclusive, matching ``:369``.
+Native used to answer that question from a **pre-computed span list built from
+the INPUT records**, which differs from ``recordDeletions()`` in three measured
+ways (all three are gated below):
+
+1. a deletion allele of a locus GATK dropped (or pruned) was still counted, so
+   native kept a ``*`` GATK prunes
+   (``unemitted-upstream-deletion-star-plus-concrete-alt``);
+2. the stored interval ended at ``start + refLen`` instead of
+   ``start + (refLen - altLen)``, so an emitted allele two or more bases long
+   over-covered and native kept a ``*`` GATK prunes
+   (``emitted-deletion-interval-end-is-deletion-size``, control
+   ``...-covered-star``);
+3. the scan skipped the symbolic ``*``, which ``recordDeletions()`` records like
+   any other emitted allele (its length is 1), so native pruned a downstream
+   ``*`` GATK keeps (``emitted-star-records-its-own-interval``, control
+   ``emitted-star-interval-control``) -- the opposite direction.
+
+Native now maintains the same state: ``EmittedDeletions`` in
+``genotype_gvcf_tool.cpp`` is appended from the alleles
+``apply_gatk_output_allele_subset()`` actually emits, in traversal order, and is
+consulted (before that append) exactly where GATK consults it, inside the output
+allele subset test (:314).
 
 The spanning-deletion-only record
 ---------------------------------
@@ -121,14 +139,14 @@ therefore emits only the upstream deletion row, and
 ``covered-star-implausible-plus-concrete-alt`` shows that an implausible ``*`` is
 dropped *allele-wise* while the record survives on its concrete ALT.
 
-One divergence in this area is deliberately left REPORTED ONLY, because it is a
-different root cause: ``recordDeletions()`` only ever records deletions that were
-actually **emitted** (``:178-179``), while native's ownership state is a
-pre-computed span list built from the **input** records.  When GATK drops an
-upstream deletion record for failing the allele threshold, the downstream ``*``
-becomes spurious and is pruned, but native still counts it as owned:
-``unemitted-upstream-deletion-star-plus-concrete-alt``.  Repairing it needs the
-ordered per-locus "emitted deletions" state, so it is out of scope here.
+One divergence in this area is still deliberately left REPORTED ONLY, because it
+is a different root cause and a record-materialization gap rather than a state
+one: in dense mode (``--include-non-variant-sites``) GATK materializes a
+spanning-deletion site for every position an emitted deletion covers, and it
+reverse-trims the merged record, while native writes neither row.  Measured with
+``2 AAA A`` + ``4 AA *,<NON_REF>`` + ``5 A *,G,<NON_REF>``: GATK emits four rows
+(including ``3 A *`` and ``4 A *``), native three; that shape is not gated here
+(see ``.diag/round-emitted-ownership.md`` section 8).
 
 The dense-mode QUAL token
 -------------------------
@@ -788,6 +806,63 @@ IMPLAUSIBLE_UPSTREAM_STAR_PLUS_CONCRETE_RECORD = (
     "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
 )
 
+# The recorded interval is ``[start, start + (refLen - altLen)]``
+# (GenotypingEngine.java:349-355), so native's ``[start, start + refLen)`` span
+# over-covers whenever the emitted ALT is two or more bases long.  Here the
+# upstream allele ``AAC`` (refLen 4, altLen 3) records 2-3 only, while native's
+# input-derived span reaches 2-5; the '*' at 4 is therefore a spurious spanning
+# deletion for GATK and is pruned.  Reverse trimming does not enter this fixture
+# (the REF and ALT end in different bases), so the two published rows are
+# directly comparable.
+DEL_LONG_ALT_RECORD = (
+    "chr1\t2\t.\tAAAA\tAAC,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t4\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# Control for the interval-end rule: the same upstream record with the '*' one
+# base earlier, INSIDE the recorded 2-3 interval, so both tools must keep it.
+# Without this case "shorten every interval" would look correct.
+DEL_LONG_ALT_COVERED_STAR_RECORD = (
+    "chr1\t2\t.\tAAAA\tAAC,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# The other direction of the same defect.  ``recordDeletions()`` records an
+# interval for EVERY emitted allele whose length is shorter than the reference,
+# the symbolic '*' included (its length is 1, so a two-base REF makes it a
+# deletion of size 1): the '*' emitted at 2 is covered by the deletion at 1 and
+# therefore survives, and its own interval 2-3 is what keeps the '*' at 3.  The
+# concrete ALT ``AC`` is exactly as long as the REF, so native's
+# ``record_has_concrete_deletion()`` sees no deletion allele at 2 and prunes the
+# downstream '*' that GATK keeps.  The non-symbolic alleles ``AA``/``A`` stop
+# reverse trimming (GATKVariantContextUtils.trimAlleles() returns the input
+# unchanged when any non-spanning-deletion allele is one base long), so the
+# untrimmed REF length is what both sides use.
+STAR_OWN_INTERVAL_RECORD = (
+    "chr1\t1\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t2\t.\tAA\t*,AC,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
+# Control for the '*' interval: the locus-2 record now carries a concrete
+# deletion allele (``A``), so native records the same 2-3 interval GATK does and
+# both tools must keep the '*' at 3.
+STAR_OWN_INTERVAL_CONTROL_RECORD = (
+    "chr1\t1\t.\tAA\tA,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+    "chr1\t2\t.\tAA\t*,A,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+    "chr1\t3\t.\tA\t*,G,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/2:20:0,0,20,0:100,100,100,100,0,100,100,100,100,100\n"
+)
+
 # The same locus with the source call written in the opposite copy order.  The
 # measured GATK row keeps that order, so the fallback must project the source
 # genotype rather than any PL-argmax or sorted genotype.
@@ -911,6 +986,30 @@ GATK_CONCRETE_ONLY_ROW = (
 GATK_G_DOWNSTREAM_ROW = ("chr1\t3\t.\tA\tG\t82.26\t.\t"
                          "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
                          "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
+
+# The upstream row of the interval-end fixture (REF AAAA, ALT AAC) and the
+# downstream row it must produce once the '*' is pruned.
+GATK_DEL_LONG_ALT_ROW = ("chr1\t2\t.\tAAAA\tAAC\t92.60\t.\t"
+                         "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
+                         "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
+GATK_G_DOWNSTREAM_AT4_ROW = ("chr1\t4\t.\tA\tG\t82.26\t.\t"
+                             "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
+                             "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
+
+# The three measured rows of the emitted-'*' interval fixture: the deletion at
+# 1, the record at 2 whose emitted '*' records 2-3, and the downstream locus
+# that only that interval keeps alive.
+GATK_DEL_AT1_ROW = ("chr1\t1\t.\tAA\tA\t92.60\t.\t"
+                    "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63\t"
+                    "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
+GATK_STAR_AND_NON_DEL_AT2_ROW = ("chr1\t2\t.\tAA\t*,AC\t82.23\t.\t"
+                                 "AC=1,1;AF=0.500,0.500;AN=2;DP=20;ExcessHet=0.0000;"
+                                 "MLEAC=1,1;MLEAF=0.500,0.500;QD=4.11\t"
+                                 "GT:AD:DP:GQ:PL\t1/2:0,0,20:20:99:100,100,100,100,0,100")
+GATK_STAR_AND_DEL_AT2_ROW = ("chr1\t2\t.\tAA\t*,A\t82.19\t.\t"
+                             "AC=1,1;AF=0.500,0.500;AN=2;DP=20;ExcessHet=0.0000;"
+                             "MLEAC=1,1;MLEAF=0.500,0.500;QD=4.11\t"
+                             "GT:AD:DP:GQ:PL\t1/2:0,0,20:20:99:100,100,100,100,0,100")
 
 # ---------------------------------------------------------------------------
 # --annotate-with-num-discovered-alleles (NDA): fixtures and measured rows
@@ -1496,23 +1595,74 @@ CASES = [
     },
     {
         "case": "unemitted-upstream-deletion-star-plus-concrete-alt",
-        "why": "reported only: the upstream deletion record is IMPLAUSIBLE, so "
-               "GATK drops it (GenotypingEngine.java:167-169) and "
-               "recordDeletions() is never called for it (:178-179); the "
-               "downstream '*' is therefore a spurious spanning deletion "
-               "(:314) and is pruned even though it is plausible, leaving "
-               "ALT='G' and the projected 0/1 call.  Native builds its deletion "
-               "spans from the INPUT records, so it still treats the '*' as "
-               "owned and publishes '*,G' with 1/2.  This is the residual "
-               "'input records vs emitted alleles' structural difference "
-               "flagged in .diag/round-star-ownership.md section 8, now visible "
-               "in the default output mode because the star-only record rule no "
-               "longer hides it; fixing it requires the ordered "
-               "emitted-deletions state and is out of scope for this round",
+        "why": "GATED: the upstream deletion record is IMPLAUSIBLE, so GATK drops "
+               "it (GenotypingEngine.java:167-169) and recordDeletions() is never "
+               "called for it (:178-179); the downstream '*' is therefore a "
+               "spurious spanning deletion (:314) and is pruned even though it is "
+               "plausible, leaving ALT='G' and the projected 0/1 call.  GATK's "
+               "upstreamDeletionsLoc only ever holds deletions that a locus "
+               "actually EMITTED (:343-357), while native's ownership state was a "
+               "span list built from the INPUT records, so it treated the '*' as "
+               "owned and published '*,G' with 1/2.  Measured row: "
+               "GATK_G_DOWNSTREAM_ROW",
         "body": IMPLAUSIBLE_UPSTREAM_STAR_PLUS_CONCRETE_RECORD,
         "args": [],
-        "gated": False,
+        "gated": True,
         "expect": [GATK_G_DOWNSTREAM_ROW],
+    },
+    {
+        "case": "emitted-deletion-interval-end-is-deletion-size",
+        "why": "GATED: the recorded interval ends at "
+               "start + (refLen - altLen), NOT at start + refLen "
+               "(GenotypingEngine.java:349-355), so an emitted allele with two or "
+               "more bases records a SHORTER interval than native's input-derived "
+               "span.  Here 'AAC' at 2 records 2-3 only while native's span "
+               "reached 2-5, so GATK prunes the plausible '*' at 4 and native "
+               "kept it",
+        "body": DEL_LONG_ALT_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_LONG_ALT_ROW, GATK_G_DOWNSTREAM_AT4_ROW],
+    },
+    {
+        "case": "emitted-deletion-interval-end-covered-star",
+        "why": "control for the interval-end rule: the same upstream record with "
+               "the '*' at 3, INSIDE the recorded 2-3 interval.  GATK keeps "
+               "'*,G' and genotypes 1/2, which is what a fix that shortened every "
+               "interval must still produce",
+        "body": DEL_LONG_ALT_COVERED_STAR_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_LONG_ALT_ROW, GATK_STAR_PLUS_CONCRETE_ROW],
+    },
+    {
+        "case": "emitted-star-records-its-own-interval",
+        "why": "GATED: recordDeletions() records an interval for every emitted "
+               "allele shorter than the reference, the symbolic '*' included "
+               "(GenotypingEngine.java:349-355): the '*' emitted at 2 (covered by "
+               "the deletion emitted at 1, so not spurious at :314) itself "
+               "records 2-3 and is what keeps the '*' at 3 alive.  Native's "
+               "concrete-deletion scan skips '*' and sees no deletion allele at 2 "
+               "('AC' is as long as the REF), so it pruned a '*' GATK keeps - the "
+               "opposite direction from the unemitted-upstream case",
+        "body": STAR_OWN_INTERVAL_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_AT1_ROW, GATK_STAR_AND_NON_DEL_AT2_ROW,
+                   GATK_STAR_PLUS_CONCRETE_ROW],
+    },
+    {
+        "case": "emitted-star-interval-control",
+        "why": "control for the emitted-'*' interval: the same three loci with a "
+               "CONCRETE deletion allele at 2 ('A'), which native can see, so both "
+               "tools record 2-3 and both keep the '*' at 3.  Without this case "
+               "'record nothing at a locus whose only short allele is a *' would "
+               "look correct",
+        "body": STAR_OWN_INTERVAL_CONTROL_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_AT1_ROW, GATK_STAR_AND_DEL_AT2_ROW,
+                   GATK_STAR_PLUS_CONCRETE_ROW],
     },
     {
         "case": "nda-annotation-single-alt",
