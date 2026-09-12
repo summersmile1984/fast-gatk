@@ -4919,8 +4919,17 @@ struct GenotypeStreamCursor {
 bool read_next_genotype_cursor_record(GenotypeStreamCursor& cursor,
                                       const std::vector<Region>& regions,
                                       std::uint64_t& indexed_interval_queries) {
-    if (cursor.traversal_index == nullptr)
-        return bcf_read(cursor.input, cursor.header, cursor.raw) == 0;
+    if (cursor.traversal_index == nullptr) {
+        // htslib signals end of input with -1 and an unparseable record with
+        // -2 (vcf_parse's error return).  Collapsing the two into "no more
+        // records" would silently truncate the traversal at the first
+        // malformed record, so the parse failure is reported instead.
+        const int status = bcf_read(cursor.input, cursor.header, cursor.raw);
+        if (status < -1)
+            throw std::runtime_error(
+                "BAD_INPUT: streaming GenotypeGVCFs VCF record parse failed");
+        return status == 0;
+    }
 
     while (true) {
         if (cursor.iterator != nullptr) {
@@ -5592,7 +5601,8 @@ int run_streaming_genotype_gvcf(Options& options,
                 bcf_close(input);
                 throw std::runtime_error("RESOURCE_EXHAUSTED: cannot initialize streaming span probe");
             }
-            while (bcf_read(input, header, record) == 0) {
+            int probe_status = 0;
+            while ((probe_status = bcf_read(input, header, record)) == 0) {
                 ++span_probe_records;
                 bcf_unpack(record, BCF_UN_ALL);
                 if (!in_regions(header, record, regions, excluded_regions)) continue;
@@ -5619,6 +5629,15 @@ int run_streaming_genotype_gvcf(Options& options,
                 variant_spans.push_back(VariantSpan{output_rid, static_cast<int>(record->pos), end});
                 if (concrete_deletion)
                     deletion_spans.push_back(VariantSpan{output_rid, static_cast<int>(record->pos), end});
+            }
+            // A record htslib could not parse (-2) must not read as end of
+            // input (-1); the probe would otherwise index a truncated file.
+            if (probe_status < -1) {
+                bcf_destroy(record);
+                bcf_hdr_destroy(header);
+                bcf_close(input);
+                throw std::runtime_error(
+                    "BAD_INPUT: streaming GenotypeGVCFs VCF record parse failed");
             }
             bcf_destroy(record);
             bcf_hdr_destroy(header);
@@ -6512,8 +6531,19 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 }
             }
             if (!used_index) {
-                while (bcf_read(input, header, record) == 0)
+                int read_status = 0;
+                while ((read_status = bcf_read(input, header, record)) == 0)
                     process_record(record);
+                // -1 is end of input; -2 is a record htslib could not parse.
+                // Treating the parse failure as end of input would silently
+                // discard this record and everything after it.
+                if (read_status < -1) {
+                    bcf_destroy(record);
+                    bcf_hdr_destroy(header);
+                    bcf_close(input);
+                    throw std::runtime_error(
+                        "BAD_INPUT: GenotypeGVCFs input record parse failed");
+                }
             }
             bcf_destroy(record);
             bcf_hdr_destroy(header);
