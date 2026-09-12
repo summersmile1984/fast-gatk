@@ -6,6 +6,7 @@
 
 #include <htslib/hts.h>
 #include <htslib/kstring.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -292,7 +293,7 @@ std::vector<std::string> read_lines(const std::string& path) {
         htsFile* file = hts_open(path.c_str(), "r");
         if (!file) throw std::runtime_error("BAD_INPUT: cannot open interval file: " + path);
         kstring_t line{0, 0, nullptr};
-        while (hts_getline(file, '\n', &line) >= 0)
+        while (fastgatk::io::read_text_line(file, &line, path) >= 0)
             lines.emplace_back(line.s == nullptr ? "" : std::string(line.s, line.l));
         free(line.s);
         if (hts_close(file) != 0) throw std::runtime_error("BAD_INPUT: failed reading interval file: " + path);

@@ -27,6 +27,7 @@
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -537,7 +538,7 @@ ComparisonData load_comparison_data(const std::string& path) {
         const auto* name = bcf_hdr_int2id(header, BCF_DT_SAMPLE, sample);
         if (name != nullptr) data.sample_names.emplace(name);
     }
-    while (bcf_read(input, header, record) == 0) {
+    while (fastgatk::io::read_variant_record(input, header, record, path) == 0) {
         bcf_unpack(record, BCF_UN_STR);
         const auto key = variant_key(header, record);
         if (!key.empty()) {
@@ -2354,7 +2355,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
         if (bcf_hdr_write(output, writer_header) != 0) throw std::runtime_error("cannot write SelectVariants header");
         record = bcf_init();
         if (!record) throw std::runtime_error("RESOURCE_EXHAUSTED: bcf_init failed");
-        while (bcf_read(input, input_header, record) == 0) {
+        while (fastgatk::io::read_variant_record(input, input_header, record,
+                                               options.input) == 0) {
             ++input_records;
             bcf_unpack(record, BCF_UN_ALL);
             canonicalize_site_filters(input_header, record);

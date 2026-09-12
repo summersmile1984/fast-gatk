@@ -23,6 +23,7 @@
 
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/sam.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -1109,7 +1110,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             int last_tid = -1;
             std::int64_t last_pos = -1;
             bool have_last_coordinate = false;
-            while (sam_read1(input, header, record) >= 0) {
+            while (fastgatk::io::read_alignment_record(input, header, record,
+                                                     options.input) >= 0) {
                 ++input_records;
                 if (!options.assume_sorted && record->core.tid >= 0 && record->core.pos >= 0) {
                     if (have_last_coordinate &&
@@ -1345,7 +1347,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
         record = bam_init1();
         if (!record) throw std::runtime_error("RESOURCE_EXHAUSTED: bam_init1 failed for second pass");
         std::uint64_t second_order = 0;
-        while (sam_read1(second_input, second_header, record) >= 0) {
+        while (fastgatk::io::read_alignment_record(second_input, second_header,
+                                                 record, options.input) >= 0) {
             ++second_order;
             // Picard MarkDuplicates runs with CLEAR_DT=true by default and
             // starts each record from a clean duplicate state.  This applies

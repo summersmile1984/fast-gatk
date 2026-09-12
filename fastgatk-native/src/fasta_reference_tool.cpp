@@ -6,6 +6,7 @@
 #include <htslib/faidx.h>
 #include <htslib/hts.h>
 #include <htslib/kstring.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #ifdef FASTGATK_FASTA_ALTERNATE
 #include <htslib/vcf.h>
 #endif
@@ -171,7 +172,7 @@ std::vector<std::string> read_text_lines(const std::string& path) {
         htsFile* file = hts_open(path.c_str(), "r");
         if (!file) throw std::runtime_error("BAD_INPUT: cannot open interval file: " + path);
         kstring_t line{0, 0, nullptr};
-        while (hts_getline(file, '\n', &line) >= 0)
+        while (fastgatk::io::read_text_line(file, &line, path) >= 0)
             lines.emplace_back(line.s == nullptr ? "" : std::string(line.s, line.l));
         free(line.s);
         if (hts_close(file) != 0) throw std::runtime_error("BAD_INPUT: failed reading interval file: " + path);
@@ -429,7 +430,7 @@ VariantMap read_variants(const std::string& path, const std::string& iupac_sampl
     if (samples_seen && !iupac_sample.empty()) (*samples_seen)[iupac_sample] = bcf_hdr_id2int(header, BCF_DT_SAMPLE, iupac_sample.c_str()) >= 0;
     VariantMap result;
     bcf1_t* record = bcf_init();
-    while (record && bcf_read(file, header, record) == 0) {
+    while (record && fastgatk::io::read_variant_record(file, header, record, path) == 0) {
         bcf_unpack(record, BCF_UN_STR | BCF_UN_FLT);
         if (record->rid < 0 || record->n_allele < 2) {
             bcf_clear(record);

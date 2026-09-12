@@ -5,6 +5,7 @@
 #include <htslib/faidx.h>
 #include <htslib/hts.h>
 #include <htslib/kstring.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 
 #include <algorithm>
 #include <array>
@@ -179,7 +180,7 @@ void append_interval_file(const std::string& path, const faidx_t* fai,
         if (!file) throw std::invalid_argument("cannot open compressed interval file: " + path);
         kstring_t line{0, 0, nullptr};
         try {
-            while (hts_getline(file, '\n', &line) >= 0)
+            while (fastgatk::io::read_text_line(file, &line, path) >= 0)
                 process_line(line.s == nullptr ? std::string{} : std::string(line.s, line.l));
         } catch (...) {
             free(line.s);

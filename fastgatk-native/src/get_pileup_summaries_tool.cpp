@@ -32,6 +32,7 @@
 #include <htslib/sam.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -478,7 +479,7 @@ std::unordered_set<std::string> load_interval_variant_keys(
             bcf_close(file);
             throw std::runtime_error("BAD_INPUT: cannot read interval VCF: " + selector);
         }
-        while (bcf_read(file, header, record) == 0) {
+        while (fastgatk::io::read_variant_record(file, header, record, selector) == 0) {
             const auto* contig = record->rid >= 0 ? bcf_hdr_id2name(header, record->rid) : nullptr;
             if (contig) selector_keys.emplace(std::string(contig) + ":" + std::to_string(record->pos));
             bcf_clear(record);
@@ -567,7 +568,7 @@ RawAfMap load_raw_vcf_af(const std::string& filename,
     htsFile* raw = hts_open(filename.c_str(), "r");
     if (!raw) return values;
     kstring_t line{0, 0, nullptr};
-    while (hts_getline(raw, '\n', &line) >= 0) {
+    while (fastgatk::io::read_text_line(raw, &line, filename) >= 0) {
         if (line.l == 0 || line.s[0] == '#') continue;
         std::string text(line.s, line.l);
         std::size_t field_start = 0;
@@ -838,7 +839,9 @@ std::vector<Site> load_sites(const Options& options,
             }
         }
     } else {
-        while (bcf_read(file, header, record) == 0) process_record();
+        while (fastgatk::io::read_variant_record(file, header, record,
+                                               options.variants) == 0)
+            process_record();
     }
     bcf_destroy(record);
     bcf_hdr_destroy(header);
@@ -928,7 +931,8 @@ std::vector<fastgatk::io::IndexedInterval> load_intervals_for_sites(
                 bcf_close(selector_file);
                 throw std::runtime_error("BAD_INPUT: cannot read interval VCF: " + selector);
             }
-            while (bcf_read(selector_file, selector_header, selector_record) == 0) {
+            while (fastgatk::io::read_variant_record(
+                       selector_file, selector_header, selector_record, variants) == 0) {
                 const auto* contig = selector_record->rid >= 0
                     ? bcf_hdr_id2name(selector_header, selector_record->rid) : nullptr;
                 const int rid = contig == nullptr ? -1 : bcf_hdr_name2id(header, contig);

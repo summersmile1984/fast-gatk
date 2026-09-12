@@ -26,6 +26,7 @@
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -2148,7 +2149,7 @@ std::vector<MaskInterval> load_mask_intervals(const std::vector<std::string>& pa
             bcf_close(input);
             throw std::runtime_error("RESOURCE_EXHAUSTED: cannot allocate VariantFiltration mask record");
         }
-        while (bcf_read(input, header, record) == 0) {
+        while (fastgatk::io::read_variant_record(input, header, record, path) == 0) {
             bcf_unpack(record, BCF_UN_ALL);
             const auto* contig = record->rid >= 0 ? bcf_hdr_id2name(header, record->rid) : nullptr;
             if (contig != nullptr && record->pos >= 0) {
@@ -2205,7 +2206,7 @@ std::set<ClusterPosition> load_cluster_positions(const std::string& path,
         bcf_close(input);
         throw std::runtime_error("RESOURCE_EXHAUSTED: cannot allocate VariantFiltration clustering record");
     }
-    while (bcf_read(input, header, record) == 0) {
+    while (fastgatk::io::read_variant_record(input, header, record, path) == 0) {
         bcf_unpack(record, BCF_UN_STR);
         const auto* contig = record->rid >= 0 ? bcf_hdr_id2name(header, record->rid) : nullptr;
         if (contig != nullptr && record->pos >= 0)
@@ -2517,7 +2518,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
         if (bcf_hdr_write(output, output_header) != 0) throw std::runtime_error("cannot write VariantFiltration header");
         record = bcf_init();
         if (!record) throw std::runtime_error("RESOURCE_EXHAUSTED: bcf_init failed");
-        while (bcf_read(input, input_header, record) == 0) {
+        while (fastgatk::io::read_variant_record(input, input_header, record,
+                                               options.input) == 0) {
             ++input_records;
             bcf_unpack(record, BCF_UN_ALL);
             if (!in_regions(input_header, record, regions)) {

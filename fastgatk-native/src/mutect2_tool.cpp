@@ -43,6 +43,7 @@
 #include <htslib/faidx.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -316,7 +317,7 @@ MutectFeatureTable load_mutect_feature_table(const std::string& path,
         bcf_close(input);
         throw std::runtime_error("RESOURCE_EXHAUSTED: cannot allocate Mutect2 feature record");
     }
-    while (bcf_read(input, header, record) == 0) {
+    while (fastgatk::io::read_variant_record(input, header, record, path) == 0) {
         bcf_unpack(record, BCF_UN_STR);
         if (record->rid < 0 || record->n_allele < 1 || record->d.allele == nullptr) continue;
         const char* contig = bcf_hdr_id2name(header, record->rid);

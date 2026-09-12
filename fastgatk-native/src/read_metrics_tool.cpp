@@ -6,6 +6,7 @@
 #include <htslib/sam.h>
 #include <htslib/hts.h>
 #include <htslib/kstring.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 
 #include <array>
 #include <algorithm>
@@ -775,7 +776,7 @@ void append_interval_file(const sam_hdr_t* header, const std::string& path,
             throw std::runtime_error("BAD_INPUT: cannot open compressed interval file: " + path);
         kstring_t line{0, 0, nullptr};
         try {
-            while (hts_getline(file, '\n', &line) >= 0)
+            while (fastgatk::io::read_text_line(file, &line, path) >= 0)
                 process_line(line.s == nullptr ? std::string{} : std::string(line.s, line.l));
         } catch (...) {
             free(line.s);

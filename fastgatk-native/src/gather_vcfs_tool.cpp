@@ -24,6 +24,7 @@
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -313,7 +314,7 @@ std::vector<std::string> reorder_inputs_by_first_variant(const std::vector<std::
         FirstVariantCoordinate coordinate;
         coordinate.path = path;
         coordinate.input_order = input_order;
-        if (bcf_read(file, header, record) == 0) {
+        if (fastgatk::io::read_variant_record(file, header, record, path) == 0) {
             bcf_unpack(record, BCF_UN_STR);
             if (record->rid < 0 || record->pos < 0) {
                 bcf_destroy(record);

@@ -2,6 +2,7 @@
 
 #include <htslib/faidx.h>
 #include <htslib/sam.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #include <zlib.h>
 
 #include "fastgatk/runtime/resource.hpp"
@@ -490,7 +491,8 @@ struct IngestResult {
                     throw std::runtime_error("BAD_INPUT: indexed BAM/CRAM iterator failed: " + path);
             }
         } else {
-            while (sam_read1(input, header, record) >= 0) process_record();
+            while (fastgatk::io::read_alignment_record(input, header, record, path) >= 0)
+                process_record();
         }
     } catch (...) {
         bam_destroy1(record);

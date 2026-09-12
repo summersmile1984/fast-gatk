@@ -43,6 +43,7 @@
 #include <htslib/hfile.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -4666,7 +4667,7 @@ std::string input_pass_filter_line(const std::string& path) {
     // anyway, so only a text-format input can answer this question.
     if (input->format.format == vcf) {
         kstring_t line{0, 0, nullptr};
-        while (hts_getline(input, '\n', &line) >= 0) {
+        while (fastgatk::io::read_text_line(input, &line, path) >= 0) {
             if (line.l == 0) continue;
             const std::string text(line.s, line.l);
             if (text.rfind("#CHROM", 0) == 0) break;

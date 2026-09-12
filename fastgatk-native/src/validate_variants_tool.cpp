@@ -21,6 +21,7 @@
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/faidx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -552,7 +553,7 @@ std::map<std::string, std::set<std::string>> load_dbsnp_ids(const std::string& p
         throw std::runtime_error("BAD_INPUT: cannot read dbSNP VCF header: " + path);
     }
     bcf1_t* record = bcf_init();
-    while (bcf_read(file, header, record) >= 0) {
+    while (fastgatk::io::read_variant_record(file, header, record, path) >= 0) {
         bcf_unpack(record, BCF_UN_STR);
         const auto* contig = record->rid >= 0 ? bcf_hdr_id2name(header, record->rid) : nullptr;
         if (contig == nullptr || record->d.id == nullptr || std::string(record->d.id) == ".") continue;
@@ -773,7 +774,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
     std::map<int, int> first_start;
     std::map<int, bool> previous_reference_block;
     std::map<int, std::vector<std::pair<int, int>>> gvcf_spans;
-    while (bcf_read(input, header, record) >= 0) {
+    while (fastgatk::io::read_variant_record(input, header, record,
+                                           options.input) >= 0) {
         ++summary.input_records;
         bcf_unpack(record, BCF_UN_ALL);
         if (!in_intervals(header, record, intervals)) {

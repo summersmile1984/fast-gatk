@@ -34,6 +34,7 @@
 #include <htslib/kstring.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 #if FASTGATK_HAS_ZLIB
@@ -648,7 +649,7 @@ std::unordered_set<std::string> read_resource_keys(const std::string& path) {
     bcf1_t* record = bcf_init();
     if (!header || !record) throw std::runtime_error("BAD_INPUT: cannot read resource header");
     std::unordered_set<std::string> keys;
-    while (bcf_read(input, header, record) == 0) {
+    while (fastgatk::io::read_variant_record(input, header, record, path) == 0) {
         if (resource_record_is_valid(header, record))
             for (const auto& key : record_keys(header, record)) keys.insert(key);
         bcf_clear(record);
@@ -891,7 +892,7 @@ void for_each_report_line(const std::string& path, Fn&& callback) {
         if (!input) throw std::runtime_error("BAD_INPUT: cannot open compressed VQSR model report: " + path);
         kstring_t line{0, 0, nullptr};
         try {
-            while (hts_getline(input, '\n', &line) >= 0)
+            while (fastgatk::io::read_text_line(input, &line, path) >= 0)
                 callback(line.s == nullptr ? std::string{} : std::string(line.s, line.l));
         } catch (...) {
             free(line.s);
@@ -2392,7 +2393,8 @@ std::vector<Entry> read_entries(const Options& options,
     bcf1_t* record = bcf_init();
     if (!header || !record) throw std::runtime_error("BAD_INPUT: cannot read input VCF header");
     std::vector<Entry> entries;
-    while (bcf_read(input, header, record) == 0) {
+    while (fastgatk::io::read_variant_record(input, header, record,
+                                           options.input) == 0) {
         ++input_records;
         const auto type = variant_type(record);
         const bool mode_match = mode_matches_variant(type, options.mode);
@@ -2704,7 +2706,8 @@ std::string write_recal_vcf(const Options& options, const std::unordered_map<std
     if (!output || bcf_hdr_write(output, output_header) != 0)
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write recal VCF header");
     std::uint64_t output_record_index = 0;
-    while (bcf_read(input, input_header, record) == 0) {
+    while (fastgatk::io::read_variant_record(input, input_header, record,
+                                           options.input) == 0) {
         // GATK's sample-every-Nth-variant mode downsamples the recalibration
         // table itself, not merely the score computation.  Keep the same
         // zero-based phase as read_entries/apply: unsampled input records do

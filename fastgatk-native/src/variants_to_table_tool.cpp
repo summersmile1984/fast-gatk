@@ -29,6 +29,7 @@
 
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -250,7 +251,7 @@ std::vector<std::string> split_raw_csv(const std::string& text) {
 
 class RawInfoReader {
 public:
-    explicit RawInfoReader(const std::string& path) {
+    explicit RawInfoReader(const std::string& path) : source_path_(path) {
         if (is_text_vcf(path) && path != "-") {
             file_ = hts_open(path.c_str(), "r");
             if (file_ != nullptr && hts_get_format(file_)->format != vcf) {
@@ -272,7 +273,7 @@ public:
 
     bool next(RawInfoRecord& record) {
         if (file_ == nullptr) return false;
-        while (hts_getline(file_, '\n', &line_) >= 0) {
+        while (fastgatk::io::read_text_line(file_, &line_, source_path_) >= 0) {
             if (line_.l == 0 || line_.s[0] == '#') continue;
             record = RawInfoRecord{};
             std::size_t field_start = 0;
@@ -319,6 +320,7 @@ public:
 private:
     htsFile* file_ = nullptr;
     kstring_t line_{0, 0, nullptr};
+    std::string source_path_;
 };
 
 bool file_complete(const std::string& path) {
@@ -1112,7 +1114,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
         std::uint64_t skipped_filtered = 0;
         std::uint64_t skipped_interval = 0;
         std::uint64_t skipped_excluded = 0;
-        while (bcf_read(input, header, record) == 0) {
+        while (fastgatk::io::read_variant_record(input, header, record,
+                                               options.input) == 0) {
             ++input_records;
             RawInfoRecord raw_info_record;
             const RawInfoRecord* raw_info = raw_info_reader.next(raw_info_record)

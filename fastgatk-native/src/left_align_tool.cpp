@@ -24,6 +24,7 @@
 #include <htslib/faidx.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -1001,7 +1002,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
         int previous_rid = -1;
         int previous_pos = -1;
         int previous_end = -1;  // one-based inclusive end of the last written record
-        while (bcf_read(input, input_header, record) == 0) {
+        while (fastgatk::io::read_variant_record(input, input_header, record,
+                                               options.input) == 0) {
             ++input_records;
             if (!in_regions(input_header, record, regions)) {
                 ++interval_skipped;

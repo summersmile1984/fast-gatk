@@ -27,6 +27,7 @@
 #include <htslib/kstring.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -290,7 +291,7 @@ void for_each_tranche_line(const std::string& path, Fn&& callback) {
         if (!input) throw std::runtime_error("BAD_INPUT: cannot open compressed tranches file: " + path);
         kstring_t line{0, 0, nullptr};
         try {
-            while (hts_getline(input, '\n', &line) >= 0)
+            while (fastgatk::io::read_text_line(input, &line, path) >= 0)
                 callback(line.s == nullptr ? std::string{} : std::string(line.s, line.l));
         } catch (...) {
             free(line.s);
@@ -421,7 +422,7 @@ RecalScores read_recal_vcf(const std::string& path, bool require_allele_specific
     bcf1_t* record = bcf_init();
     if (!header || !record) throw std::runtime_error("BAD_INPUT: cannot read recal VCF header");
     RecalScores result;
-    while (bcf_read(input, header, record) == 0) {
+    while (fastgatk::io::read_variant_record(input, header, record, path) == 0) {
         bcf_unpack(record, BCF_UN_ALL);
         float* values = nullptr;
         int count = 0;
@@ -776,7 +777,8 @@ int main(int argc, char** argv) {
         std::uint64_t applicable_alleles = 0, mode_skipped_alleles = 0;
         std::uint64_t interval_skipped_records = 0;
         std::uint64_t interval_excluded_records = 0;
-        while (bcf_read(input, input_header, record) == 0) {
+        while (fastgatk::io::read_variant_record(input, input_header, record,
+                                               options.input) == 0) {
             if (!options.regions.empty() && !record_in_intervals(input_header, record, intervals)) {
                 ++interval_skipped_records;
                 bcf_clear(record);

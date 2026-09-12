@@ -36,6 +36,7 @@
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -3999,7 +4000,8 @@ static void run_java_learning_pipeline(
                     normal_sample_indices.push_back(sample_index);
             }
             bcf1_t* record = bcf_init();
-            while (bcf_read(input, header, record) == 0) {
+            while (fastgatk::io::read_variant_record(input, header, record,
+                                                   options.input) == 0) {
                 bcf_unpack(record, BCF_UN_ALL);
                 const auto evidence_begin = ev_alt.size();
                 const auto phased_observations = haplotype_filter != nullptr
@@ -4664,7 +4666,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             options.orientation_threshold_strategy != "CONSTANT" &&
             options.max_orientation_artifact_probability < 0.0F) {
             std::vector<double> learned_posteriors;
-            while (bcf_read(input, input_header, record) == 0) {
+            while (fastgatk::io::read_variant_record(input, input_header, record,
+                                                   options.input) == 0) {
                 if (!options.regions.empty() &&
                     !filter_record_in_intervals(input_header, record, intervals)) {
                     bcf_clear(record);
@@ -4720,7 +4723,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             //
             // This remains a streaming pass: only per-haplotype
             // (locus, probability) vectors remain resident.
-            while (bcf_read(input, input_header, record) == 0) {
+            while (fastgatk::io::read_variant_record(input, input_header, record,
+                                                   options.input) == 0) {
                 if (!options.regions.empty() &&
                     !filter_record_in_intervals(input_header, record, intervals)) {
                     bcf_clear(record);
@@ -4812,7 +4816,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                     input_header = bcf_hdr_read(input);
                     if (!input_header) throw std::runtime_error("BAD_INPUT: cannot reread Mutect2 VCF header");
                 }
-                while (bcf_read(input, input_header, record) == 0) {
+                while (fastgatk::io::read_variant_record(input, input_header,
+                                                       record, options.input) == 0) {
                 if (!options.regions.empty() &&
                     !filter_record_in_intervals(input_header, record, intervals)) {
                     bcf_clear(record);
@@ -5085,7 +5090,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             }
             }
         }
-        while (bcf_read(input, input_header, record) == 0) {
+        while (fastgatk::io::read_variant_record(input, input_header, record,
+                                               options.input) == 0) {
             if (!options.regions.empty() &&
                 !filter_record_in_intervals(input_header, record, intervals)) {
                 ++interval_skipped_records;

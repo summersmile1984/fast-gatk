@@ -34,6 +34,7 @@
 #include <htslib/hts.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #include <htslib/faidx.h>
 #endif
 
@@ -1154,7 +1155,9 @@ int run_streaming_tool(const Options& options,
 
         const auto read_next_raw = [&](Cursor& cursor) -> bool {
             if (cursor.traversal_index == nullptr)
-                return bcf_read(cursor.file, cursor.header, cursor.input_record) == 0;
+                return fastgatk::io::read_variant_record(
+                           cursor.file, cursor.header, cursor.input_record,
+                           cursor.path) == 0;
             while (true) {
                 if (cursor.iterator != nullptr) {
                     int status = -1;
@@ -1703,7 +1706,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                 bcf_hdr_destroy(header); bcf_close(input);
                 throw std::runtime_error("RESOURCE_EXHAUSTED: bcf_init failed");
             }
-            while (bcf_read(input, header, record) == 0) {
+            while (fastgatk::io::read_variant_record(input, header, record,
+                                                   input_path) == 0) {
                 ++input_records;
                 bcf_unpack(record, BCF_UN_ALL);
                 if (!in_regions(header, record, regions)) {

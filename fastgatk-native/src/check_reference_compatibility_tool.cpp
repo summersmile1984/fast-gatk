@@ -3,6 +3,7 @@
 #include <htslib/hts.h>
 #include <htslib/sam.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -96,7 +97,7 @@ std::vector<fastgatk::reference::SequenceInfo> parse_vcf_text_contigs(const std:
     htsFile* stream = hts_open(path.c_str(), "r");
     if (!stream) return result;
     kstring_t line{0, 0, nullptr};
-    while (hts_getline(stream, '\n', &line) >= 0) {
+    while (fastgatk::io::read_text_line(stream, &line, path) >= 0) {
         if (!line.s || std::string_view(line.s, line.l).rfind("##contig=<", 0) != 0) continue;
         const std::string text(line.s, line.l);
         const auto begin = text.find('<');

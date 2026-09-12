@@ -31,6 +31,7 @@
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/sam.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -3261,7 +3262,9 @@ int covariate_delta(const QualityBin& bin, int quality) {
         batch.records.reserve(decode_batch_records);
         batch.raw_qualities.reserve(decode_batch_records * 150ULL);
         batch.deltas.reserve(decode_batch_records * 150ULL);
-        while (batch.records.size() < decode_batch_records && sam_read1(input, header, record) >= 0) {
+        while (batch.records.size() < decode_batch_records &&
+               fastgatk::io::read_alignment_record(input, header, record,
+                                                  options.input) >= 0) {
             if (input_records_seen < checkpoint_records) {
                 ++input_records_seen;
                 continue;

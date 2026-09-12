@@ -29,6 +29,7 @@
 #include <htslib/faidx.h>
 #include <htslib/tbx.h>
 #include <htslib/vcf.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -1843,7 +1844,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             }
             bcf1_t* record = bcf_init();
             if (!record) { bcf_hdr_destroy(header); bcf_close(input); throw std::runtime_error("RESOURCE_EXHAUSTED: bcf_init failed"); }
-            while (bcf_read(input, header, record) == 0) {
+            while (fastgatk::io::read_variant_record(input, header, record,
+                                                   input_path) == 0) {
                 ++input_records;
                 bcf_unpack(record, BCF_UN_ALL);
                 if (record->rid < 0 || record->n_allele < 2) continue;

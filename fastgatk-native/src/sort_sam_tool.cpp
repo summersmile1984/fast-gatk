@@ -20,6 +20,7 @@
 
 #if FASTGATK_HAS_HTSLIB
 #include <htslib/sam.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace {
@@ -751,7 +752,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
         } else {
             record = bam_init1();
             if (!record) throw std::runtime_error("RESOURCE_EXHAUSTED: bam_init1 failed");
-            while (sam_read1(input, header, record) >= 0) {
+            while (fastgatk::io::read_alignment_record(input, header, record,
+                                                     options.input) >= 0) {
                 ++input_records;
                 auto* copy = bam_dup1(record);
                 if (!copy) throw std::runtime_error("RESOURCE_EXHAUSTED: cannot stage BAM record");
@@ -833,7 +835,8 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                 heap.pop();
                 write_record(node.record);
                 auto& state = merge_runs[node.run];
-                const int status = sam_read1(state.file, state.header, state.record);
+                const int status = fastgatk::io::read_alignment_record(
+                    state.file, state.header, state.record, runs[node.run].string());
                 if (status >= 0) heap.push({node.run, state.record});
             }
         }

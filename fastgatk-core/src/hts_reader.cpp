@@ -17,6 +17,7 @@
 #include <htslib/sam.h>
 #include <htslib/hts.h>
 #include <htslib/kstring.h>
+#include "fastgatk/io/hts_read_guard.hpp"
 #endif
 
 namespace fastgatk::io {
@@ -466,7 +467,8 @@ struct HtsReader::Impl {
 
     bool next_record() {
         if (!indexed) {
-            const auto status = sam_read1(file, header, record);
+            const auto status = fastgatk::io::read_alignment_record(
+                file, header, record, source_path);
             if (status >= 0) ++records_read;
             return status >= 0;
         }
@@ -481,7 +483,8 @@ struct HtsReader::Impl {
                     continue;
                 }
             }
-            const auto status = sam_itr_next(file, iterator, record);
+            const auto status = fastgatk::io::read_indexed_alignment_record(
+                file, iterator, record, source_path);
             if (status >= 0) {
                 ++records_read;
                 return true;
@@ -553,7 +556,7 @@ struct HtsReader::Impl {
         std::size_t parsed = 0;
         kstring_t raw_line{0, 0, nullptr};
         try {
-        while (hts_getline(input, '\n', &raw_line) >= 0) {
+        while (fastgatk::io::read_text_line(input, &raw_line, path) >= 0) {
             std::string line = trim(raw_line.s == nullptr ? std::string{} :
                                     std::string(raw_line.s, raw_line.l));
             if (line.empty() || line[0] == '#' || line[0] == '@') continue;
