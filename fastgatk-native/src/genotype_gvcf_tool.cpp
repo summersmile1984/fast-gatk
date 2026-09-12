@@ -3794,7 +3794,8 @@ int called_deletion_allele_index(const Record& record) {
 
 void materialize_spanning_loci(const bcf_hdr_t* output_header,
                                faidx_t* reference_index,
-                               std::vector<Record>& records) {
+                               std::vector<Record>& records,
+                               const std::vector<Region>& regions) {
     if (records.empty()) return;
     std::set<std::pair<int, int>> occupied;
     for (const auto& record : records)
@@ -3814,6 +3815,13 @@ void materialize_spanning_loci(const bcf_hdr_t* output_header,
         if (end <= record.pos + 1) continue;
         const auto deletion = called_deletion_allele_index(record);
         if (deletion < 0) continue;
+        // A source locus outside the requested intervals is never emitted, so
+        // GATK never records its deletion and the covered coordinate would be an
+        // ORPHAN '*' there.  Restricting the pass to in-interval sources keeps
+        // the emitted-deletion state consistent with the traversal.
+        if (!regions.empty() &&
+            !starts_in_regions(output_header, record.value, regions))
+            continue;
         coverage.push_back(Coverage{record.rid, record.pos + 1, end, index, deletion});
     }
     if (coverage.empty()) return;
@@ -7144,8 +7152,28 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
         // block's REF base is not recoverable from its single start allele at
         // an interior split coordinate.
         split_reference_blocks_at_variants(output_header, reference_index, records);
-        if (options.include_non_variant_sites)
-            materialize_spanning_loci(output_header, reference_index, records);
+        if (options.include_non_variant_sites) {
+            materialize_spanning_loci(output_header, reference_index, records, regions);
+            if (!regions.empty()) {
+                // GATK traverses only the requested intervals, so the
+                // per-coordinate dense record supply is clipped to them: a
+                // reference block whose END reaches past the interval used to be
+                // published in full (measured: 4809 in-block coordinates for a
+                // 1000 bp window of GATK's own chr20 gVCF, against GATK's 1001).
+                std::vector<Record> clipped;
+                clipped.reserve(records.size());
+                for (auto& record : records) {
+                    if (record.value != nullptr && record.value->rid >= 0 &&
+                        starts_in_regions(output_header, record.value, regions)) {
+                        clipped.push_back(std::move(record));
+                    } else {
+                        bcf_destroy(record.value);
+                        record.value = nullptr;
+                    }
+                }
+                records = std::move(clipped);
+            }
+        }
         std::sort(records.begin(), records.end(), [](const Record& left, const Record& right) {
             if (left.rid != right.rid) return left.rid < right.rid;
             if (left.pos != right.pos) return left.pos < right.pos;

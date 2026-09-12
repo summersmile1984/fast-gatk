@@ -279,6 +279,24 @@ ROW_NO_TRIM_NEEDED = ("chr1\t2\t.\tAAAA\tAAC\t92.60\t.\t"
                       "MLEAC=1;MLEAF=0.500;QD=4.63\t"
                       "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
 
+# A pure reference block whose END reaches past the requested interval.  The
+# header declares INFO/END and FORMAT/GQ/MIN_DP, which the gate's shared header
+# does not need for the other cases.
+HEADER_END_BLOCK = HEADER.replace(
+    "##FORMAT=<ID=DP",
+    '##INFO=<ID=END,Number=1,Type=Integer,Description="End position">\n'
+    '##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum DP">\n'
+    "##FORMAT=<ID=DP")
+
+INTERVAL_REFERENCE_BLOCK = (
+    "chr1\t2\t.\tA\t<NON_REF>\t.\t.\tEND=11;DP=40\t"
+    "GT:DP:GQ:MIN_DP\t0/0:40:99:40\n")
+
+
+def _interval_ref_only_row(position: int) -> str:
+    return f"chr1\t{position}\t.\tA\t.\t.\t.\tDP=40\tGT:DP:RGQ\t0/0:40:99"
+
+
 # ---------------------------------------------------------------------------
 # cases
 # ---------------------------------------------------------------------------
@@ -444,6 +462,24 @@ CASES = [
         "gated": True,
         "expect": [ROW_STARTING_RECORD_DELETION],
     },
+    {
+        "case": "dense-reference-block-clipped-to-intervals",
+        "why": "GATK traverses only the requested intervals, so the per-coordinate "
+               "expansion of a reference block stops at the interval end: with "
+               "-L chr1:5-7 on a block spanning 2-11 (INFO/END=11) GATK publishes "
+               "exactly the three in-interval rows.  Native expanded the whole "
+               "overlapping block and published all ten coordinates -- measured on "
+               "GATK's own chr20 gVCF as well, where a 1000 bp window produced 4809 "
+               "rows of the enclosing block instead of 1001 "
+               "(evidence/2026-09-13-round52-dense/real-corpus-chr20-verification.md)",
+        "body": INTERVAL_REFERENCE_BLOCK,
+        "header": HEADER_END_BLOCK,
+        "args": [DENSE, "-L", "chr1:5-7"],
+        "mode": "rows",
+        "gated": True,
+        "expect": [_interval_ref_only_row(5), _interval_ref_only_row(6),
+                   _interval_ref_only_row(7)],
+    },
 ]
 
 
@@ -492,7 +528,7 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
              java: pathlib.Path, jar: pathlib.Path, native: pathlib.Path,
              timeout: int) -> dict:
     source = work / f"{case['case']}.in.vcf"
-    source.write_text(HEADER + case["body"], encoding="utf-8")
+    source.write_text(case.get("header", HEADER) + case["body"], encoding="utf-8")
     # GATK's group-by-locus traversal needs an index; creating it for every case
     # keeps the two tools' inputs byte-identical.
     index_result = invoke([str(java), "-Xmx1g", "-jar", str(jar),
