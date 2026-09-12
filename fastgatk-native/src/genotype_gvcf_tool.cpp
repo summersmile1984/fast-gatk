@@ -4931,7 +4931,9 @@ std::string format_gatk_qual_value(const std::string& value) {
     }
 }
 
-std::string gatk_compatible_record_text(const std::string& formatted) {
+std::string gatk_compatible_record_text(const std::string& formatted,
+                                        bool drop_read_level = false,
+                                        bool drop_excess_het = false) {
     if (formatted.empty()) return formatted;
     std::string line = formatted;
     while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) line.pop_back();
@@ -4980,6 +4982,15 @@ std::string gatk_compatible_record_text(const std::string& formatted) {
         fields[7] = ".";
     } else {
         std::ostringstream info_text;
+        if (drop_read_level || drop_excess_het) {
+            ordered.erase(std::remove_if(ordered.begin(), ordered.end(),
+                                         [&](const auto& entry) {
+                if (drop_read_level && (entry.key == "MQ" || entry.key == "BaseQRankSum" ||
+                                       entry.key == "MQRankSum" || entry.key == "ReadPosRankSum"))
+                    return true;
+                return drop_excess_het && entry.key == "ExcessHet";
+            }), ordered.end());
+        }
         for (std::size_t index = 0; index < ordered.size(); ++index) {
             if (index != 0) info_text << ';';
             info_text << ordered[index].key;
@@ -6718,6 +6729,12 @@ int run_streaming_genotype_gvcf(Options& options,
             },
             [&](GenotypeComputed computed) -> std::optional<GenotypeEncoded> {
                 GenotypeEncoded encoded;
+                const bool drop_read_level =
+                    computed.record.materialized_spanning_locus ||
+                    computed.record.finalized_monomorphic_ref;
+                // Only the REF-only materialisation drops ExcessHet as well: the
+                // spanning-locus rows keep it (measured, round 85).
+                const bool drop_excess_het = computed.record.finalized_monomorphic_ref;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};
@@ -6726,7 +6743,7 @@ int run_streaming_genotype_gvcf(Options& options,
                         throw std::runtime_error("cannot format GATK-compatible streaming VCF record");
                     }
                     encoded.text = gatk_compatible_record_text(
-                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l));
+                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het);
                     free(formatted.s);
                 }
                 return encoded;
@@ -7483,6 +7500,12 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
             },
             [&](GenotypeComputed computed) -> std::optional<GenotypeEncoded> {
                 GenotypeEncoded encoded;
+                const bool drop_read_level =
+                    computed.record.materialized_spanning_locus ||
+                    computed.record.finalized_monomorphic_ref;
+                // Only the REF-only materialisation drops ExcessHet as well: the
+                // spanning-locus rows keep it (measured, round 85).
+                const bool drop_excess_het = computed.record.finalized_monomorphic_ref;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};
@@ -7491,7 +7514,7 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                         throw std::runtime_error("cannot format GATK-compatible VCF record");
                     }
                     encoded.text = gatk_compatible_record_text(
-                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l));
+                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het);
                     free(formatted.s);
                 }
                 return encoded;
