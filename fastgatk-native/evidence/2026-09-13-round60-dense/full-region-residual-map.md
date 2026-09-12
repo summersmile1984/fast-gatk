@@ -513,3 +513,24 @@ C/E 行。也就是说：第 68–75 轮所有"窄窗口插桩 → 判定 C/E �
 **为什么不用 htslib 删除**（第 78 轮实测）：`bcf_update_info_float(hdr, line, tag, NULL, 0)`
 四条调用全部 `rc=0` 而 `n_info` 不变（8→8），此版本下它不是删除语义；
 文本层按 key 丢弃不受该语义影响，且 native 的 GATK 兼容文本本来就由这段代码自己组装。
+
+## 第 80 轮：文本层过滤**编译通过并运行，但仍无效果**——需要确认这些行的文本到底由谁生成
+
+按第 79 轮的三处改法实施（`gatk_compatible_record_text` 加 `drop_read_level` 默认参数、
+INFO 组装循环内按 key 跳过四个键、两处调用点传入 `materialized_spanning_locus ||
+finalized_monomorphic_ref`），**编译通过**，整段复验：残差仍 **84**（C 类 9 行、E 类 2 行原样）。
+
+⇒ 说明这些行的 GATK 兼容文本**不是**由 `gatk_compatible_record_text()` 的 INFO 组装分支产出的
+（或该函数在这一步拿到的 `computed.record` 已是 moved-from 状态、标志读不到）。
+改动已回退。
+
+**下一步（一次插桩即可判定，插桩位置作用域安全）**：在 `gatk_compatible_record_text()` 入口打印
+`formatted` 的 POS 与第 8 列（INFO），并在 `format_gatk_float_value()` 里打印被调用的 key；
+用整段命令跑、只 grep `pos=10008964`：
+- 若该函数**根本没被调用**（无对应输出）⇒ 这些行走的是另一条写出路径（如 `bcf_write` 直写），
+  过滤要挂到那条路径上；
+- 若被调用但 key 列表里没有那四个键 ⇒ 它们是在**别处**（例如 `apply_gatk_annotation_compatibility()`
+  之后、文本组装之前）被写入的。
+
+**本轮结论**：C/E 类的问题已从"来源不明"推进到"**已排除两条修复路径（htslib 删除、文本层 INFO 过滤）**，
+并明确了下一次插桩要回答的一个二选一问题"。这是可继续的具体状态，而不是卡住。
