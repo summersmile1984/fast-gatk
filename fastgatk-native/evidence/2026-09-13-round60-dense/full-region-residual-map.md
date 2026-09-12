@@ -496,3 +496,20 @@ C/E 行。也就是说：第 68–75 轮所有"窄窗口插桩 → 判定 C/E �
    这四个键**最直接**，且不受 htslib INFO 删除语义影响；
 3. 判据可以随行携带（本会话已有的两个标志不足以覆盖，需要在文本层知道该行是物化行——
    可由记录的两个标志组合或再加一个标志传入文本组装函数）。
+
+## 第 79 轮：文本层过滤的**具体改法**（读码得到，下一步照做即可）
+
+已定位到需要改的三处（行号为当前树）：
+
+| 位置 | 现状 | 需要的改动 |
+| --- | --- | --- |
+| `:4934` | `std::string gatk_compatible_record_text(const std::string& formatted)` | 增加一个默认参数，例如 `bool drop_read_level = false` |
+| `:4987` 附近 | 组装 INFO 的循环：`info_text << '=' << format_gatk_float_value(ordered[index].key, ordered[index].value);` | 在该循环内按 key 跳过：`drop_read_level && key ∈ {MQ, BaseQRankSum, MQRankSum, ReadPosRankSum}` → `continue` |
+| `:6728`、`:7493` | 两处调用 `gatk_compatible_record_text(<formatted>)` | 传 `computed.record.materialized_spanning_locus \|\| computed.record.finalized_monomorphic_ref`（REF-only 行另需丢 `PGT/PID/PS`） |
+
+原因：该函数**只收到已格式化文本**，拿不到"这一行是物化行"的信息，所以必须由调用点把该状态传进来。
+改完后用整段命令复验（预期 84 → 73：C 类 9 行 + E 类 2 行的多余键消失），再跑双后端全量。
+
+**为什么不用 htslib 删除**（第 78 轮实测）：`bcf_update_info_float(hdr, line, tag, NULL, 0)`
+四条调用全部 `rc=0` 而 `n_info` 不变（8→8），此版本下它不是删除语义；
+文本层按 key 丢弃不受该语义影响，且 native 的 GATK 兼容文本本来就由这段代码自己组装。
