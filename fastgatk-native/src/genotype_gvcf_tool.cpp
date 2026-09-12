@@ -6729,12 +6729,15 @@ int run_streaming_genotype_gvcf(Options& options,
             },
             [&](GenotypeComputed computed) -> std::optional<GenotypeEncoded> {
                 GenotypeEncoded encoded;
-                const bool drop_read_level =
-                    computed.record.materialized_spanning_locus ||
-                    computed.record.finalized_monomorphic_ref;
-                // Only the REF-only materialisation drops ExcessHet as well: the
-                // spanning-locus rows keep it (measured, round 85).
-                const bool drop_excess_het = computed.record.finalized_monomorphic_ref;
+                // Both switches follow measured GATK behaviour at three loci: a
+                // SPANNING materialization drops the read-level annotations
+                // (20:10008964, span=1 mono=1 -> `DP=63;MLEAC=.;MLEAF=.`), a real
+                // record that merely turned REF-only keeps them AND keeps ExcessHet
+                // (20:10041698, span=0 mono=1), and a '*' spanning row keeps
+                // ExcessHet (span=1 mono=0, round 85).
+                const bool drop_read_level = computed.record.materialized_spanning_locus;
+                const bool drop_excess_het = computed.record.materialized_spanning_locus &&
+                                             computed.record.finalized_monomorphic_ref;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};
@@ -7500,12 +7503,15 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
             },
             [&](GenotypeComputed computed) -> std::optional<GenotypeEncoded> {
                 GenotypeEncoded encoded;
-                const bool drop_read_level =
-                    computed.record.materialized_spanning_locus ||
-                    computed.record.finalized_monomorphic_ref;
-                // Only the REF-only materialisation drops ExcessHet as well: the
-                // spanning-locus rows keep it (measured, round 85).
-                const bool drop_excess_het = computed.record.finalized_monomorphic_ref;
+                // Both switches follow measured GATK behaviour at three loci: a
+                // SPANNING materialization drops the read-level annotations
+                // (20:10008964, span=1 mono=1 -> `DP=63;MLEAC=.;MLEAF=.`), a real
+                // record that merely turned REF-only keeps them AND keeps ExcessHet
+                // (20:10041698, span=0 mono=1), and a '*' spanning row keeps
+                // ExcessHet (span=1 mono=0, round 85).
+                const bool drop_read_level = computed.record.materialized_spanning_locus;
+                const bool drop_excess_het = computed.record.materialized_spanning_locus &&
+                                             computed.record.finalized_monomorphic_ref;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};

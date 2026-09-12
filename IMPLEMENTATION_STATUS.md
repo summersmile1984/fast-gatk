@@ -1448,6 +1448,30 @@ native 因为克隆源记录并经 merge/注释阶段，会把 `MQ` 与三个 ra
 `PGT/PID/PS`，需在 FORMAT 侧处理）、QUAL-only 3 行（D 类 `QUAL=Infinity`）、INFO-only 3 行与
 INFO+FORMAT 2 行（待细分）。
 
+## 第 93 轮：两个开关的判据按实测拆分（`drop_read_level = span`、`drop_excess_het = span && mono`）
+
+第 86 轮的规则把两族物化行混为一谈（`drop_read_level = span || mono`、`drop_excess_het = mono`），
+在真实语料上把「真实记录退化为 REF-only」那类行（如 `20:10041698`，`span=0 mono=1`）的读级注释
+一并删掉，而 GATK 是**保留**的。第 92 轮用 0-based 位置插桩解开矛盾后确定判据：
+
+| 观测（GATK 实测） | 判据 |
+| --- | --- |
+| `20:10008964`（span=1 mono=1）→ INFO 仅 `DP;MLEAC=.;MLEAF=.` | 读级注释与 `ExcessHet` **都丢** |
+| `20:10041698`（span=0 mono=1）→ 保留 rank sum/MQ **且保留 `ExcessHet`** | 两者都留 |
+| `*` 跨位点行（span=1 mono=0）→ 保留 `ExcessHet` | 读级注释丢、`ExcessHet` 留 |
+
+本轮把两行赋值写入（`:6732`、`:7503` 两处编码 lambda）。
+
+**效果与诚实说明**：位点级 **FIXED 0 / BROKEN 0**、INFO 列匹配数与第 86 轮相同（99918）——
+即**没有字节级收益**；但它在 `20:10041698`/`20:10077008` 这些行上**恢复了与 GATK 一致的键集**
+（此前被误删），扫清了下一步的唯一障碍。五个基因型门禁全部严格通过。
+
+**下一步（本轮顺带定位）**：这些行现在只差 **`ExcessHet` 的渲染精度**——
+GATK 写 `ExcessHet=0.00`，native 写 `ExcessHet=0.0000`（同一位点、同一数值 0）。
+这也是新的、精确的目标：native 的 `format_gatk_float_value()` 对 `ExcessHet` 一律用 4 位小数，
+而 GATK 在（至少）这些行上用 2 位；需按 GATK 的 `formatVCFDouble`/注解侧格式化规则核对
+（注意：跨位点物化行上 GATK 写的确实是 `ExcessHet=0.0000`，故不是简单的"零值用 2 位"）。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
 **最新基线（第 86 轮，主会话亲自运行）：物化行读级注释的文本层过滤（两后端均已重建）上
