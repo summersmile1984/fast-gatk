@@ -3724,8 +3724,13 @@ void split_reference_blocks_at_variants(const bcf_hdr_t* output_header,
             if (copy == nullptr)
                 throw std::runtime_error("RESOURCE_EXHAUSTED: cannot split reference block");
             copy->pos = segment_begin;
-            const auto reference = reference_base(reference_index, output_header,
-                                                  original.rid, segment_begin);
+            // A segment that begins at the block's own start is the record's own
+            // locus, so it keeps the record's REF (see the per-coordinate
+            // expansion below for the measurement).
+            const auto reference = segment_begin == block_begin
+                ? original.alleles.front()
+                : reference_base(reference_index, output_header, original.rid,
+                                 segment_begin);
             const auto alleles = reference + ",<NON_REF>";
             if (bcf_update_alleles_str(output_header, copy, alleles.c_str()) != 0) {
                 bcf_destroy(copy);
@@ -7017,8 +7022,18 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                             throw std::runtime_error("RESOURCE_EXHAUSTED: cannot expand reference block");
                         }
                         copy->pos = position;
+                        // The merged REF of a locus is the REF of the record
+                        // that STARTS there, and only an interior coordinate
+                        // falls back to the reference base: the merger is handed
+                        // `ref.getBase()` and uses it where no record starts
+                        // (ReferenceConfidenceVariantContextMerger.merge()).
+                        // Measured on a block whose REF is C over an all-A
+                        // reference: GATK publishes C at the block's own
+                        // coordinate and A at the interior ones; taking the FASTA
+                        // base everywhere was the divergence behind 82 positions
+                        // of GATK's own chr20 corpus.
                         std::string expanded_reference = staged.alleles.front();
-                        if (reference_index) {
+                        if (reference_index && position != start) {
                             const char* contig = staged_contig.empty() ? nullptr : staged_contig.c_str();
                             int fetched_length = 0;
                             char* fetched = contig == nullptr ? nullptr :

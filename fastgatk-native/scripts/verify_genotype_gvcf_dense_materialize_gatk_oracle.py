@@ -297,6 +297,20 @@ def _interval_ref_only_row(position: int) -> str:
     return f"chr1\t{position}\t.\tA\t.\t.\t.\tDP=40\tGT:DP:RGQ\t0/0:40:99"
 
 
+# A reference block whose REF does not match the reference FASTA, which is the
+# shape GATK's own chr20 corpus shows (the FASTA is a padded/sparse reference
+# whose coordinates read N while the records carry the real base).  At the
+# coordinate where the block RECORD starts the merged REF is that record's REF;
+# only the interior coordinates fall back to the FASTA base.
+MISMATCHED_REFERENCE_BLOCK = (
+    "chr1\t2\t.\tC\t<NON_REF>\t.\t.\tEND=5;DP=40\t"
+    "GT:DP:GQ:MIN_DP\t0/0:40:99:40\n")
+
+
+def _mismatched_ref_only_row(position: int, base: str) -> str:
+    return f"chr1\t{position}\t.\t{base}\t.\t.\t.\tDP=40\tGT:DP:RGQ\t0/0:40:99"
+
+
 # ---------------------------------------------------------------------------
 # cases
 # ---------------------------------------------------------------------------
@@ -479,6 +493,25 @@ CASES = [
         "gated": True,
         "expect": [_interval_ref_only_row(5), _interval_ref_only_row(6),
                    _interval_ref_only_row(7)],
+    },
+    {
+        "case": "dense-block-start-keeps-the-record-ref",
+        "why": "the merged REF at a locus is the starting record's REF and only "
+               "falls back to the reference base where no record starts "
+               "(ReferenceConfidenceVariantContextMerger.merge() is fed "
+               "ref.getBase()): with a block record whose REF is C over an all-A "
+               "reference, GATK publishes C at the block's own coordinate and A at "
+               "the three interior coordinates.  Native took the FASTA base for "
+               "every coordinate of the expansion, which is the divergence behind "
+               "82 and 3 positions of GATK's own chr20 corpus "
+               "(evidence/2026-09-13-round53-clipping/real-corpus-interval-clipping.md)",
+        "body": MISMATCHED_REFERENCE_BLOCK,
+        "header": HEADER_END_BLOCK,
+        "args": [DENSE],
+        "mode": "rows",
+        "gated": True,
+        "expect": [_mismatched_ref_only_row(2, "C"), _mismatched_ref_only_row(3, "A"),
+                   _mismatched_ref_only_row(4, "A"), _mismatched_ref_only_row(5, "A")],
     },
 ]
 
