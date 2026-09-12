@@ -4506,6 +4506,112 @@ constexpr const char* kGatkLowQualFilterLine =
 constexpr const char* kHtslibSyntheticPassFilterLine =
     "##FILTER=<ID=PASS,Description=\"All filters passed\">";
 
+// htsjdk re-serializes every header line it parsed.  VCFHeaderLineTranslator
+// .parseLine() builds a VCFCompoundHeaderLine out of the attributes of a
+// `##INFO`/`##FORMAT`/`##FILTER`/`##ALT` line and the writer emits the line
+// again out of that object, so a Description the input left unquoted comes back
+// quoted: measured on the gate fixture, GATK writes
+// `##INFO=<ID=DP,Number=1,Type=Integer,Description="Read depth">` for an input
+// that said `Description=Read depth`, and the same for `##ALT`,
+// `##FORMAT=<ID=GT...>` and the rest.  The attribute order inside `<>` is NOT
+// re-ordered -- htsjdk refuses an input that does not already use its
+// (ID, Number, Type, Description) order ("Tag Description in wrong order (was
+// #2, expected #4)", VCF4Parser.parseLine) -- so re-quoting is the whole of the
+// re-serialization a valid input can need.  Only the measured kinds are
+// touched; a line that is already quoted, or that has no Description, is
+// returned unchanged.
+std::string gatk_canonical_header_line(const std::string& line) {
+    const bool compound =
+        line.rfind("##INFO=<", 0) == 0 || line.rfind("##FORMAT=<", 0) == 0 ||
+        line.rfind("##FILTER=<", 0) == 0 || line.rfind("##ALT=<", 0) == 0;
+    if (!compound || line.size() < 3 || line.back() != '>') return line;
+    static const std::string marker = "Description=";
+    const auto at = line.find(marker);
+    if (at == std::string::npos) return line;
+    const auto value = at + marker.size();
+    if (value >= line.size() - 1 || line[value] == '"') return line;
+    return line.substr(0, value) + '"' +
+           line.substr(value, line.size() - 1 - value) + "\">";
+}
+
+// GATK's own MLEAC/MLEAF lines (GATKVCFHeaderLines.java:148-149, added by
+// GenotypeGVCFsEngine.setupVCFWriter() at :404-405).  Native's diagnostic
+// (non-GATK) profile appends a short description of its own for these two keys;
+// the GATK-compatibility profile must declare GATK's text instead, so these
+// constants exist for the two places that append them.
+constexpr const char* kGatkMleacInfoLine =
+    "##INFO=<ID=MLEAC,Number=A,Type=Integer,Description=\"Maximum likelihood expectation (MLE) for the allele counts (not necessarily the same as the AC), for each ALT allele, in the same order as listed\">";
+constexpr const char* kGatkMleafInfoLine =
+    "##INFO=<ID=MLEAF,Number=A,Type=Float,Description=\"Maximum likelihood expectation (MLE) for the allele frequency (not necessarily the same as the AF), for each ALT allele, in the same order as listed\">";
+
+// GATK's standard INFO/DP description (htsjdk VCFStandardHeaderLines, added by
+// GenotypeGVCFsEngine.setupVCFWriter() at :407 -- "needed for gVCFs without DP
+// tags").  It is deliberately DIFFERENT text from the htsjdk FORMAT/DP line
+// ("Read depth"), which is why GATK's header carries two ##INFO=<ID=DP,...>
+// lines when the input declares only the FORMAT/INFO pair this fixture has.
+constexpr const char* kGatkStandardDpInfoLine =
+    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Approximate read depth; some reads may have been filtered\">";
+
+// GATK's NDA line (GATKVCFHeaderLines.java:205), added by
+// GenotypingEngine.getAppropriateVCFInfoHeaders() (GenotypingEngine.java:90-94)
+// when --annotate-with-num-discovered-alleles is set.  Native's diagnostic
+// profile appends a shorter description of its own.
+constexpr const char* kGatkNdaInfoLine =
+    "##INFO=<ID=NDA,Number=1,Type=Integer,Description=\"Number of alternate alleles discovered (but not necessarily genotyped) at this site\">";
+
+// Every header line GATK 4.6.2.0 GenotypeGVCFs declares for itself, i.e. the
+// lines of its output header that do not come from the input.  Measured byte for
+// byte on the gate fixture of
+// fastgatk-native/scripts/verify_genotype_gvcf_spandel_gatk_oracle.py and cited
+// to the source that produces each one:
+//   * GenotypeGVCFsEngine.setupVCFWriter() adds
+//     `annotationEngine.getVCFAnnotationDescriptions(false)` (:401) -- the
+//     annotation lines, resolved through GATKVCFHeaderLines (or htsjdk's
+//     VCFStandardHeaderLines for AD/DP, GATKVCFHeaderLines.java:18-43),
+//     `genotypingEngine.getAppropriateVCFInfoHeaders()` (:402), MLEAC/MLEAF/RGQ
+//     (:404-406), the standard INFO/DP line (:407) and finally the LowQual
+//     filter (:416);
+//   * the annotation set is the StandardAnnotation group
+//     (GenotypeGVCFs.java:255-257), which is unconditional.
+// GATK adds these to a Set<VCFHeaderLine> that de-duplicates by the whole line
+// (ID + Number + Type + Description), not by ID, so a line is only absent from
+// the output header when the input declared exactly the same text.  Measured:
+// GATK's header carries BOTH `##INFO=<ID=DP,...Description="Read depth">` and
+// `##INFO=<ID=DP,...Description="Approximate read depth; some reads may have
+// been filtered">`, and both `##FORMAT=<ID=AD,...>` spellings, while the
+// canonical MLEAC/MLEAF pair of a HaplotypeCaller gVCF appears exactly once.
+const std::vector<std::string>& gatk_declared_info_lines() {
+    static const std::vector<std::string> lines{
+        "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes, for each ALT allele, in the same order as listed\">",
+        "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency, for each ALT allele, in the same order as listed\">",
+        "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">",
+        "##INFO=<ID=BaseQRankSum,Number=1,Type=Float,Description=\"Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities\">",
+        "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Approximate read depth; some reads may have been filtered\">",
+        "##INFO=<ID=ExcessHet,Number=1,Type=Float,Description=\"Phred-scaled p-value for exact test of excess heterozygosity\">",
+        "##INFO=<ID=FS,Number=1,Type=Float,Description=\"Phred-scaled p-value using Fisher's exact test to detect strand bias\">",
+        "##INFO=<ID=InbreedingCoeff,Number=1,Type=Float,Description=\"Inbreeding coefficient as estimated from the genotype likelihoods per-sample when compared against the Hardy-Weinberg expectation\">",
+        "##INFO=<ID=MLEAC,Number=A,Type=Integer,Description=\"Maximum likelihood expectation (MLE) for the allele counts (not necessarily the same as the AC), for each ALT allele, in the same order as listed\">",
+        "##INFO=<ID=MLEAF,Number=A,Type=Float,Description=\"Maximum likelihood expectation (MLE) for the allele frequency (not necessarily the same as the AF), for each ALT allele, in the same order as listed\">",
+        "##INFO=<ID=MQ,Number=1,Type=Float,Description=\"RMS Mapping Quality\">",
+        "##INFO=<ID=MQRankSum,Number=1,Type=Float,Description=\"Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities\">",
+        "##INFO=<ID=QD,Number=1,Type=Float,Description=\"Variant Confidence/Quality by Depth\">",
+        "##INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description=\"Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias\">",
+        "##INFO=<ID=SOR,Number=1,Type=Float,Description=\"Symmetric Odds Ratio of 2x2 contingency table to detect strand bias\">"};
+    return lines;
+}
+
+// The FORMAT half of the same list: the standard AD line GATK's header carries
+// because DepthPerAlleleBySample is a StandardAnnotation (its description comes
+// from VariantAnnotation.java:22-33 -> GATKVCFHeaderLines.getFormatLine("AD",
+// true) -> htsjdk's VCFStandardHeaderLines), and the RGQ line the writer adds
+// itself (GenotypeGVCFsEngine.java:406 + GATKVCFHeaderLines.java:133).
+const std::vector<std::string>& gatk_declared_format_lines() {
+    static const std::vector<std::string> lines{
+        "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed\">",
+        "##FORMAT=<ID=RGQ,Number=1,Type=Integer,Description=\"Unconditional reference genotype confidence, encoded as a phred quality -10*log10 p(genotype call is wrong)\">"};
+    return lines;
+}
+
 // GATK's GenotypeGVCFs propagates the input header's own ##FILTER lines
 // verbatim: the writer seeds its header set from the input's lines
 // (`final Set<VCFHeaderLine> headerLines = new LinkedHashSet<>(
@@ -4576,7 +4682,12 @@ std::string gatk_compatible_header_text(const std::string& formatted,
     std::vector<std::string> retained;
     bool inserted_info = false;
     bool inserted_source = false;
-    for (const auto& line : lines) {
+    for (const auto& raw_line : lines) {
+        // htsjdk writes its header back out of parsed objects, so every
+        // compound line it retained is re-quoted (see
+        // gatk_canonical_header_line() above).  Everything below works on the
+        // canonical spelling, which is what GATK's output carries.
+        const auto line = gatk_canonical_header_line(raw_line);
         if (line.rfind("##fastgatk_genotype_gvcfs_status=", 0) == 0) continue;
         // GVCF block-band declarations are input-only metadata.  GATK's
         // GenotypeGVCFs writer does not propagate them to the materialized
@@ -4605,6 +4716,15 @@ std::string gatk_compatible_header_text(const std::string& formatted,
         "AC", "AF", "AN", "BaseQRankSum", "DP", "END", "ExcessHet", "FS",
         "InbreedingCoeff", "MLEAC", "MLEAF", "MQ", "MQRankSum", "QD",
         "RAW_MQandDP", "ReadPosRankSum", "SOR"};
+    // GATK's own declarations join the group the input's lines are already in;
+    // a line is added only when its exact text is absent, because GATK's header
+    // set de-duplicates by the whole line and not by ID (see
+    // gatk_declared_info_lines() above).  This is what makes GATK's duplicate
+    // ##INFO=<ID=DP,...>/##FORMAT=<ID=AD,...> pairs come out right: the input's
+    // own spelling is a different line and is kept alongside the standard one.
+    for (const auto& declared : gatk_declared_info_lines())
+        if (std::find(info_lines.begin(), info_lines.end(), declared) == info_lines.end())
+            info_lines.push_back(declared);
     std::stable_sort(info_lines.begin(), info_lines.end(), [&](const auto& left, const auto& right) {
         const auto id = [](const std::string& line) {
             const auto marker = line.find("ID=");
@@ -4637,11 +4757,13 @@ std::string gatk_compatible_header_text(const std::string& formatted,
     // is read from the raw input text because HTSlib replaced it with its
     // synthetic record (input_pass_filter_line() above); GATK keeps it verbatim,
     // so it goes back into the group with the input's own Description and is
-    // ordered with the rest by the sort below.
-    if (!input_pass_filter.empty() &&
-        std::find(filter_lines.begin(), filter_lines.end(), input_pass_filter) ==
+    // ordered with the rest by the sort below.  It is canonicalized like every
+    // other retained line: htsjdk re-quotes the Description.
+    const auto own_pass_filter = gatk_canonical_header_line(input_pass_filter);
+    if (!own_pass_filter.empty() &&
+        std::find(filter_lines.begin(), filter_lines.end(), own_pass_filter) ==
             filter_lines.end())
-        filter_lines.emplace_back(input_pass_filter);
+        filter_lines.emplace_back(own_pass_filter);
     if (std::find(filter_lines.begin(), filter_lines.end(), kGatkLowQualFilterLine) ==
         filter_lines.end())
         filter_lines.emplace_back(kGatkLowQualFilterLine);
@@ -4662,6 +4784,13 @@ std::string gatk_compatible_header_text(const std::string& formatted,
         format_lines.emplace_back(
             "##FORMAT=<ID=RGQ,Number=1,Type=Integer,Description=\"Unconditional reference genotype confidence, encoded as a phred quality -10*log10 p(genotype call is wrong)\">");
     }
+    // The FORMAT half of GATK's own declarations (the standard AD line; RGQ is
+    // already ensured above).  Same exact-text de-duplication rule as the INFO
+    // group.
+    for (const auto& declared : gatk_declared_format_lines())
+        if (std::find(format_lines.begin(), format_lines.end(), declared) ==
+            format_lines.end())
+            format_lines.push_back(declared);
     std::stable_sort(format_lines.begin(), format_lines.end(), [&](const auto& left,
                                                                     const auto& right) {
         return format_id(left) < format_id(right);
@@ -5167,13 +5296,26 @@ void add_genotype_output_header_fields(bcf_hdr_t* output_header,
             bcf_hdr_append(output_header,
                            "##FORMAT=<ID=PG,Number=G,Type=Float,Description=Genotype priors in Phred Scale>");
     }
+    // AC/AN/AF/DP/MLEAC/MLEAF/... are declared with GATK's own text in the
+    // GATK-compatibility profile (see kGatkMleacInfoLine() and
+    // kGatkStandardDpInfoLine() above); the diagnostic profile keeps the
+    // shorter descriptions it has always written.
+    const std::string dp_info_line = options.gatk_annotation_compatibility
+        ? std::string(kGatkStandardDpInfoLine)
+        : std::string("##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Approximate read depth\">");
+    const std::string mleac_info_line = options.gatk_annotation_compatibility
+        ? std::string(kGatkMleacInfoLine)
+        : std::string("##INFO=<ID=MLEAC,Number=A,Type=Integer,Description=Maximum likelihood allele count>");
+    const std::string mleaf_info_line = options.gatk_annotation_compatibility
+        ? std::string(kGatkMleafInfoLine)
+        : std::string("##INFO=<ID=MLEAF,Number=A,Type=Float,Description=Maximum likelihood allele frequency>");
     const std::vector<std::string> info_headers{
         "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes, for each ALT allele, in the same order as listed\">",
         "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">",
         "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency, for each ALT allele, in the same order as listed\">",
-        "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Approximate read depth\">",
-        "##INFO=<ID=MLEAC,Number=A,Type=Integer,Description=Maximum likelihood allele count>",
-        "##INFO=<ID=MLEAF,Number=A,Type=Float,Description=Maximum likelihood allele frequency>",
+        dp_info_line,
+        mleac_info_line,
+        mleaf_info_line,
         "##INFO=<ID=FS,Number=1,Type=Float,Description=\"Phred-scaled p-value using Fisher's exact test to detect strand bias\">",
         "##INFO=<ID=MQ,Number=1,Type=Float,Description=\"RMS Mapping Quality\">",
         "##INFO=<ID=QD,Number=1,Type=Float,Description=\"Variant Confidence/Quality by Depth\">",
@@ -5192,8 +5334,9 @@ void add_genotype_output_header_fields(bcf_hdr_t* output_header,
     }
     if (options.annotate_with_num_discovered_alleles &&
         bcf_hdr_id2int(output_header, BCF_DT_ID, "NDA") < 0)
-        bcf_hdr_append(output_header,
-                       "##INFO=<ID=NDA,Number=1,Type=Integer,Description=Number of discovered alternate alleles>");
+        bcf_hdr_append(output_header, options.gatk_annotation_compatibility
+            ? kGatkNdaInfoLine
+            : "##INFO=<ID=NDA,Number=1,Type=Integer,Description=Number of discovered alternate alleles>");
     if (bcf_hdr_sync(output_header) != 0)
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot sync streaming VCF header");
 }
@@ -6045,14 +6188,22 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "AF") < 0)
                     bcf_hdr_append(output_header, "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency, for each ALT allele, in the same order as listed\">");
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "DP") < 0)
-                    bcf_hdr_append(output_header, "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Approximate read depth\">");
+                    bcf_hdr_append(output_header, options.gatk_annotation_compatibility
+                        ? kGatkStandardDpInfoLine
+                        : "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Approximate read depth\">");
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MLEAC") < 0)
-                    bcf_hdr_append(output_header, "##INFO=<ID=MLEAC,Number=A,Type=Integer,Description=Maximum likelihood allele count>");
+                    bcf_hdr_append(output_header, options.gatk_annotation_compatibility
+                        ? kGatkMleacInfoLine
+                        : "##INFO=<ID=MLEAC,Number=A,Type=Integer,Description=Maximum likelihood allele count>");
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MLEAF") < 0)
-                    bcf_hdr_append(output_header, "##INFO=<ID=MLEAF,Number=A,Type=Float,Description=Maximum likelihood allele frequency>");
+                    bcf_hdr_append(output_header, options.gatk_annotation_compatibility
+                        ? kGatkMleafInfoLine
+                        : "##INFO=<ID=MLEAF,Number=A,Type=Float,Description=Maximum likelihood allele frequency>");
                 if (options.annotate_with_num_discovered_alleles &&
                     bcf_hdr_id2int(output_header, BCF_DT_ID, "NDA") < 0)
-                    bcf_hdr_append(output_header, "##INFO=<ID=NDA,Number=1,Type=Integer,Description=Number of discovered alternate alleles>");
+                    bcf_hdr_append(output_header, options.gatk_annotation_compatibility
+                        ? kGatkNdaInfoLine
+                        : "##INFO=<ID=NDA,Number=1,Type=Integer,Description=Number of discovered alternate alleles>");
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "FS") < 0)
                     bcf_hdr_append(output_header, "##INFO=<ID=FS,Number=1,Type=Float,Description=\"Phred-scaled p-value using Fisher's exact test to detect strand bias\">");
                 if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MQ") < 0)

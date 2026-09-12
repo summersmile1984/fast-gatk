@@ -282,6 +282,61 @@ header index of the first element):
 The group is therefore asserted as a whole **ordered list**, so a case fails
 both when a line is missing and when it is ordered differently.
 
+The output header's other content lines
+---------------------------------------
+The ``##FILTER`` group was only one face of the header divergence.  Beyond the
+FILTER column the writer also
+
+1. **re-serializes every header line it parsed.**  htsjdk parses a
+   ``##INFO=<...>``/``##FORMAT=<...>``/``##ALT=<...>`` line into a
+   ``VCFCompoundHeaderLine`` (``VCFHeaderLineTranslator.parseLine``, htsjdk
+   4.2.0) and writes it back out of its own fields, so a ``Description`` the
+   input left unquoted comes back quoted.  Measured: the gate fixture's
+   ``##INFO=<ID=DP,Number=1,Type=Integer,Description=Read depth>`` is written by
+   GATK as ``##INFO=<ID=DP,Number=1,Type=Integer,Description="Read depth">``.
+   The attribute order inside ``<>`` is *not* re-ordered -- htsjdk rejects an
+   input that does not already use its order (*"Tag Description in wrong order
+   (was #2, expected #4)"*, ``VCF4Parser.parseLine``), so a valid input never
+   needs re-ordering, only re-quoting.
+2. **declares the annotations it always uses, unconditionally.**  The writer
+   seeds its header from the input (``:395``) and then adds
+   ``annotationEngine.getVCFAnnotationDescriptions(false)`` (``:401``),
+   ``genotypingEngine.getAppropriateVCFInfoHeaders()`` (``:402``), the two MLE
+   lines and RGQ (``:404-406``) and the standard INFO/DP line (``:407``, *"needed
+   for gVCFs without DP tags"*).  GATK's ``VCFHeaderLine`` set de-duplicates by
+   the **whole line** (ID + Number + Type + Description), not by ID: measured,
+   GATK's header carries the input's ``##INFO=<ID=DP,...Description="Read
+   depth">`` *and* ``##INFO=<ID=DP,...Description="Approximate read depth; some
+   reads may have been filtered">``, and likewise two ``##FORMAT=<ID=AD,...>``
+   lines.  So a declaration is added when its exact text is absent, and a
+   same-ID-different-text input line is **kept alongside** it.
+
+Measured on this gate's fixture, GATK declares these lines that native did not
+(cited to the GATK source that produces each one):
+
+    ##INFO=<ID=BaseQRankSum,...>       BaseQualityRankSumTest + GATKVCFHeaderLines.java:151
+    ##INFO=<ID=MQRankSum,...>          MappingQualityRankSumTest + GATKVCFHeaderLines.java:168
+    ##INFO=<ID=ReadPosRankSum,...>     ReadPosRankSumTest + GATKVCFHeaderLines.java:195
+    ##INFO=<ID=DP,..."Approximate read depth; some reads may have been filtered">
+                                       VCFStandardHeaderLines via GenotypeGVCFsEngine.java:407
+    ##INFO=<ID=MLEAC,...>              GATKVCFHeaderLines.java:148 via GenotypeGVCFsEngine.java:404
+    ##INFO=<ID=MLEAF,...>              GATKVCFHeaderLines.java:149 via GenotypeGVCFsEngine.java:405
+    ##FORMAT=<ID=AD,..."Allelic depths for the ref and alt alleles in the order listed">
+                                       DepthPerAlleleBySample via VariantAnnotation.java:22-33
+
+The ``##INFO=<ID=MLEAC/MLEAF,...>`` pair was the *wording* half: native declared
+the same keys with a short description of its own
+(``Description=Maximum likelihood allele count``), which GATK never writes.
+
+This gate therefore also asserts, for every gated case, that the **multiset of
+header content lines is equal** -- every ``##`` line except the two
+producer-identity lines (``##GATKCommandLine``, which records the command line of
+the GATK process that ran, and ``##source``, which names the program).  Order is
+deliberately *not* part of that assertion (native preserves the input's order and
+htsjdk sorts the whole header, a pre-existing divergence recorded as an
+observation); the ``##FILTER`` group keeps its additional ordered assertion
+above.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -298,6 +353,7 @@ Exit status: 0 when every gated case passes, non-zero otherwise.
 from __future__ import annotations
 
 import argparse
+import collections
 import gzip
 import json
 import os
@@ -381,6 +437,62 @@ HEADER_WITH_PASS_AND_Q10_FILTER = HEADER.replace(
 # GenotypeGVCFsEngine.java:416 + GATKVCFHeaderLines.java:89 +
 # GATKVCFConstants.java:179, byte for byte.
 GATK_LOWQUAL_FILTER_LINE = '##FILTER=<ID=LowQual,Description="Low quality">'
+
+# The same fixture header with every Description already in htsjdk's canonical
+# quoted form, i.e. the shape a GATK-produced gVCF has.  It separates the two
+# halves of the header divergence: here nothing needs re-quoting, so only the
+# missing *declarations* can make the case fail.
+HEADER_QUOTED_DESCRIPTIONS = HEADER
+for _description in ("Represents any possible alternate allele", "Read depth",
+                     "Allele depths", "Genotype", "Likelihoods",
+                     "Genotype quality"):
+    HEADER_QUOTED_DESCRIPTIONS = HEADER_QUOTED_DESCRIPTIONS.replace(
+        f"Description={_description}>", f'Description="{_description}">')
+
+# The fixture header with an MLEAC/MLEAF pair already declared using GATK's own
+# (long) wording, which is what a HaplotypeCaller gVCF carries.  GATK's header
+# set de-duplicates by the whole line, so this input's lines are kept and the
+# tool's identical pair is NOT added a second time -- the case therefore also
+# pins that native must not over-declare MLEAC/MLEAF.
+HEADER_WITH_GATK_MLE_LINES = HEADER.replace(
+    "##FORMAT=<ID=GT",
+    '##INFO=<ID=MLEAC,Number=A,Type=Integer,Description="Maximum likelihood '
+    'expectation (MLE) for the allele counts (not necessarily the same as the '
+    'AC), for each ALT allele, in the same order as listed">\n'
+    '##INFO=<ID=MLEAF,Number=A,Type=Float,Description="Maximum likelihood '
+    'expectation (MLE) for the allele frequency (not necessarily the same as '
+    'the AF), for each ALT allele, in the same order as listed">\n'
+    "##FORMAT=<ID=GT")
+
+# Every header line GATK 4.6.2.0 GenotypeGVCFs declares for itself, i.e. the
+# lines of its output header that do not come from the input, measured byte for
+# byte on this gate's fixture and cited to their GATK source.
+# GenotypeGVCFsEngine.setupVCFWriter(): `annotationEngine.
+# getVCFAnnotationDescriptions(false)` (:401), `genotypingEngine.
+# getAppropriateVCFInfoHeaders()` (:402), MLEAC/MLEAF/RGQ (:404-406),
+# `VCFStandardHeaderLines.getInfoLine(DEPTH_KEY)` (:407) and the LowQual filter
+# (:416).  The annotation lines resolve through GATKVCFHeaderLines (or, for
+# AD/DP, htsjdk's VCFStandardHeaderLines -- GATKVCFHeaderLines.java:18-43).
+GATK_DECLARED_HEADER_LINES = [
+    GATK_LOWQUAL_FILTER_LINE,
+    '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">',
+    '##FORMAT=<ID=RGQ,Number=1,Type=Integer,Description="Unconditional reference genotype confidence, encoded as a phred quality -10*log10 p(genotype call is wrong)">',
+    '##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed">',
+    '##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed">',
+    '##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">',
+    '##INFO=<ID=BaseQRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities">',
+    '##INFO=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">',
+    '##INFO=<ID=ExcessHet,Number=1,Type=Float,Description="Phred-scaled p-value for exact test of excess heterozygosity">',
+    '##INFO=<ID=FS,Number=1,Type=Float,Description="Phred-scaled p-value using Fisher\'s exact test to detect strand bias">',
+    '##INFO=<ID=InbreedingCoeff,Number=1,Type=Float,Description="Inbreeding coefficient as estimated from the genotype likelihoods per-sample when compared against the Hardy-Weinberg expectation">',
+    '##INFO=<ID=MLEAC,Number=A,Type=Integer,Description="Maximum likelihood expectation (MLE) for the allele counts (not necessarily the same as the AC), for each ALT allele, in the same order as listed">',
+    '##INFO=<ID=MLEAF,Number=A,Type=Float,Description="Maximum likelihood expectation (MLE) for the allele frequency (not necessarily the same as the AF), for each ALT allele, in the same order as listed">',
+    '##INFO=<ID=MQ,Number=1,Type=Float,Description="RMS Mapping Quality">',
+    '##INFO=<ID=MQRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities">',
+    '##INFO=<ID=QD,Number=1,Type=Float,Description="Variant Confidence/Quality by Depth">',
+    '##INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias">',
+    '##INFO=<ID=SOR,Number=1,Type=Float,Description="Symmetric Odds Ratio of 2x2 contingency table to detect strand bias">',
+]
 
 # verify_genotype_gvcf.py:378-381, byte for byte.
 STAR_RECORD = (
@@ -1024,6 +1136,56 @@ CASES = [
         "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
     },
     {
+        "case": "header-content-with-unquoted-descriptions",
+        "why": "THE HEADER CONTENT CASE.  The input header writes every "
+               "Description unquoted, the shape verify_genotype_gvcf.py's "
+               "fixture has.  htsjdk parses each `##INFO`/`##FORMAT`/`##ALT` "
+               "line into a VCFCompoundHeaderLine and writes it back out of its "
+               "own fields, so GATK's output quotes every one of them "
+               "(measured: `Description=\"Read depth\"` for an input that said "
+               "`Description=Read depth`), and on top of the input's lines the "
+               "tool declares its own annotation lines "
+               "(GenotypeGVCFsEngine.java:395-416): the three rank-sum INFO "
+               "lines, the standard INFO/DP line (:407, *\"needed for gVCFs "
+               "without DP tags\"*) and the standard FORMAT/AD line "
+               "(DepthPerAlleleBySample via VariantAnnotation.java:22-33).  Both "
+               "halves are asserted as one multiset comparison, so this case "
+               "fails while either half is wrong",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
+        "case": "header-content-with-quoted-descriptions",
+        "why": "the same case with every Description ALREADY quoted, i.e. the "
+               "shape a GATK-produced gVCF has.  Nothing needs re-quoting here, "
+               "so only the missing declarations can make this case fail -- it "
+               "separates 'quote the input's lines' from 'declare GATK's own "
+               "lines', which the unquoted case alone could not distinguish",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "header": HEADER_QUOTED_DESCRIPTIONS,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
+        "case": "header-content-with-gatk-mle-wording",
+        "why": "the input already declares MLEAC/MLEAF with GATK's own long "
+               "wording, as a HaplotypeCaller gVCF does.  GATK's header set "
+               "de-duplicates by the whole line, so its identical pair is not "
+               "added twice and native must produce exactly one of each: this "
+               "case fails if native over-declares them (and it also pins the "
+               "wording half, because native used to declare these two keys with "
+               "a short description of its own, "
+               "`Description=Maximum likelihood allele count`)",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "header": HEADER_WITH_GATK_MLE_LINES,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
         "case": "non-pass-variant-input-undeclared-filter",
         "why": "the ORDINARY (non-dense) variant path with a non-PASS source "
                "FILTER, and the source FILTER declared nowhere in the header.  "
@@ -1119,6 +1281,22 @@ def filter_header_lines(lines: list[str]) -> list[str]:
     return [line for line in lines if line.startswith("##FILTER=")]
 
 
+def content_header_lines(lines: list[str]) -> list[str]:
+    """Every header content line, in order, minus the producer-identity ones.
+
+    ``##GATKCommandLine`` records the command line and version of the GATK
+    process that produced the file and ``##source`` names the program that wrote
+    it; native is a different program and is deliberately not required to
+    reproduce either.  Everything else -- ``##fileformat``, ``##ALT``,
+    ``##FILTER``, ``##FORMAT``, ``##INFO``, ``##contig`` -- is a declaration
+    about the file's contents and must match byte for byte (order aside; the
+    order-only residual is reported, not gated).
+    """
+    return [line for line in lines
+            if line.startswith("##")
+            and not line.startswith(("##GATKCommandLine=", "##source="))]
+
+
 def write_reference(work: pathlib.Path) -> pathlib.Path:
     """A 100 bp chr1 whose bases match every fixture REF allele."""
     reference = work / "reference.fa"
@@ -1173,6 +1351,13 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
     native_headers = header_lines(native_out) if native_out.exists() else []
     gatk_filters = filter_header_lines(gatk_headers)
     native_filters = filter_header_lines(native_headers)
+    # The declarations themselves: every ## line but the two producer-identity
+    # ones, compared as a multiset (duplicates included -- GATK really does
+    # declare two ##INFO=<ID=DP,...> and two ##FORMAT=<ID=AD,...> lines here).
+    gatk_content = content_header_lines(gatk_headers)
+    native_content = content_header_lines(native_headers)
+    gatk_content_counter = collections.Counter(gatk_content)
+    native_content_counter = collections.Counter(native_content)
     # Everything that is not the asserted ##FILTER group is recorded, not gated.
     # ##GATKCommandLine is excluded from the diff because it embeds the run's
     # absolute paths and timestamp and native never emits it (native has no
@@ -1196,6 +1381,12 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
         "native_rows": native_rows,
         "gatk_filter_header_lines": gatk_filters,
         "native_filter_header_lines": native_filters,
+        "gatk_content_header_lines": gatk_content,
+        "native_content_header_lines": native_content,
+        "header_content_missing_in_native":
+            sorted((gatk_content_counter - native_content_counter).elements()),
+        "header_content_extra_in_native":
+            sorted((native_content_counter - gatk_content_counter).elements()),
         "header_observations": {
             "only_in_gatk": [line for line in gatk_observed
                              if line not in native_observed],
@@ -1235,6 +1426,27 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
             result["violations"].append(
                 "##FILTER header lines are not byte-identical: "
                 f"GATK={gatk_filters} NATIVE={native_filters}")
+        # GATK must still declare what this gate was written from; if the
+        # pinned GATK stops emitting one of these lines, the comparison below
+        # could pass for the wrong reason.
+        missing_from_gatk = [line for line in GATK_DECLARED_HEADER_LINES
+                             if line not in gatk_content_counter]
+        if missing_from_gatk:
+            result["violations"].append(
+                "GATK moved away from the measured header truth: it no longer "
+                f"declares {missing_from_gatk}")
+        # The header's content lines: same multiset (order aside, and excluding
+        # the producer-identity lines).  GATK re-quotes every Description and
+        # declares its own annotations on top of the input's lines
+        # (GenotypeGVCFsEngine.java:395-416), so both the re-quoted input lines
+        # and the added declarations are asserted here.
+        if gatk_content_counter != native_content_counter:
+            result["violations"].append(
+                "header content lines are not byte-identical (as a set): "
+                "missing in native="
+                f"{sorted((gatk_content_counter - native_content_counter).elements())} "
+                "extra in native="
+                f"{sorted((native_content_counter - gatk_content_counter).elements())}")
     return result
 
 
@@ -1324,6 +1536,12 @@ def main() -> int:
             print(f"        {row}")
         print(f"    GATK   ##FILTER header lines: {result['gatk_filter_header_lines']}")
         print(f"    NATIVE ##FILTER header lines: {result['native_filter_header_lines']}")
+        print(f"    header content lines: GATK={len(result['gatk_content_header_lines'])} "
+              f"NATIVE={len(result['native_content_header_lines'])}")
+        for line in result["header_content_missing_in_native"]:
+            print(f"        missing in native: {line}")
+        for line in result["header_content_extra_in_native"]:
+            print(f"        extra in native  : {line}")
         observation = result["header_observations"]
         print("    header observations (NOT gated): "
               f"only_in_gatk={len(observation['only_in_gatk'])} "
@@ -1346,8 +1564,12 @@ def main() -> int:
         ],
         "violations": violations,
         "rows_compared": "data rows byte-identical (CHROM..sample columns)",
-        "header_compared": "##FILTER header lines byte-identical and in order",
-        "header_observations": "every other header difference is reported, not gated",
+        "header_compared": "##FILTER header lines byte-identical and in order; "
+                           "all other header content lines byte-identical as a "
+                           "set (order-only differences reported, not gated); "
+                           "##GATKCommandLine and ##source excluded as "
+                           "producer identity",
+        "header_observations": "order-only header differences are reported, not gated",
     }
     print(json.dumps(payload, sort_keys=True))
 
