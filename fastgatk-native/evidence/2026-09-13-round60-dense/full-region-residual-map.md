@@ -201,3 +201,20 @@ merger 的合并语义——把**所有覆盖该坐标的记录**（跨接变异
    但必须与 INFO 抑制一起落地并上锁，单独一半会把「INFO+FORMAT 不同」变成「仅 INFO 不同」而总数不变。
 
 两次改动均已**回退**（不留未验证、未上锁的代码）；结论与判据留在本节，供下一步一次性做完。
+
+## 第 67 轮：C/E 类的**第三次**尝试同样无效——须先查清这些行的真正来源
+
+按第 66 轮的判据新增 `Record::materialized_reference_only`（在解码阶段的逐坐标展开处打标），
+并把抑制器与 `PGT/PID/PS` 清除都挂到该标志上——**整段残差仍为 84，C/E 类一行未变**。
+
+即：C/E 类那 11 条 REF-only 行**既不**是 `materialized_spanning_locus`，**也不是**
+`finalized_monomorphic_ref`，**也不是**解码阶段的块逐坐标展开行。聚合路径里还剩两个候选来源：
+
+- `split_reference_blocks_at_variants()`（`:3815` 处 `split.reference_block = true`）产生的分段行；
+- 分组阶段调用 `materialize_reference_only()` 的那些行（`:6604` / `:7311`）。
+
+**下一步（先查来源，再谈修复）**：不要继续猜标志。加一个**临时插桩**——在输出前对
+`record.pos` 命中这 11 个位点时打印该记录的
+`materialized_spanning_locus / materialized_reference_only / finalized_monomorphic_ref /
+reference_block / alleles / allele_count`，一次运行即可确定来源；
+确认后把抑制挂到正确的判据上，并用整段语料复验（预期 84 → 73）。三次尝试均已回退。
