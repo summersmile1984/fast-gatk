@@ -91,3 +91,32 @@ INFO 键——**实测无效**（整段残差仍为 153，109 行照旧）。原
 merge/注释阶段被（从源记录的 Host 侧状态）重新写回。因此修复必须落在**输出边界**：
 在编码/注释阶段对 `record.materialized_spanning_locus == true` 的行抑制这四个键，
 而不是在 pass 里清除。该改动已回退，不留未经验证的代码。
+
+## 第 63 轮：余下 40 行 `*`/`*` 的机制（多删除 ALT 源的塌缩）
+
+以 10008953 为例：
+
+```
+输入 10008952:  CACACACACACACA > C,CCA,CCACACACACA,CCACACACACACA,<NON_REF>
+                INFO: MLEAC=0,1,0,1,0   → 被调用的 ALT 是 #2(CCA) 与 #4(CCACACACACACA)，
+                两者长度都 < REF(14) ⇒ **两个被调用的删除等位基因**
+GATK   (10008953): N  *  0  LowQual  AC=2;AF=1.00;AN=2;…;QD=-0.00  GT:AD:DP:GQ:PL  1/1:1,11:34:62:1184,62,0
+NATIVE (10008953): N  *  0  LowQual  AC=0;AF=0.00;AN=0;…（缺 QD）  GT:AD:DP:GQ:PL  ./.:1,14:34:0:1717,539,803
+```
+
+**机制**：`materialize_spanning_loci()` 的 `called_deletion_allele_index()` 只返回**第一个**被调用的删除
+等位基因，投影目标因此是 `{REF, 那一个删除}`；而源 GT 是 `2/4`（两个删除各一份），
+另一份落在目标列表之外，于是 `remap_record_to_allele_union()` 里既有的
+`force_no_call_on_dropped_gt` 逻辑把该样本整体判成 **no-call** —— 这正是 native 输出
+`./.`/`AC=0;AN=0`（并因 depth=0 缺 `QD`）的原因。
+
+**GATK 的做法**：merger 把该跨接记录的**所有**删除等位基因都塌缩成**同一个**符号 `*`
+（所以 GT 变成 `1/1` 两份都是 `*`），PL 则是对被塌缩的那些旧基因型组合做 log 域归并
+（因此 GATK 的 `1184,62,0` 与 native 取单个子矩阵的 `1717,539,803` 不同）。
+
+**修复配方（下一步）**：
+1. 投影目标改为多对一：所有「删除类」ALT（长度 < REF）都映射到同一个 `*`，非删除 ALT 映射为 NO_CALL；
+2. GT 逐拷贝按上述映射重写（不再是 1:1 的名称匹配）；
+3. PL/AD 用**塌缩后的等价基因型**做 log 域归并（GATK 的 `newToOldGenotypeMap` 语义），
+   而不是取某一个代表等位基因的子矩阵；
+4. 完成后用整段语料复验（预期余下 `*`/`*` 行 40 → 0，整段残差 84 → 44）。
