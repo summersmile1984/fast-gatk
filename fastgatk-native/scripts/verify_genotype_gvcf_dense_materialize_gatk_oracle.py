@@ -429,19 +429,19 @@ CASES = [
     },
     {
         "case": "owned-star-only-locus-default-mode-refused",
-        "why": "REPORTED ONLY, different call site: without the dense flag GATK "
-               "returns no record at all for a locus whose only surviving ALT is "
-               "the symbolic '*' (GenotypingEngine.java:173-175: "
+        "why": "GATED since the round that implemented it: without the dense flag "
+               "GATK returns no record at all for a locus whose only surviving "
+               "ALT is the symbolic '*' (GenotypingEngine.java:173-175: "
                "'!emitAllActiveSites() && alleles.size()==1 && "
-               "SPAN_DEL.equals(alleles.get(0))'), while native publishes the "
-               "'*'-only row with the full annotation set.  Found by this "
-               "round's measurement; the registered spandel oracle's "
+               "SPAN_DEL.equals(alleles.get(0))'), and native used to publish the "
+               "'*'-only row with the full annotation set.  Found by this gate's "
+               "round and fixed later; the registered spandel oracle's "
                "covered-star-only-record case reaches native's *empty*-ALT-set "
                "refusal instead, so this shape was previously unmeasured",
         "body": OWNED_STAR_ONLY_LOCUS_DEFAULT,
         "args": [],
         "mode": "rows",
-        "gated": False,
+        "gated": True,
         "expect": [ROW_STARTING_RECORD_DELETION],
     },
 ]

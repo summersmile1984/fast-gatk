@@ -92,7 +92,8 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 51 轮，当前树） | **307/307 通过**（1458.9s） | **307/307 通过**（1422.5s） | `a0a30b7` + star-only 拒绝修复（即下一次提交的内容），运行时未提交变更 3 项；零陈旧告警；强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`；证据 `.diag/regression/20260913-012345/` |
+| 全量回归（第 52 轮，当前树） | **308/308 通过**（1504.4s） | **308/308 通过**（1496.3s） | `3389e98` + dense 跨位点物化（即下一次提交的内容），运行时未提交变更 2 项；零陈旧告警；强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`；证据 `.diag/regression/20260913-020841/` |
+| 全量回归（第 51 轮） | 307/307 通过（1458.9s） | 307/307 通过（1422.5s） | `a0a30b7` + star-only 拒绝修复 |
 | 全量回归（第 50 轮） | 306/306 通过（1497.9s） | 306/306 通过（1538.3s） | `640678b` + depth-gate 修复 |
 | 全量回归（第 49 轮） | 305/305 通过（1566.2s） | 305/305 通过（1531.5s） | `56e2ea6` + reverse-trim 修复 |
 | 全量回归（第 48 轮） | 304/304 通过（1622.6s） | 304/304 通过（1444.9s） | commit `0862251`，工作树未提交变更 0 项 |
@@ -776,7 +777,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–51 轮增量（累计 **33** 个已证真 bug 已修并上锁）
+## 第 36–52 轮增量（累计 **34** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -793,6 +794,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 31 | GenotypeGVCFs **反向 trim**（第 49 轮） | 见下节 |
 | 32 | GenotypeGVCFs 缺 `INFO/DP > 0` 前置条件（第 50 轮） | 见下文「第 50 轮」一节 |
 | 33 | 只含跨接删除的位点在默认模式必须被拒绝（第 51 轮） | 见下文「第 51 轮」一节 |
+| 34 | dense 模式跨位点记录物化（第 52 轮） | 见下文「第 52 轮」一节；本会话最大的一处结构性缺口 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -1000,19 +1002,85 @@ GATK 的浮点运算顺序（内核级），Host 呈现层做不到。
 > 反向 trim 门禁的位置 4 行从 `QD=0.00` 变成了 `QD=-0.00`。
 
 
+## 第 52 轮：dense 模式跨位点记录物化（第 34 个已修 bug，本会话最大的一处结构性缺口）
+
+### 规则
+
+GATK 的位点遍历访问**每一条输入记录跨过的每一个参考坐标**，而不只是记录起点的坐标
+（`VariantLocusWalker.java:150-176`），`--include-non-variant-sites` 随后把这些位点发布出来。
+在这样被跨过的位点上，merger 把跨接事件的删除等位基因换成符号 `*`
+（`ReferenceConfidenceVariantContextMerger.java:150-151`、`:222-245`），样本数据则是它的
+reference-confidence 投影（`mergeRefConfidenceGenotypes()`、`:575-612`）。
+
+native 的位点集合过去只由「记录起点 ∪ 纯参考块逐坐标展开」构成，因此**被跨接记录覆盖的位点整行缺失**。
+这正是上一轮以前一直记录的「结构性、刻意未修」项，也是唯一有真实语料证据的缺口：
+GATK 自带的 chr20 HaplotypeCaller gVCF（1291 条）里有 **139 个**这样的坐标。
+
+### 实测（gate 的 4 个 gated 用例，pinned GATK 4.6.2.0）
+
+| fixture（dense） | GATK | native（修前） |
+| --- | --- | --- |
+| `2 AAA A,<NON_REF>`（span 2-4） | 3 行（2/3/4） | **1 行**（缺 3、4） |
+| 同上 + `5 A *,G,<NON_REF>` | 4 行 | 2 行（缺 3、4） |
+| `2 AAA A` + `4 AA *,<NON_REF>` | 4 行 | 3 行（缺 3） |
+
+### 实现
+
+新助手 `materialize_spanning_loci()`，**只在 `--include-non-variant-sites` 下**、
+在 `split_reference_blocks_at_variants()` 之后、排序/分组之前运行（聚合路径，即默认路径）：
+
+- 只在「被某条记录跨过、且自身没有记录起点」的位置合成记录（GATK 保留起点记录：
+  `GenotypeGVCFsEngine.java:339-354`，故 `starting-record-wins-dense` 对照不变红）；
+- 仅当**源记录的基因型确实调用了那个删除等位基因**时才合成 `*` 行。hom-ref 的跨接记录贡献 NO_CALL，
+  GATK 那时发布的是 REF-only 行——另一种形状，**仍未修**（`pruned-deletion`、`no-deletion-alt`
+  两个对照用例正是在钉这一点：它们必须保持「没有任何 `*` 行」）；
+- 样本数据复用既有的 allele-union 重映射（`remap_record_to_allele_union`）投影到
+  `[新参考碱基, *]`：对单一删除等位基因的源记录这就是等位基因下标上的恒等映射
+  （GT/AD/PL 逐项与 GATK 实测一致）；
+- 新参考碱基取自 `-R` 索引（与既有分块路径同一助手），并把 `END` 清掉。
+
+### 顺带收窄的 QD 符号零规则（与第 51 轮那次被否证的尝试不同）
+
+合成的跨位点行有 **4/4** 实测为 `QD=-0.00`（QUAL 恒为 0），与 regenotyped 行的 1e-16 不确定性
+（同一 fixture 内 `-0.00` 与 `0.00` 并存）**性质不同**：合成位点没有自己的输入记录，
+其站点置信度是**恰好 0**。故新增 `Record::materialized_spanning_locus` 标志，
+仅在「该行由本 pass 合成 且 QUAL==0」时把 QD 分子取为 `-0.0`，
+并让浮点文本格式器只对 `QD` 保留负零（第 51 轮那次是**整体**放宽，被注册门禁否证并回退；
+这次收窄到合成行，四个基因型门禁同时通过）。
+
+### 门禁
+
+`fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle` —— 即此前**刻意未注册**的
+`verify_genotype_gvcf_dense_materialize_gatk_oracle.py`：本轮起严格通过（0 violations）并注册。
+其中原「REPORTED ONLY」的 `owned-star-only-locus-default-mode-refused` 用例
+（默认模式 `*`-only 拒绝）已由第 51 轮修复，本轮**升格为 gated**；
+只剩 `owned-star-only-locus-dense-negative-zero-qual`（regenotyped 行的 QD 符号零，1e-16 级）
+仍标为 REPORTED ONLY、不参与退出码。
+
+### 本轮未覆盖（下一步）
+
+1. **流式路径**：pass 目前只接在聚合路径（默认路径）。`--stream-by-locus` 的等价接入点未做，
+   故该选项下仍缺这些行（既有行为，未回归）。
+2. **非删除跨接的 REF-only 形状**：`2 AAAA AACC,<NON_REF>` 这类无删除等位基因的跨接记录，
+   GATK 在被覆盖位点发布 REF-only 行（`GT:AD ./. :0` / `QUAL 192.21` 等两种形状）；
+   native 仍不产生这些行（两个对照用例只钉「不得出现 `*` 行」）。
+3. **多 ALT 源记录**：本 pass 用「保留 REF + 被调用的那个删除等位基因」表达投影；
+   源记录有多个 ALT（其中若干需变成 NO_CALL）的更一般情形未做。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
-**最新基线（第 51 轮，主会话亲自运行）：commit `a0a30b7` + star-only 拒绝修复
-（即下一次提交的内容；运行时工作树未提交变更 3 项，全部为本轮修复/门禁/文档）上
-OpenMP 307/307（1458.9s）、Serial 307/307（1422.5s），零陈旧告警，
+**最新基线（第 52 轮，主会话亲自运行）：commit `3389e98` + dense 跨位点物化
+（即下一次提交的内容；运行时工作树未提交变更 2 项，全部为本轮源码/门禁/文档）上
+OpenMP 308/308（1504.4s）、Serial 308/308（1496.3s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-证据块（可直接复核）：`.diag/regression/20260913-012345/summary.txt`
-（307 = 304 + reverse-trim 门禁 + depth-gate 门禁 + `fastgatk-genotype-gvcf-star-only-locus-gatk-oracle`）。
+证据块（可直接复核）：`.diag/regression/20260913-020841/summary.txt`
+（308 = 304 + reverse-trim + depth-gate + star-only-locus + `fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle`，
+最后一个是此前刻意未注册、本轮起严格通过并注册的 dense 物化门禁）。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
-第 50 轮 `a0a30b7` 上 306/306（1497.9s / 1538.3s）——当时写成"下一次提交即 content"，
-对应提交 `640678b` 之后的 depth-gate 修复；
+第 51 轮 `a0a30b7` 上 307/307（1458.9s / 1422.5s）；
+第 50 轮 306/306（1497.9s / 1538.3s）；
 第 49 轮 `640678b` 上 305/305（1566.2s / 1531.5s）；
 `0862251` 上 304/304（1622.6s / 1444.9s，工作树干净）；
 `c971cf3` 上 303/303；`b3cd293` 上 302/302。
@@ -1020,21 +1088,22 @@ OpenMP 307/307（1458.9s）、Serial 307/307（1422.5s），零陈旧告警，
 
 这条基线的意义：此前数轮的全量结果由委派方运行、我只做了 md5/时序核对；
 自 `c971cf3` 起补上了「最终提交树上由主会话亲自测得」的那一步，因此
-**「307/307 在强制 oracle 存在下成立」这一宣称有同源证据。**
+**「308/308 在强制 oracle 存在下成立」这一宣称有同源证据。**
 
 配套的可信度条件（均已在本会话建立）：
 1. `run_regression.sh` 默认要求 GATK oracle 在场（缺失即响亮失败），
    并只与**最新产物**比较陈旧性（消除假告警）；
 2. 176 个脚本经 `oracle_guard.py` 改为 fail-closed（原可静默降级为「与自身比较」）；
-3. 本会话新注册 26 道严格 GATK 门禁（另有 1 道 `-diagnostic` 门禁以 exit 0 记录差异、
-   刻意不使全量变红），覆盖本会话 33 个修复中的关键行为；
+3. 本会话新注册 27 道严格 GATK 门禁（另有 1 道 `-diagnostic` 门禁以 exit 0 记录差异、
+   刻意不使全量变红），覆盖本会话 34 个修复中的关键行为；
 4. 5 道刻意未注册（`verify_hc_forced_alleles_emission_gate_oracle.py`、
    `verify_reblock_gvcf_triploid_gatk_oracle.py`、
    `verify_genotype_gvcf_dense_materialize_gatk_oracle.py` 等），因其**按设计必须失败**——
    它们是尚未修复分歧的活证据，不应被注册成会永久变红的测试。
 
 **仍未达成 1:1**（按剩余体量排序，均已在正文各节记录并可复现）：
-1. dense 模式跨位点记录物化（结构性：需同时改聚合遍历与流式遍历）；
+1. dense 跨位点物化的**剩余两半**（第 52 轮已修默认路径）：流式 `--stream-by-locus` 的等价接入点、
+   以及非删除跨接记录的 REF-only 形状（`GT:AD ./. :0` / `QUAL 192.21` 两种）；
 2. 多输入 header：**对齐目标已更正**——GATK 拒绝多个 `-V`，故应对齐 `CombineGVCFs` 合并语义；
    实测分歧为样本列顺序（字典序 vs 输入序）与后续输入声明（INFO/FORMAT/FILTER/ALT）丢失；
 3. ReblockGVCF case B（修法已验证但会使现有 trim/gap/NON_REF-AD 断言块不可满足，

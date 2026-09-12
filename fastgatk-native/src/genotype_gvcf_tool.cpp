@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
+#include <set>
 #include <deque>
 #include <filesystem>
 #include <fstream>
@@ -1101,6 +1102,12 @@ struct Record {
     // through the PL-derived assignment boundary.
     std::vector<std::uint8_t> force_no_call_samples;
     bool orphan_spanning_deletion = false;
+    // True only for a locus this tool SYNTHESIZED because a spanning record
+    // covers it (dense mode only).  Such a locus has no input record of its
+    // own, which is what makes its site confidence exactly zero rather than a
+    // ~1e-16 residue, and that in turn makes GATK's QualByDepth numerator the
+    // sign-preserving -0.0 (see update_gatk_standard_annotations).
+    bool materialized_spanning_locus = false;
     // True when the source FORMAT carried GQ for this record, i.e. when GATK's
     // merged genotype would report hasGQ().  Distinct from the native PL-derived
     // GQ vector, which is synthesized even for inputs without FORMAT/GQ.
@@ -3748,6 +3755,126 @@ void split_reference_blocks_at_variants(const bcf_hdr_t* output_header,
     records = std::move(rewritten);
 }
 
+// GATK's locus traversal visits EVERY reference coordinate that an input record
+// spans, not only the coordinates where a record starts
+// (VariantLocusWalker.java:150-176), and --include-non-variant-sites then
+// publishes such a locus.  Native's locus list is built from record starts plus
+// the per-coordinate expansion of pure reference blocks, so positions covered
+// by a SPANNING record were missing entirely.
+//
+// At such a locus the merger replaces the spanning event's deletion allele with
+// the symbolic '*' (ReferenceConfidenceVariantContextMerger.java:150-151,
+// :222-245) and projects the sample data onto [reference base, '*']
+// (mergeRefConfidenceGenotypes(), :575-612).  For a source whose surviving ALT
+// is that single deletion the projection is the identity map on allele indices,
+// which is why this pass can express it as an ordinary allele-union remap:
+// keeping the source REF and the called deletion allele, then renaming the
+// envelope to the new single-base REF and '*'.
+//
+// Only positions with no record of their own are synthesized (GATK's
+// GenotypeGVCFsEngine.java:339-354 keeps the record that starts at the locus),
+// and only when the source's own genotype calls the deletion: a hom-reference
+// spanning record contributes NO_CALL for that allele, which is the shape GATK
+// publishes as a REF-only row instead -- a different, still unfixed shape.
+int called_deletion_allele_index(const Record& record) {
+    if (record.alleles.size() < 2 || !record.ploidy) return -1;
+    const auto reference_length = record.alleles.front().size();
+    for (std::size_t index = 1; index < record.alleles.size(); ++index) {
+        const auto& allele = record.alleles[index];
+        if (allele == "*" || (!allele.empty() && allele.front() == '<')) continue;
+        if (allele.size() >= reference_length) continue;
+        for (const auto encoded : record.gt) {
+            if (encoded == bcf_int32_vector_end || bcf_gt_is_missing(encoded)) continue;
+            if (bcf_gt_allele(encoded) == static_cast<int>(index))
+                return static_cast<int>(index);
+        }
+    }
+    return -1;
+}
+
+void materialize_spanning_loci(const bcf_hdr_t* output_header,
+                               faidx_t* reference_index,
+                               std::vector<Record>& records) {
+    if (records.empty()) return;
+    std::set<std::pair<int, int>> occupied;
+    for (const auto& record : records)
+        if (record.rid >= 0 && record.pos >= 0) occupied.emplace(record.rid, record.pos);
+    struct Coverage {
+        int rid = -1;
+        int begin = -1;
+        int end = -1;
+        std::size_t source = 0;
+        int deletion = -1;
+    };
+    std::vector<Coverage> coverage;
+    for (std::size_t index = 0; index < records.size(); ++index) {
+        const auto& record = records[index];
+        if (record.reference_block || record.rid < 0 || record.pos < 0) continue;
+        const auto end = record_span_end(output_header, record);
+        if (end <= record.pos + 1) continue;
+        const auto deletion = called_deletion_allele_index(record);
+        if (deletion < 0) continue;
+        coverage.push_back(Coverage{record.rid, record.pos + 1, end, index, deletion});
+    }
+    if (coverage.empty()) return;
+    if (reference_index == nullptr)
+        throw std::runtime_error(
+            "UNSUPPORTED_PARAMETER: spanning-locus materialization requires an indexed -R reference");
+    std::sort(coverage.begin(), coverage.end(), [](const Coverage& left, const Coverage& right) {
+        if (left.rid != right.rid) return left.rid < right.rid;
+        if (left.begin != right.begin) return left.begin < right.begin;
+        return left.end < right.end;
+    });
+
+    std::vector<Record> synthesized;
+    for (const auto& span : coverage) {
+        const auto& source = records[span.source];
+        if (source.alleles.size() < 2 || span.deletion < 1 ||
+            static_cast<std::size_t>(span.deletion) >= source.alleles.size())
+            continue;
+        for (int position = span.begin; position < span.end; ++position) {
+            if (!occupied.emplace(span.rid, position).second) continue;
+            auto* copy = bcf_dup(source.value);
+            if (copy == nullptr)
+                throw std::runtime_error("RESOURCE_EXHAUSTED: cannot materialize a spanning locus");
+            Record synthetic = source;
+            synthetic.value = copy;
+            // Project the sample data onto [source REF, the called deletion],
+            // which is the identity map on allele indices whenever the source's
+            // only surviving ALT is that deletion.
+            const std::vector<std::string> projected{
+                source.alleles.front(), source.alleles[static_cast<std::size_t>(span.deletion)]};
+            remap_record_to_allele_union(output_header, synthetic, projected);
+            const auto base = reference_base(reference_index, output_header, span.rid, position);
+            const auto alleles = base + ",*";
+            if (bcf_update_alleles_str(output_header, synthetic.value, alleles.c_str()) != 0) {
+                bcf_destroy(synthetic.value);
+                throw std::runtime_error(
+                    "OUTPUT_CONTRACT_FAILURE: cannot rewrite a materialized spanning locus");
+            }
+            (void)bcf_update_info_int32(output_header, synthetic.value, "END", nullptr, 0);
+            synthetic.value->pos = position;
+            bcf_unpack(synthetic.value, BCF_UN_STR);
+            synthetic.pos = position;
+            synthetic.alleles = {base, "*"};
+            synthetic.allele_count = 2;
+            synthetic.key = record_key(synthetic.value);
+            synthetic.reference_block = false;
+            synthetic.materialized_spanning_locus = true;
+            // The cohort vectors describe the SOURCE allele list; the normal
+            // compute stage recomputes them for the two-allele projection.
+            synthetic.cohort_log10_p_allele_absent.clear();
+            synthetic.cohort_integer_allele_counts.clear();
+            synthetic.cohort_log10_p_no_variant = 0.0;
+            synthetic.cohort_quality_available = false;
+            synthesized.push_back(std::move(synthetic));
+        }
+    }
+    if (synthesized.empty()) return;
+    records.reserve(records.size() + synthesized.size());
+    for (auto& record : synthesized) records.push_back(std::move(record));
+}
+
 void merge_sample_fields(const bcf_hdr_t* output_header,
                          std::vector<Record*>& group) {
     if (group.empty()) return;
@@ -4444,8 +4571,23 @@ void update_gatk_standard_annotations(const bcf_hdr_t* output_header, Record& re
         // registered reverse-trim gate caught.  Keeping the rounded numerator is
         // therefore the measured-better choice until the AF kernel's near-zero
         // result can be aligned.
+        // GATK's QualByDepth divides the double it reads back from the record
+        // (-10.0 * vc.getLog10PError(), QualByDepth.java:78+86), and only the
+        // sign of ZERO can differ from the rounded QUAL published here.  For a
+        // REGENOTYPED locus that sign survives from a ~1e-16 round-off in the
+        // AF calculator and is not reproducible without matching GATK's
+        // arithmetic order (measured: QD=-0.00 for one '*' locus and QD=0.00 for
+        // another inside a single fixture), so the rounded numerator is kept.
+        // A locus this tool MATERIALIZED because a spanning record covers it is
+        // different: it has no input record of its own, its confidence is
+        // exactly zero, and pinned GATK publishes QD=-0.00 for every measured
+        // instance of that shape (4/4), so -0.0 is reproduced there.
+        const double qd_numerator =
+            (record.materialized_spanning_locus && record.value->qual == 0.0F)
+                ? -0.0
+                : static_cast<double>(record.value->qual);
         const float qd = static_cast<float>(gatk_fix_high_qd(
-            record.value->qual / static_cast<double>(depth), random));
+            qd_numerator / static_cast<double>(depth), random));
         if (bcf_update_info_float(output_header, record.value, "QD", &qd, 1) != 0)
             throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write QD annotation");
     }
@@ -4616,7 +4758,11 @@ std::string format_gatk_float_value(const std::string& key,
         try {
             auto number = std::stod(token);
             if (std::isfinite(number)) {
-                if (number == 0.0) number = 0.0; // normalize negative zero
+                // htsjdk's VCFEncoder formats the sign of a negative zero, and
+                // the materialized spanning loci above are the only rows whose
+                // QD can be -0.0 (GATK publishes -0.00 there).  Every other
+                // annotation keeps the historical native normalisation.
+                if (number == 0.0 && key != "QD") number = 0.0;
                 int token_precision = precision;
                 if (rank_sum) {
                     // Exact htsjdk VCFEncoder.formatVCFDouble ordering:
@@ -6998,6 +7144,8 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
         // block's REF base is not recoverable from its single start allele at
         // an interior split coordinate.
         split_reference_blocks_at_variants(output_header, reference_index, records);
+        if (options.include_non_variant_sites)
+            materialize_spanning_loci(output_header, reference_index, records);
         std::sort(records.begin(), records.end(), [](const Record& left, const Record& right) {
             if (left.rid != right.rid) return left.rid < right.rid;
             if (left.pos != right.pos) return left.pos < right.pos;

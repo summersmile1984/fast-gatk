@@ -1599,6 +1599,18 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_star_only_locus_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-star-only-locus-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # STRICT gate for the spanning-locus materialization gap: GATK's traversal
+    # visits every reference coordinate a record spans (VariantLocusWalker.java:
+    # 150-176) and dense mode publishes those loci, while native's locus list was
+    # built from record starts only, so 139 positions of GATK's own chr20 gVCF
+    # were missing.  Two cases inside it are REPORTED ONLY (a ~1e-16
+    # sign-of-zero in QD of a regenotyped locus) and do not affect the exit
+    # status; see the script docstring.
+    add_test(NAME fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_dense_materialize_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # Systemic guard: an htslib read failure (-2) must not be mistaken for EOF
     # (-1), which silently truncated output across many tools while exiting 0.
     add_test(NAME fastgatk-malformed-input-fail-loud-oracle
