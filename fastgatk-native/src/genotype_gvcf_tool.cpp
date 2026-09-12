@@ -2585,16 +2585,33 @@ bool apply_gatk_max_alternate_alleles(const bcf_hdr_t* output_header,
     return true;
 }
 
-// NDA is intentionally captured before max-ALT reduction.  GATK uses this
-// scalar to report how many concrete alternate alleles were discovered at the
-// locus, including alleles that the GenotypingEngine later drops for its
-// Number=G/AF bound.  Pure REF/<NON_REF> reference-confidence blocks do not
-// receive NDA.
+// NDA is intentionally captured before max-ALT reduction, and from the MERGED
+// INPUT allele list rather than the published one.  That is exactly GATK's
+// rule: GenotypingEngine.composeCallAttributes() stores
+// `vc.getAlternateAlleles().size()` of the VariantContext handed to
+// calculateGenotypes() (GenotypingEngine.java:464-465), i.e. the merged record
+// -- before `*` ownership pruning (:312-316), before the confidence test and
+// before the max-ALT reduction into `reducedVC` (:137-144).  Two details of
+// that value are load-bearing:
+//   * <NON_REF> is NOT counted, because the merger that built `vc` already
+//     removed it (GenotypeGVCFsEngine.java:136 passes
+//     removeNonRefSymbolicAllele = true;
+//     ReferenceConfidenceVariantContextMerger.java:339-345);
+//   * a symbolic '*' IS counted, because the merger re-adds Allele.SPAN_DEL
+//     for a spanning event (ReferenceConfidenceVariantContextMerger.java:340-342).
+// So the value is 1 for a single-concrete-ALT locus, and the old
+// `record.alleles.size() < 3` guard (>= two ALTs) silently omitted NDA on every
+// one-ALT shape -- including the REF-only dense row materialized from a covered
+// '*', whose merged input set is [ref, *].  A locus whose merged ALT set is
+// genuinely empty carries no NDA on either side: that denormalized REF-only
+// record comes from regenotypeVC's non-variant branch -- the method entered at
+// GenotypeGVCFsEngine.java:148 whose `originalVC.isVariant()` test at :154 fails
+// -- and never reaches composeCallAttributes().
 void annotate_num_discovered_alleles(const bcf_hdr_t* output_header,
                                      Record& record,
                                      const Options& options) {
     if (!options.annotate_with_num_discovered_alleles ||
-        record.alleles.size() < 3 ||
+        record.alleles.size() < 2 ||
         bcf_hdr_id2int(output_header, BCF_DT_ID, "NDA") < 0)
         return;
     int discovered = 0;

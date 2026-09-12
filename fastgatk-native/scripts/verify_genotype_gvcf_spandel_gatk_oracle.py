@@ -337,6 +337,67 @@ htsjdk sorts the whole header, a pre-existing divergence recorded as an
 observation); the ``##FILTER`` group keeps its additional ordered assertion
 above.
 
+The ``--annotate-with-num-discovered-alleles`` data-row contract
+--------------------------------------------------------------
+``--annotate-with-num-discovered-alleles`` (``@Argument`` at
+``GenotypeCalculationArgumentCollection.java:73``, backing field
+``ANNOTATE_NUMBER_OF_ALLELES_DISCOVERED`` at ``:74``, default ``false``) makes
+``GenotypingEngine.composeCallAttributes()`` add exactly one ``INFO`` key:
+
+    if ( configuration.genotypeArgs.ANNOTATE_NUMBER_OF_ALLELES_DISCOVERED ) {
+        attributes.put(GATKVCFConstants.NUMBER_OF_DISCOVERED_ALLELES_KEY,
+                       vc.getAlternateAlleles().size());
+    }
+                                        // GenotypingEngine.java:464-465
+
+``NUMBER_OF_DISCOVERED_ALLELES_KEY`` is the literal ``NDA``
+(``GATKVCFConstants.java:73``); the declaration GATK writes for it is
+``GATKVCFHeaderLines.java:205``, and it is added **only** under that flag
+because it goes through ``GenotypingEngine.getAppropriateVCFInfoHeaders()``
+behind the same boolean (``:90-94``), called from
+``GenotypeGVCFsEngine.setupVCFWriter()`` (``:401-402``).
+
+The count is read from the **``vc`` argument of ``calculateGenotypes()``**, not
+from ``reducedVC`` (built at ``:137-144`` for ``--max-alternate-alleles``) and
+not from the published allele subset (``outputAlternativeAlleles``, computed at
+``:155``), so it is the ALT count of the *merged input* record -- before ``*``
+ownership pruning, before the confidence test at ``:312-316`` and before the
+max-ALT reduction.  Three consequences, all measured
+(``.diag/nda-probe.log``, ``.diag/nda-probe2.log``,
+``.diag/nda-gate-probe-before.log``):
+
+1. ``<NON_REF>`` is **not** counted, because the merged ``vc`` handed to the
+   engine has already had it removed: ``GenotypeGVCFsEngine`` calls
+   ``merger.merge(variantsToProcess, loc, ref.getBase(), true, false)``
+   (``GenotypeGVCFsEngine.java:136``), whose 4th parameter is
+   ``removeNonRefSymbolicAllele``, and ``collectTargetAlleles()`` then adds
+   ``Allele.NON_REF_ALLELE`` only when that flag is false
+   (``ReferenceConfidenceVariantContextMerger.java:339-345``).  A one-ALT input
+   therefore reports ``NDA=1``, not 2: the value counts *concrete* discovered
+   alleles.
+2. a symbolic ``*`` **is** counted, because ``collectTargetAlleles()`` re-adds
+   ``Allele.SPAN_DEL`` for a spanning event
+   (``ReferenceConfidenceVariantContextMerger.java:340-342``): ``A *,G,<NON_REF>``
+   reports ``NDA=2`` even when GATK publishes only ``G``, and
+   ``A *,<NON_REF>`` reports ``NDA=1`` even when the dense-mode row is REF-only.
+   The rule is "input alleles", not "published alleles".
+3. a locus whose merged ALT set is empty writes **no** ``NDA`` at all: that
+   denormalized REF-only record comes from the ``regenotypeVC`` branch for a
+   non-variant ``originalVC`` (``GenotypeGVCFsEngine.java:148``/``:154``) and never
+   reaches ``composeCallAttributes()``.  Measured row ``chr1 2 . A . . . DP=20
+   GT:AD ./.:20`` (``.diag/nda-probe2.log``, ``homref-nonref-only-dense``).
+
+Native's ``annotate_num_discovered_alleles()`` (``genotype_gvcf_tool.cpp``,
+called first in the compute stage, before ``apply_gatk_max_alternate_alleles()``
+and ``apply_gatk_output_allele_subset()``, so the ordering and the input-vs-
+published rule were already right) guarded the call with
+``record.alleles.size() < 3`` and so silently required at least **two** ALT
+alleles; for every ``NDA=1`` shape it wrote nothing.  The ``nda-annotation-*``
+cases below pin the flag's whole contract: the row bytes including the ``NDA``
+key, the input-allele counting rule (pruning must not change the value), the
+REF-only dense row, two samples, and the control that neither the key nor its
+declaration appears without the flag.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -437,6 +498,15 @@ HEADER_WITH_PASS_AND_Q10_FILTER = HEADER.replace(
 # GenotypeGVCFsEngine.java:416 + GATKVCFHeaderLines.java:89 +
 # GATKVCFConstants.java:179, byte for byte.
 GATK_LOWQUAL_FILTER_LINE = '##FILTER=<ID=LowQual,Description="Low quality">'
+
+# GATKVCFHeaderLines.java:205 + GATKVCFConstants.java:73, byte for byte.  Unlike
+# the lines above this one is conditional: it is added through
+# GenotypingEngine.getAppropriateVCFInfoHeaders() (GenotypingEngine.java:90-94)
+# only when --annotate-with-num-discovered-alleles is set, so it is asserted
+# per-case against that flag rather than against every case.
+GATK_NDA_HEADER_LINE = (
+    '##INFO=<ID=NDA,Number=1,Type=Integer,Description="Number of alternate '
+    'alleles discovered (but not necessarily genotyped) at this site">')
 
 # The same fixture header with every Description already in htsjdk's canonical
 # quoted form, i.e. the shape a GATK-produced gVCF has.  It separates the two
@@ -773,6 +843,77 @@ GATK_CONCRETE_ONLY_ROW = (
 GATK_G_DOWNSTREAM_ROW = ("chr1\t3\t.\tA\tG\t82.26\t.\t"
                          "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.11\t"
                          "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
+
+# ---------------------------------------------------------------------------
+# --annotate-with-num-discovered-alleles (NDA): fixtures and measured rows
+# ---------------------------------------------------------------------------
+# The flag is spelled identically on both sides, so it travels in the case's
+# shared `args` and is passed to pinned GATK and native alike.  Native binds it
+# at genotype_gvcf_tool.cpp:643-648, GATK at
+# GenotypeCalculationArgumentCollection.java:73-74.
+
+NDA_FLAG = "--annotate-with-num-discovered-alleles"
+
+# One concrete ALT besides the symbolic <NON_REF>, called 0/1: the minimal
+# shape on which GATK's value is 1 rather than 0 or 2.  It is the shape
+# native's `record.alleles.size() < 3` guard silently skipped.
+NDA_SINGLE_ALT_RECORD = (
+    "chr1\t2\t.\tA\tG,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\n"
+)
+
+# The same locus with two samples, so the count is pinned as a property of the
+# locus and not of the sample count (GATK_NDA_TWO_SAMPLES_ROW has NDA=1, not 2).
+NDA_TWO_SAMPLES_RECORD = (
+    "chr1\t2\t.\tA\tG,<NON_REF>\t.\tPASS\tDP=20\t"
+    "GT:DP:AD:PL\t0/1:20:0,20,0:100,0,100,100,100,100\t"
+    "0/1:20:0,20,0:100,0,100,100,100,100\n"
+)
+
+# Measured with pinned GATK 4.6.2.0 (.diag/nda-gate-probe-before.log).  The
+# `NDA` key sits between `MLEAF` and `QD`: GenotypeGVCFsEngine.addGenotyping-
+# Annotations() copies the attributes into a LinkedHashMap in the order MLEAC,
+# MLEAF, NDA, AS_QUAL (GenotypeGVCFsEngine.java:233-250, the NDA carry at
+# :238-239) before htsjdk's
+# VCFEncoder writes them, which is the same order native's compatibility
+# annotation writer already produces.
+GATK_NDA_SINGLE_ALT_ROW = (
+    "chr1\t2\t.\tA\tG\t92.64\t.\t"
+    "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;NDA=1;QD=4.63\t"
+    "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100")
+GATK_NDA_TWO_SAMPLES_ROW = (
+    "chr1\t2\t.\tA\tG\t190.50\t.\t"
+    "AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;NDA=1;QD=4.76\t"
+    "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100\t0/1:0,20:20:99:100,0,100")
+# The control: the very same fixture and invocation WITHOUT the flag.  Neither
+# the `NDA` key nor its `##INFO` declaration may appear on either side
+# (GenotypingEngine.java:464-465 and :90-94 are both behind the same boolean).
+GATK_NDA_CONTROL_ROW = GATK_NDA_SINGLE_ALT_ROW.replace("NDA=1;", "")
+# G_PLAUSIBLE_RECORD ('*,G,<NON_REF>') publishes only `G` but has TWO input ALT
+# alleles: NDA=2 proves the value follows the input set, not the published one.
+GATK_NDA_REDUCED_ALT_SET_ROW = (
+    "chr1\t2\t.\tA\tG\t82.26\t.\t"
+    "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;NDA=2;QD=4.11\t"
+    "GT:AD:DP:PL\t0/1:0,20:20:0,0,0")
+# COVERED_STAR_PLUS_CONCRETE_RECORD: two rows, NDA=1 for the upstream deletion
+# and NDA=2 for the two-ALT row ('*' counts as a discovered allele).
+GATK_NDA_COVERED_STAR_PLUS_CONCRETE_ROWS = [
+    ("chr1\t2\t.\tAA\tA\t92.60\t.\t"
+     "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;NDA=1;QD=4.63\t"
+     "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100"),
+    ("chr1\t3\t.\tA\t*,G\t82.26\t.\t"
+     "AC=1,1;AF=0.500,0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1,1;MLEAF=0.500,0.500;"
+     "NDA=2;QD=4.11\t"
+     "GT:AD:DP:GQ:PL\t1/2:0,0,20:20:99:100,100,100,100,0,100"),
+]
+# STAR_ONLY_COVERED_RECORD in dense mode: the materialized REF-only row keeps
+# the count of the input record whose only ALT was the covered '*'.
+GATK_NDA_COVERED_STAR_ONLY_DENSE_ROWS = [
+    ("chr1\t2\t.\tAA\tA\t92.60\t.\t"
+     "AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;NDA=1;QD=4.63\t"
+     "GT:AD:DP:GQ:PL\t0/1:0,20:20:99:100,0,100"),
+    "chr1\t3\t.\tA\t.\tInfinity\t.\tDP=20;MLEAC=.;MLEAF=.;NDA=1\tGT\t./.",
+]
 
 CASES = [
     {
@@ -1256,6 +1397,82 @@ CASES = [
         "gated": False,
         "expect": [GATK_G_DOWNSTREAM_ROW],
     },
+    {
+        "case": "nda-annotation-single-alt",
+        "why": "the --annotate-with-num-discovered-alleles data-row contract on "
+               "the shape native's `record.alleles.size() < 3` guard skipped: "
+               "one concrete ALT besides <NON_REF>.  GATK's value comes from "
+               "`vc.getAlternateAlleles().size()` on the MERGED input record "
+               "(GenotypingEngine.java:464-465), i.e. 1 here because the merger "
+               "has already dropped <NON_REF> "
+               "(ReferenceConfidenceVariantContextMerger.java:339-345 via "
+               "GenotypeGVCFsEngine.java:136), while native wrote no NDA at all",
+        "body": NDA_SINGLE_ALT_RECORD,
+        "args": [NDA_FLAG],
+        "gated": True,
+        "expect": [GATK_NDA_SINGLE_ALT_ROW],
+    },
+    {
+        "case": "nda-annotation-control-without-flag",
+        "why": "the control for the same fixture with NO flag: both the `NDA` "
+               "key and its `##INFO=<ID=NDA,...>` declaration are produced only "
+               "under the flag (GenotypingEngine.java:464-465 for the key, "
+               ":90-94 for the header line), so this case fails if native (or "
+               "GATK) annotates or declares it unconditionally",
+        "body": NDA_SINGLE_ALT_RECORD,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_NDA_CONTROL_ROW],
+    },
+    {
+        "case": "nda-annotation-reduced-alt-set",
+        "why": "the count follows the INPUT allele set, not the published one: "
+               "G_PLAUSIBLE_RECORD ('*,G,<NON_REF>') is pruned to ALT='G' but "
+               "GATK writes NDA=2, because composeCallAttributes() is handed the "
+               "pre-pruning `vc` (GenotypingEngine.java:464-465) rather than "
+               "outputAlternativeAlleles (:155)",
+        "body": G_PLAUSIBLE_RECORD,
+        "args": [NDA_FLAG],
+        "gated": True,
+        "expect": [GATK_NDA_REDUCED_ALT_SET_ROW],
+    },
+    {
+        "case": "nda-annotation-covered-star-plus-concrete-alt",
+        "why": "two published ALTs including a symbolic '*' that an upstream "
+               "deletion owns: the '*' is a discovered allele, so the two-ALT "
+               "row carries NDA=2 while the upstream one-ALT deletion row "
+               "carries NDA=1 (ReferenceConfidenceVariantContextMerger.java:"
+               "340-342 re-adds Allele.SPAN_DEL to the merged allele set)",
+        "body": COVERED_STAR_PLUS_CONCRETE_RECORD,
+        "args": [NDA_FLAG],
+        "gated": True,
+        "expect": GATK_NDA_COVERED_STAR_PLUS_CONCRETE_ROWS,
+    },
+    {
+        "case": "nda-annotation-covered-star-only-dense",
+        "why": "the REF-only dense materialization of a covered-'*' locus keeps "
+               "the INPUT record's count: the merged set is [A, *] so GATK "
+               "writes NDA=1 on the row whose ALT is '.' and whose FORMAT is "
+               "GT only (GenotypeGVCFsEngine.java:191-194).  A locus whose "
+               "merged ALT set is EMPTY writes no NDA at all -- that path is "
+               "`regenotypeVC`'s non-variant branch (:148/:154) and never reaches "
+               "composeCallAttributes()",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "args": ["--include-non-variant-sites", NDA_FLAG],
+        "gated": True,
+        "expect": GATK_NDA_COVERED_STAR_ONLY_DENSE_ROWS,
+    },
+    {
+        "case": "nda-annotation-two-samples",
+        "why": "the count is a property of the locus, not of the sample count: "
+               "the same single-ALT fixture with two samples still writes "
+               "NDA=1, so a fix that summed per-sample discoveries would fail",
+        "body": NDA_TWO_SAMPLES_RECORD,
+        "header": HEADER_TWO_SAMPLES,
+        "args": [NDA_FLAG],
+        "gated": True,
+        "expect": [GATK_NDA_TWO_SAMPLES_ROW],
+    },
 ]
 
 
@@ -1447,6 +1664,23 @@ def run_case(case: dict, work: pathlib.Path, reference: pathlib.Path,
                 f"{sorted((gatk_content_counter - native_content_counter).elements())} "
                 "extra in native="
                 f"{sorted((native_content_counter - gatk_content_counter).elements())}")
+        # The NDA declaration is flag-conditional on BOTH sides
+        # (GenotypingEngine.java:90-94 for GATK, the
+        # `options.annotate_with_num_discovered_alleles` guard in
+        # genotype_gvcf_tool.cpp for native), so it is asserted in both
+        # directions rather than left to the set comparison above.
+        if NDA_FLAG in case["args"]:
+            if GATK_NDA_HEADER_LINE not in gatk_content_counter:
+                result["violations"].append(
+                    "GATK moved away from the measured header truth: it no "
+                    f"longer declares {GATK_NDA_HEADER_LINE!r} under {NDA_FLAG}")
+            if GATK_NDA_HEADER_LINE not in native_content_counter:
+                result["violations"].append(
+                    f"native does not declare {GATK_NDA_HEADER_LINE!r} under "
+                    f"{NDA_FLAG}")
+        elif GATK_NDA_HEADER_LINE in native_content_counter:
+            result["violations"].append(
+                f"native declares {GATK_NDA_HEADER_LINE!r} without {NDA_FLAG}")
     return result
 
 
