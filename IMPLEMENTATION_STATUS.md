@@ -1367,7 +1367,12 @@ QD 分子改为优先使用 `record.call_confidence`（未取整 double），**�
 证据与逐类实例：`fastgatk-native/evidence/2026-09-13-round60-dense/full-region-residual-map.md`。
 
 **更正**：3 kb 窗口全绿属采样偏差，不能代表整段；本条已写入「仍未达成 1:1」清单。
-A 类占 71% 且看起来是单点修复，列为下一轮首选。
+A 类占 71%，第 61 轮已把修复点钉死：109 行**全部**是 native 多写 `MQ`（其中 86 行还多写
+`BaseQRankSum`/`MQRankSum`/`ReadPosRankSum`），且这些行确实由 `materialize_spanning_loci()` 产生
+（例：10004770 附近唯一输入是跨 10004769-10004778 的删除记录）；
+**在 pass 里清除这四个键实测无效**（注释在后续 merge/注释阶段被写回），
+修复须落在输出边界、以 `materialized_spanning_locus` 为判据；
+另有 24 行是 GATK 有 `QD` 而 native 无（同类内的第二个子问题）。
 
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
@@ -1409,8 +1414,9 @@ OpenMP 309/309（1473.5s）、Serial 309/309（1480.8s），零陈旧告警，
    它们是尚未修复分歧的活证据，不应被注册成会永久变红的测试。
 
 **仍未达成 1:1**（按剩余体量排序，均已在正文各节记录并可复现）：
-1. **dense 残差 A 类（第 60 轮量出，占残差 71%）**：`*` 行上 native 多写
-   `BaseQRankSum`/`MQ`/`MQRankSum`/`ReadPosRankSum`——单点修复可消掉整段约 2/3 的残差；
+1. **dense 残差 A 类（第 60/61 轮，占残差 71%）**：物化行上 native 多写 `MQ`（109 行）与
+   三个 rank sum（86 行）；修复点在**输出边界**（按 `materialized_spanning_locus` 抑制），
+   在 pass 里清除已被实测证否；同一类内还有 24 行缺 `QD`；
    其余类见 `evidence/2026-09-13-round60-dense/full-region-residual-map.md`（B 30 条、C 9、D 3、E 2、F 7）；
 2. **单记录形状上的 `INFO LowQual=.../RGQ=...` 差异**（第 58 轮发现，候选分歧）：
    该形状不是真实语料的形状，需先确认是否有真实输入能触发；

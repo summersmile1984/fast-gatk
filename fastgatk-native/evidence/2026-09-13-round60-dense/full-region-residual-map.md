@@ -70,3 +70,24 @@ NATIVE N  .      .    .        DP=63                                            
 - 整段语料的 dense 对齐度 ≈ **99.84%**（160/100000 位点残差），且**零**额外位点；
 - 残差集中在 5 个可判定的类里，其中 A 类占 71% 且看起来是**单点修复**；
 - 3 kb 窗口之所以全绿属采样偏差，**不应**用它代表整段（本轮更正）。
+
+## 第 61 轮：A 类的**补充定位**（把修复点钉死）
+
+对 109 行 `*`/`*` 逐行比较 INFO 键集合：
+
+| 差 | 键 | 条数 |
+| --- | --- | --- |
+| native 有、GATK 无 | `MQ` | **109**（全部） |
+| native 有、GATK 无 | `BaseQRankSum` / `MQRankSum` / `ReadPosRankSum` | 各 86 |
+| GATK 有、native 无 | `QD` | 24 |
+
+并确认这些行**确实由本轮新增的跨位点物化 pass 产生**：以 10004770 为例，附近唯一的输入记录是
+`10004769 TAAAACTATGC > T,<NON_REF>`（跨 10004769-10004778），该位点没有自己的记录，
+native 的 `*` 行来自 `materialize_spanning_loci()`；GATK 同样发布该行但不带源记录的
+`MQ`/`BaseQRankSum`/`MQRankSum`/`ReadPosRankSum`（它只发布在该位点重算的注释）。
+
+**一次被证否的修复（记录在案）**：在 `materialize_spanning_loci()` 里 `bcf_dup` 之后直接清除这四个
+INFO 键——**实测无效**（整段残差仍为 153，109 行照旧）。原因是这些注释在后续的
+merge/注释阶段被（从源记录的 Host 侧状态）重新写回。因此修复必须落在**输出边界**：
+在编码/注释阶段对 `record.materialized_spanning_locus == true` 的行抑制这四个键，
+而不是在 pass 里清除。该改动已回退，不留未经验证的代码。
