@@ -1442,8 +1442,22 @@ AlleleFrequencyResult calculate_allele_frequency_kokkos(
     PriorView device_sample_p0("cohort_sample_p0", sample_count);
     PriorView device_sample_absent("cohort_sample_absent",
                                   sample_count * static_cast<std::size_t>(allele_count));
+    // The site posteriors are accumulated in LOG space (log-sum-exp) rather than
+    // as linear probabilities.  A confident homozygous-alternate sample has
+    // P(hom-ref) far below the smallest positive double (PL differences of a few
+    // thousand are common), so the linear form underflowed to exactly 0 and its
+    // log10 became -inf, which the host then mistook for "this sample has no
+    // likelihoods" -- leaving the cohort without any allele-absent information
+    // and pruning a perfectly good ALT.  Measured on GATK's own chr20 corpus: 18
+    // of 252 emitted loci (all confident hom-alt calls) disappeared that way.
+    PriorView device_absent_log_max("cohort_absent_log_max",
+                                   sample_count * static_cast<std::size_t>(allele_count));
+    PriorView device_absent_log_sum("cohort_absent_log_sum",
+                                   sample_count * static_cast<std::size_t>(allele_count));
     Kokkos::deep_copy(device_sample_p0, -1.0e300);
     Kokkos::deep_copy(device_sample_absent, 0.0);
+    Kokkos::deep_copy(device_absent_log_max, -1.0e300);
+    Kokkos::deep_copy(device_absent_log_sum, 0.0);
     Kokkos::parallel_for(
         "fastgatk_cohort_final_posteriors",
         Kokkos::RangePolicy<ExecSpace>(0, sample_count),
@@ -1476,7 +1490,9 @@ AlleleFrequencyResult calculate_allele_frequency_kokkos(
                 denominator += Kokkos::pow(10.0, term - maximum);
             }
             if (denominator <= 0.0) return;
-            double p0 = 0.0;
+            const double log10_denominator = Kokkos::log10(denominator);
+            double p0_log_max = -1.0e300;
+            double p0_log_sum = 0.0;
             for (std::size_t genotype = 0; genotype < width; ++genotype) {
                 const auto value = device_pl(sample * width + genotype);
                 if (value < 0) continue;
@@ -1486,7 +1502,7 @@ AlleleFrequencyResult calculate_allele_frequency_kokkos(
                     term += static_cast<double>(device_genotype_counts[
                         genotype * static_cast<std::size_t>(allele_count) +
                         static_cast<std::size_t>(allele)]) * device_log10_af(allele);
-                const double probability = Kokkos::pow(10.0, term - maximum) / denominator;
+                const double log10_probability = term - maximum - log10_denominator;
                 bool non_variant_genotype = genotype == 0;
                 if (spanning_deletion_index >= 0) {
                     non_variant_genotype = true;
@@ -1500,21 +1516,43 @@ AlleleFrequencyResult calculate_allele_frequency_kokkos(
                         }
                     }
                 }
-                if (non_variant_genotype) p0 += probability;
+                if (non_variant_genotype) {
+                    if (log10_probability > p0_log_max) {
+                        p0_log_sum = p0_log_sum *
+                            Kokkos::pow(10.0, p0_log_max - log10_probability) + 1.0;
+                        p0_log_max = log10_probability;
+                    } else {
+                        p0_log_sum += Kokkos::pow(10.0, log10_probability - p0_log_max);
+                    }
+                }
                 for (int allele = 0; allele < allele_count; ++allele) {
                     if (device_genotype_counts[genotype * static_cast<std::size_t>(allele_count) +
-                                               static_cast<std::size_t>(allele)] == 0)
-                        device_sample_absent(sample * static_cast<std::size_t>(allele_count) +
-                                             static_cast<std::size_t>(allele)) += probability;
+                                               static_cast<std::size_t>(allele)] != 0)
+                        continue;
+                    const auto index = sample * static_cast<std::size_t>(allele_count) +
+                                       static_cast<std::size_t>(allele);
+                    const auto running_max = device_absent_log_max(index);
+                    if (log10_probability > running_max) {
+                        device_absent_log_sum(index) = device_absent_log_sum(index) *
+                            Kokkos::pow(10.0, running_max - log10_probability) + 1.0;
+                        device_absent_log_max(index) = log10_probability;
+                    } else {
+                        device_absent_log_sum(index) +=
+                            Kokkos::pow(10.0, log10_probability - running_max);
+                    }
                 }
             }
             for (int allele = 0; allele < allele_count; ++allele) {
                 const auto index = sample * static_cast<std::size_t>(allele_count) +
                                    static_cast<std::size_t>(allele);
-                const auto absent = device_sample_absent(index);
-                device_sample_absent(index) = absent <= 0.0 ? -1.0e300 : Kokkos::log10(absent);
+                const auto total = device_absent_log_sum(index);
+                device_sample_absent(index) = total > 0.0
+                    ? device_absent_log_max(index) + Kokkos::log10(total)
+                    : -1.0e300;
             }
-            device_sample_p0(sample) = Kokkos::log10(p0);
+            device_sample_p0(sample) = p0_log_sum > 0.0
+                ? p0_log_max + Kokkos::log10(p0_log_sum)
+                : -1.0e300;
         });
     ExecSpace{}.fence();
     const auto execute_end = std::chrono::steady_clock::now();

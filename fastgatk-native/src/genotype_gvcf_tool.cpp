@@ -3239,6 +3239,17 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
         record.value = nullptr;
         return false;
     }
+    if (std::getenv("FASTGATK_DEBUG_SUBSET") != nullptr) {
+        std::fprintf(stderr, "[SUBSET] pos=%d nalleles=%zu pruned=%zu output=[", record.pos,
+                     record.alleles.size(), pruned);
+        for (const auto& allele : output_alleles) std::fprintf(stderr, "%s,", allele.c_str());
+        std::fprintf(stderr, "] absent=[");
+        for (const auto value : record.cohort_log10_p_allele_absent)
+            std::fprintf(stderr, "%.6g,", value);
+        std::fprintf(stderr, "] orphan=%d includeNV=%d\n",
+                     record.orphan_spanning_deletion ? 1 : 0,
+                     options.include_non_variant_sites ? 1 : 0);
+    }
     if (pruned == 0) {
         upstream_deletions.record(record, output_alleles);
         // The emitted allele list is the merged one, and the trim still applies.

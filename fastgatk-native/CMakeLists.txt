@@ -1611,6 +1611,16 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_dense_materialize_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # STRICT gate for the allele-frequency posterior underflow: a confident
+    # hom-alt sample's P(hom-ref) fell below the smallest positive double, so the
+    # linear normalisation produced log10(0) = -inf, which collided with the
+    # "no likelihoods" sentinel, pruned the ALT and dropped a real variant call
+    # (18 of GATK's own 252 chr20 loci).
+    add_test(NAME fastgatk-genotype-gvcf-confident-hom-alt-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_confident_hom_alt_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-confident-hom-alt-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # Systemic guard: an htslib read failure (-2) must not be mistaken for EOF
     # (-1), which silently truncated output across many tools while exiting 0.
     add_test(NAME fastgatk-malformed-input-fail-loud-oracle
