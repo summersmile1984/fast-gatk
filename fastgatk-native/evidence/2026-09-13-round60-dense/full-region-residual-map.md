@@ -675,3 +675,32 @@ BaseQRankSum;DP=63;ExcessHet=0.0000;MLEAC=.;MLEAF=.;MQRankSum;ReadPosRankSum
    `materialized_spanning_locus` 与 `finalized_monomorphic_ref` 取值；
 4. REF-only 行另需丢 FORMAT 的 `PGT/PID/PS`（E 类）。
 预期：`*`/`*` 保持 40（不再误伤）、C/E 的 11 行消失 ⇒ 整段残差 **84 → 73**。
+
+## 第 87 轮：把 `drop_read_level` 收窄到 span 行的尝试**无任何效果**；判别式仍需细化
+
+第 86 轮后余下的 REF-only 残差共 13 行，逐行看清后分三类：
+
+| 类 | 行数 | 例 | GATK | native |
+| --- | --- | --- | --- | --- |
+| 样本列（GT/GQ） | 3 | 10008964 | `0/0:34:99` | `./.:34:0` |
+| QUAL + 样本列 | 3 | 10024301 | `163.67` | `Infinity` |
+| INFO（GATK **保留**读级注释） | 4 | 10041698 | `BaseQRankSum=1.89;DP=80;ExcessHet=0.00;…;MQ=58.63;…` | `DP=80;MLEAC=.;MLEAF=.`（被第 86 轮误删） |
+| INFO + FORMAT + 样本列 | 2 | 10077008 | `GT:DP:RGQ` + 读级注释 | `GT:DP:RGQ:PGT:PID:PS` + 注释被删 |
+
+据此把 `drop_read_level` 从 `span || mono` 收窄为 `span`（理由：GATK 在"真实记录退化为 REF-only"的行上
+**保留**读级注释，如 10041698，而在"被跨接记录覆盖的物化行"上丢弃，如 10008964）。
+**实测：行为完全不变**（两种构建逐位点相同：99912/99993 个位点一致；两个探针位点的
+INFO/整行匹配结果也一致），残差都维持 81。
+
+**推论**：10041698 那类行的 `materialized_spanning_locus` **也是真**（否则收窄就会恢复其注释）。
+最可能的原因：该坐标上**同时**存在「真实记录起点」与「由其它跨接记录物化出来的行」，
+两者在分组阶段被并到同一条记录上，标志由物化的那一条带来。因此判别式应当细化到
+**"该坐标是否存在输入记录起点"**（而不是"该记录是否被物化"）：
+- 有起点 ⇒ 保留读级注释（GATK 用起点记录的注释）；
+- 无起点（纯物化）⇒ 丢弃。
+
+**下一步**：在 `materialize_spanning_loci()` 已有的 `occupied` 判据外，额外记一个
+`Record::synthetic_locus_without_start`（仅在确实没有起点时置位），并用它驱动文本层开关；
+预期把上表第 3、4 类（共 6 行）恢复为与 GATK 一致，残差 **81 → 75**（其余 6 行的 GT/GQ 与
+QUAL=Infinity 属另外两类问题）。
+（本轮改动已回退，树保持第 86 轮已验证状态。）
