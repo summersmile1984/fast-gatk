@@ -88,10 +88,14 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 ## 最近验证状态（当前二进制的实测证据）
 
 证据目录 `.diag/regression/`（含各次全量日志与自动生成的证据块）。
+下表第 1 行是**当前树**；其余各行是历史记录（数字不同只是因为当时的树不同，不是回归）。
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 10 轮复验） | **280/280 通过**（1019s） | **280/280 通过**（1017s） | 对 commit `03b02b7`、二进制由 pristine 源重建后的复验；证据目录 `.diag/regression/20260911-010134/` |
+| 全量回归（第 48 轮，当前树） | **304/304 通过**（1622.6s） | **304/304 通过**（1444.9s） | commit `0862251`，工作树未提交变更 0 项，零陈旧告警；强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`；证据 `.diag/regression/20260912-230356/` |
+| 全量回归（第 44 轮） | 303/303 通过（1431.4s） | 303/303 通过（1453.3s） | commit `c971cf3`；此后生产代码又改了 2 次（`dce568f`、`f0a8277`），故必须重跑 |
+| 全量回归（第 42 轮） | 302/302 通过 | 302/302 通过 | commit `b3cd293` |
+| 全量回归（第 10 轮复验） | 280/280 通过（1019s） | 280/280 通过（1017s） | 对 commit `03b02b7`、二进制由 pristine 源重建后的复验；证据目录 `.diag/regression/20260911-010134/` |
 | HC/Mutect2 子集 | **72/72 通过**（261s） | **72/72 通过**（268s） | `omp-hc-mutect2.log` / `serial-hc-mutect2.log` |
 | `verify_hc_alleles_gatk_oracle.py` | 通过（86s） | 通过（112s） | 原「待本轮复跑」项已结清 |
 | `verify_hc_complex_multiallelic_oracle.py` | 通过（45s） | 通过（33s） | 四倍体 / max-ALT / max-genotype-count |
@@ -572,7 +576,8 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 ## 测试契约审计（第 20 轮）：6 处**被测试钉死的 parity 分歧** + 一个隐性失真机制
 
-对 273 个 add_test 条目做程序化枚举：94 个名字不含 `oracle`；其中约 30 个按构造确属 oracle，
+对 273 个 add_test 条目做程序化枚举（**第 20 轮当时的数字**；此后本会话又新增 24 个
+条目，当前 `fastgatk-native/CMakeLists.txt` 共 283 个）：94 个名字不含 `oracle`；其中约 30 个按构造确属 oracle，
 **约 64 个是真·native 内部契约**。全部 94 个都进了分类表（测试名 / CMake 行 / 脚本 /
 是否做记录级断言 / 类别 / 行号）。报告：`fastgatk-native/evidence/2026-09-11-wave0/round-testcontract-audit.md`。
 
@@ -780,25 +785,42 @@ BCF 输入与 GenomicsDB/`gendb://` 路径亦有意未处理。
 
 ## 收尾基线（第 42 轮，主会话亲自运行）
 
-**最新基线（第 44 轮，主会话亲自运行）：commit `c971cf3`（工作树干净）上
-OpenMP 303/303（1431.4s）、Serial 303/303（1453.3s），零陈旧告警，
+**最新基线（第 48 轮，主会话亲自运行）：commit `0862251`（工作树未提交变更 0 项）上
+OpenMP 304/304（1622.6s）、Serial 304/304（1444.9s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-（上一轮基线：`b3cd293` 上 302/302。两次均由主会话亲自测得，非委派方代跑。）
+证据块（可直接复核）：`.diag/regression/20260912-230356/summary.txt`
+
+（更早的基线，均由主会话亲自测得，非委派方代跑：
+`c971cf3` 上 303/303 → 本轮之所以必须重跑，是因为其后生产代码又改了两次
+（`dce568f` GenotypeGVCFs 自身 `FILTER=LowQual`、`f0a8277` 删除归属改为追踪已发射等位基因），
+上一次自测的树已不是当前树；`b3cd293` 上 302/302。）
 
 这条基线的意义：此前数轮的全量结果由委派方运行、我只做了 md5/时序核对；
-本次补上了「最终提交树上由主会话亲自测得」的那一步，因此
-**「302/302 在强制 oracle 存在下成立」这一宣称现在有同源证据。**
+自 `c971cf3` 起补上了「最终提交树上由主会话亲自测得」的那一步，因此
+**「304/304 在强制 oracle 存在下成立」这一宣称有同源证据。**
 
 配套的可信度条件（均已在本会话建立）：
 1. `run_regression.sh` 默认要求 GATK oracle 在场（缺失即响亮失败），
    并只与**最新产物**比较陈旧性（消除假告警）；
 2. 176 个脚本经 `oracle_guard.py` 改为 fail-closed（原可静默降级为「与自身比较」）；
-3. 21 道严格 GATK 门禁已注册，覆盖本会话 27 个修复中的关键行为；
-4. 4 道刻意未注册（`verify_hc_forced_alleles_emission_gate_oracle.py`、
-   `verify_reblock_gvcf_triploid_gatk_oracle.py` 等），因其**按设计必须失败**——
+3. 本会话新注册 23 道严格 GATK 门禁（另有 1 道 `-diagnostic` 门禁以 exit 0 记录差异、
+   刻意不使全量变红），覆盖本会话 30 个修复中的关键行为；
+4. 5 道刻意未注册（`verify_hc_forced_alleles_emission_gate_oracle.py`、
+   `verify_reblock_gvcf_triploid_gatk_oracle.py`、
+   `verify_genotype_gvcf_dense_materialize_gatk_oracle.py` 等），因其**按设计必须失败**——
    它们是尚未修复分歧的活证据，不应被注册成会永久变红的测试。
 
-**仍未达成 1:1**：27 个已修之外，header 纯顺序差异、多输入 header 合并、
-`FILTER=LowQual` 阈值通路、删除归属重构（按已发射等位基因）、ReblockGVCF case B、
-以及退出码类分歧（空等位基因 / SAM 文本路径不可修）均仍在。详见上文各节。
+**仍未达成 1:1**（按剩余体量排序，均已在正文各节记录并可复现）：
+1. dense 模式跨位点记录物化（结构性：需同时改聚合遍历与流式遍历）；
+2. 反向 trim（模式无关，须置于 `recordDeletions` 之后）；
+3. 多输入 header 合并（现状取 `input_paths.front()`，GATK 合并所有 `-V`）；
+4. ReblockGVCF case B（修法已验证但会使现有 trim/gap/NON_REF-AD 断言块不可满足，
+   需先重做其约 25 个派生值）；
+5. 退出码类分歧（空等位基因 `--alleles` GATK exit 3 vs 本实现 exit 0；
+   SAM 文本路径受 htslib `sam_read1_sam` 折叠解析失败为 -1 所限，不可修）。
+
+此外还有一批**已测量但尚未设门禁**的残差（多 contig 顺序、非 ASCII Description、
+NaN 补集、「同一位点两条记录」、跨位点替换的 REF-only 物化、默认模式 `*`-only 行、
+缺样本 `'./.'` vs `'./.:.:.:.:.'`、QD `-0.00` 渲染），以及
+Mutect2 6 处「推理上脆弱但从未复现」的所有者位点（44/44 行与 GATK 一致）。
