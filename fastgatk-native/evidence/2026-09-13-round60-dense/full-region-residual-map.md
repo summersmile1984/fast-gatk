@@ -571,3 +571,31 @@ finalized_monomorphic_ref`），**编译通过**，整段复验：残差仍 **84
 配合 `gatk_compatible_record_text(..., bool drop_read_level = false)` 与 INFO 组装循环内的
 key 跳过（这两处第 80 轮已写好并编译通过，可直接复用）。预期整段残差 **84 → 73**。
 （本轮最后一次尝试因锚点已被上一轮改掉而未写入，改动已回退，树保持已验证状态。）
+
+## 第 82 轮：`drop_read_level` 在该行上为假——三种传参写法全部无效，下一步探针已定
+
+按第 81 轮"唯一剩余写法"实施：在**编码 lambda 入口**（`std::move` 之前）捕获
+`drop_read_level = materialized_spanning_locus || finalized_monomorphic_ref`，
+再传给 `gatk_compatible_record_text(..., drop_read_level)`（函数加默认参数 + INFO 组装循环内按 key 跳过，
+两处第 80 轮已编译通过）。编译通过，整段复验：**残差仍 84**（C 类 9 行、E 类 2 行原样）。
+
+三种写法全部无效：
+
+| 写法 | 轮次 | 结果 |
+| --- | --- | --- |
+| 调用点读 `computed.record.<flags>` | 80 | ✗ |
+| 调用点读 `encoded.record.<flags>`（move 后） | 81 | ✗ |
+| 编码 lambda 入口捕获局部量（move 前，第 77 轮插桩证实该处为真） | 82 | ✗ |
+
+**推论**：那些 C/E 行的文本**不是**经由本次改动的那个调用点/那条组装循环产出的
+（尽管第 81 轮的 TXT 探针在 `-L 20:10000000-10009999` 下确实看到该行带着四个键）。
+
+**下一步（决定性的一次插桩，1 次运行即可）**：把探针放到 `gatk_compatible_record_text()`
+**内部**，同时打印
+① `drop_read_level` 的取值、② 该行的 POS、③ 组装前 `fields[7]` 与组装后 `info_text.str()`
+的键列表；用整段命令跑、只 grep `pos=10008964`。三种可能结果各自直接指向修法：
+- `drop_read_level=false` ⇒ 该行走的不是编码 lambda 的那两个调用点；
+- `=true` 而组装后键仍在 ⇒ 跳过逻辑没落在实际写键的那一层（可能有两处组装循环）；
+- 组装后键已消失而输出仍有 ⇒ 文本在之后被二次处理（回到"谁在最后写这四个键"的问题）。
+
+改动已回退；树保持已验证状态。
