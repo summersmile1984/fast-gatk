@@ -1,0 +1,62 @@
+fixture                                dense rows      alleles  fields-that-differ
+a-end-with-concrete-alt                      1/1       equal    pos2:INFO(END)
+a-end-with-concrete-alt-dense          yes   4/1       equal    GATK-only positions [3, 4, 5]; pos2:INFO(END)
+b-block-multibase-ref-default                0/0       equal    
+b-block-multibase-ref-dense            yes   4/1       DIFFER   GATK-only positions [3, 4, 5]
+      allele diff at 2: GATK AAAA/.  native A/.
+b-block-multibase-ref-end                    0/0       equal    
+b-block-plus-symbolic-del                    0/0       equal    
+c-star-multibase-ref-no-upstream             0/0       equal    
+c-star-multibase-ref-with-upstream           1/2       equal    native-only positions [4]
+d-three-sample-one-base-alt-pruned           1/1       equal    
+d-two-sample-one-base-alt-survives           2/1       DIFFER   
+      allele diff at 2: GATK AAAA/A  native AAA/AAC
+d2-merged-two-het-default                    2/1       DIFFER   
+      allele diff at 2: GATK AAAA/A  native AAA/AAC
+d2-merged-two-het-dense                      0/1       equal    native-only positions [2]
+dp0-dense                                    4/1       DIFFER   GATK-only positions [3, 4, 5]
+      allele diff at 2: GATK AAAA/AACA  native AAA/AAC
+dp0-star-ownership-dense                     4/2       DIFFER   GATK-only positions [3, 5]
+      allele diff at 2: GATK AAAA/AA  native AAA/A
+      allele diff at 4: GATK AA/.  native A/*
+dp1-dense                                    4/1       equal    GATK-only positions [3, 4, 5]
+e-ploidy3-guard                        ?     -         -        incomplete
+e-ploidy3-one-base-alt                 ?     -         -        incomplete
+e-ploidy3-trim                         ?     -         -        incomplete
+e-ploidy4-trim                         ?     -         -        incomplete
+e-wide-diploid-3alt                          1/1       equal    
+end-block-dense                              4/4       DIFFER   pos3:FORMAT; pos3:SAMPLE; pos3:INFO(DP); pos4:FORMAT; pos4:SAMPLE; pos4:INFO(DP); pos5:FORMAT; pos5:SAMPLE; pos5:INFO(DP)
+      allele diff at 2: GATK ACGT/.  native C/.
+end-guard-no-trim                            1/1       equal    pos2:INFO(END)
+end-no-trim-control                          1/1       equal    pos2:INFO(END)
+end-trim-consistent                          1/1       equal    pos2:INFO(END)
+g-longref-default                            1/1       equal    
+g-longref-phantom                            12/2       equal    GATK-only positions [3, 5, 6, 7, 8, 9, 10, 11, 12, 13]; pos4:QUAL
+g-placement-deletion-size              yes   4/2       equal    GATK-only positions [3, 5]
+g-placement-long-ref-star-4            yes   6/2       equal    GATK-only positions [3, 5, 6, 7]
+g-star-at-emitted-span-end             yes   9/2       equal    GATK-only positions [3, 4, 5, 7, 8, 9, 10]
+g-star-chain-dense                           9/3       equal    GATK-only positions [3, 5, 6, 8, 9, 10]
+g-star-mid-only-control                      7/2       equal    GATK-only positions [3, 5, 6, 7, 8]
+g-star-nomid-control                         9/2       equal    GATK-only positions [3, 4, 5, 6, 8, 9, 10]; pos7:QUAL
+h-stream-dense                               4/1       equal    GATK-only positions [3, 4, 5]
+h-stream-end                                 1/1       equal    pos2:INFO(END)
+h-stream-p3                            ?     -         -        incomplete
+h-stream-placement-chain                     9/3       equal    GATK-only positions [3, 5, 6, 8, 9, 10]
+h-stream-star-locus-group                    1/2       equal    native-only positions [4]
+h-stream-suffix-substitution                 1/1       equal    
+p3-guard                               ?     -         -        incomplete
+p3-nop-guard                                 1/1       equal    
+p3-nop-triploid-gt                           1/1       equal    
+p3-trim                                ?     -         -        incomplete
+p4-nop-tetraploid-gt                         1/1       equal    
+p4-trim                                      1/1       equal    
+prune-refonly-default                        0/0       equal    
+prune-refonly-dense                          4/1       equal    GATK-only positions [3, 4, 5]
+r-info-dp-zero-default                       0/1       equal    native-only positions [2]
+r-info-dp-zero-dense                   yes   4/1       DIFFER   GATK-only positions [3, 4, 5]
+      allele diff at 2: GATK AAAA/AACA  native AAA/AAC
+r-no-info-dp                                 1/1       equal    pos2:INFO(DP)
+star-only-nonref-default                     0/0       equal    
+star-only-nonref-dense                       2/1       equal    GATK-only positions [5]; pos4:QUAL
+x-attrib-block-ref-base                      4/1       DIFFER   GATK-only positions [3, 4, 5]
+      allele diff at 2: GATK ACGT/.  native C/.

@@ -1,0 +1,19 @@
+# GATKVariantContextUtils.reverseTrimAlleles on synthetic records
+multibase-ref-nonref               in=AAAA/<NON_REF>               type=SYMBOLIC     isVariant=true  out=A/ start=100 end=100 unchanged=false
+multibase-ref-nonref-8             in=ACGTACGT/<NON_REF>           type=SYMBOLIC     isVariant=true  out=A/ start=100 end=100 unchanged=false
+multibase-ref-star                 in=AA/*                         type=INDEL        isVariant=true  out=A/* start=100 end=100 unchanged=false
+multibase-ref-star-nonref          in=AA/*/<NON_REF>               type=MIXED        isVariant=true  out=A/*/ start=100 end=100 unchanged=false
+ref-alt-shared3                    in=AAAA/AA                      type=INDEL        isVariant=true  out=AAA/A start=100 end=102 unchanged=false
+ref-alt-shared1                    in=AAAA/AACA                    type=MNP          isVariant=true  out=AAA/AAC start=100 end=102 unchanged=false
+ref-alt-noshared                   in=AAAA/AACC                    type=MNP          isVariant=true  out=AAAA/AACC start=100 end=103 unchanged=true
+guard-one-base-alt                 in=AAA/A                        type=INDEL        isVariant=true  out=AAA/A start=100 end=102 unchanged=true
+guard-star-only-alt                in=AAA/*                        type=INDEL        isVariant=true  out=A/* start=100 end=100 unchanged=false
+empty-guard-acgtacgt               in=ACGTACGT/ACGT                type=INDEL        isVariant=true  out=ACGTA/A start=100 end=104 unchanged=false
+ref-lt-alt-insertion               in=AA/AAAA                      type=INDEL        isVariant=true  out=A/AAA start=100 end=100 unchanged=false
+ref-2alt-mixed-len                 in=AAAAA/AAA/CAAAA              type=MIXED        isVariant=true  out=AAA/A/CAA start=100 end=102 unchanged=false
+ref-star-long                      in=AAAAA/*                      type=INDEL        isVariant=true  out=A/* start=100 end=100 unchanged=false
+symbolic-only                      in=ACGT/<DEL>                   type=SYMBOLIC     isVariant=true  out=A/ start=100 end=100 unchanged=false
+symbolic-plus-nonref               in=ACGT/<DEL>/<NON_REF>         type=SYMBOLIC     isVariant=true  out=A// start=100 end=100 unchanged=false
+ref-alt-symbolic-shared            in=ACGTAC/ACGT/<NON_REF>        type=MIXED        isVariant=true  out=ACGTAC/ACGT/ start=100 end=105 unchanged=true
+star-ref-multibase-3               in=AAA/*/<NON_REF>              type=MIXED        isVariant=true  out=A/*/ start=100 end=100 unchanged=false
+# htsjdk=4.6.2.0

@@ -1,0 +1,43 @@
+====================================================================================================
+# g-star-nomid-control
+# why: control for g-star-chain-dense: the intermediate '*' record at 4 is removed, so the only recorded deletion is record 1's [2,6] span, which does NOT reach position 7.  The '*' at 7 must then be treated as a spurious spanning deletion by BOTH tools (covering the negative case of the coverage test that keeps row 7 alive in the chain fixture)
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-nomid-control.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-nomid-control.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-nomid-control.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-nomid-control.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-nomid-control.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-nomid-control.native.vcf   [exit 0]
+# GATK positions: ['2', '3', '4', '5', '6', '7', '8', '9', '10']
+# native positions: ['2', '7']
+# compared positions: [2, 7]
+  GATK      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+  GATK      chr1	7	.	AAAA	.	163.06	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+NATIVE      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	7	.	AAAA	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+# VERDICT: DIFFER
+====================================================================================================
+# g-star-mid-only-control
+# why: control: only record 1 and the intermediate '*' record at 4; the row at 4 must survive on both sides
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-mid-only-control.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-mid-only-control.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-mid-only-control.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-mid-only-control.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-mid-only-control.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-mid-only-control.native.vcf   [exit 0]
+# GATK positions: ['2', '3', '4', '5', '6', '7', '8']
+# native positions: ['2', '4']
+# compared positions: [2, 4]
+  GATK      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+  GATK      chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+NATIVE      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+# VERDICT: EQUAL
+====================================================================================================
+# dp0-star-ownership-dense
+# why: the DP=0 reach gap combined with '*' ownership: with INFO/DP=0 GATK takes the `result = originalVC` arm, so GenotypingEngine.recordDeletions() is never reached and the downstream '*' has no covering deletion at all
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-star-ownership-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-star-ownership-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-star-ownership-dense.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-star-ownership-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-star-ownership-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-star-ownership-dense.native.vcf   [exit 0]
+# GATK positions: ['2', '3', '4', '5']
+# native positions: ['2', '4']
+# compared positions: [2, 4]
+  GATK      chr1	2	.	AAAA	AA	.	.	DP=0	GT:AD	./.:0,20
+  GATK      chr1	4	.	AA	.	163.06	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+NATIVE      chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=0;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+# VERDICT: DIFFER
+====================================================================================================
+DIFFER  g-star-nomid-control
+EQUAL   g-star-mid-only-control
+DIFFER  dp0-star-ownership-dense

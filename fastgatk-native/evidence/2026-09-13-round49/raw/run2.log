@@ -1,0 +1,213 @@
+====================================================================================================
+# end-no-trim-control
+# why: control for the END axis: REF/ALT share no trailing base, so GATK never trims; isolates END pass-through from the trim
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-no-trim-control.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-no-trim-control.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-no-trim-control.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-no-trim-control.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-no-trim-control.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-no-trim-control.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAAA	AACC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AAAA	AACC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=5	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: DIFFER
+====================================================================================================
+# end-trim-consistent
+# why: END=4 equals the POST-trim span (2..4): the trim cannot make this END stale, yet GATK drops END in the merge and native appears to keep it
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-trim-consistent.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-trim-consistent.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-trim-consistent.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-trim-consistent.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-trim-consistent.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-trim-consistent.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=4	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: DIFFER
+====================================================================================================
+# end-guard-no-trim
+# why: the guard fires (one-base ALT), so no trim; END=4 is consistent with the untrimmed REF=AAA span 2..4 either way
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-guard-no-trim.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-guard-no-trim.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-guard-no-trim.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-guard-no-trim.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-guard-no-trim.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-guard-no-trim.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=4	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: DIFFER
+====================================================================================================
+# end-block-dense
+# why: a multi-base-REF block with END in dense mode: if the trim ran on an END-bearing record, htsjdk's validateStop would reject it (measured in TrimProbe/P2), so this checks that the merger really removes END before :167
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-block-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-block-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-block-dense.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-block-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-block-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/end-block-dense.native.vcf   [exit 0]
+# compared positions: [2] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['2', '3', '4', '5']
+# native rows at all positions: ['2', '3', '4', '5']
+  GATK      chr1	2	.	ACGT	.	.	.	DP=20	GT:AD	./.:20
+NATIVE      chr1	2	.	C	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+# VERDICT: DIFFER
+====================================================================================================
+# prune-refonly-dense
+# why: every concrete ALT is pruned (hom-ref likelihoods), so GATK's emitted list is the REF alone and :1458's getNAlleles()<=1 arm returns it untrimmed; native keeps <NON_REF> in the merged allele list, which would make the list two alleles and trigger a clip
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-dense.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-dense.native.vcf   [exit 0]
+# compared positions: [2] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['2', '3', '4', '5']
+# native rows at all positions: ['2']
+  GATK      chr1	2	.	AAAA	.	127.78	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+NATIVE      chr1	2	.	AAAA	.	127.78	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+# VERDICT: EQUAL
+====================================================================================================
+# prune-refonly-default
+# why: same input in default mode (GATK drops it: not properly polymorphic)
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-default.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-default.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-default.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/prune-refonly-default.native.vcf   [exit 0]
+  GATK rows: <none>
+NATIVE rows: <none>
+# VERDICT: EQUAL
+====================================================================================================
+# dp1-dense
+# why: the DP>0 gate boundary: INFO/DP=1 in dense mode
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp1-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp1-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp1-dense.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp1-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp1-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp1-dense.native.vcf   [exit 0]
+# compared positions: [2] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['2', '3', '4', '5']
+# native rows at all positions: ['2']
+  GATK      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=1;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=1;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: EQUAL
+====================================================================================================
+# dp0-dense
+# why: INFO/DP=0 makes GATK skip regenotyping altogether, so the merged record is emitted with UNTRIMMED alleles
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-dense.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/dp0-dense.native.vcf   [exit 0]
+# compared positions: [2] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['2', '3', '4', '5']
+# native rows at all positions: ['2']
+  GATK      chr1	2	.	AAAA	AACA	.	.	DP=0	GT:AD	./.:0,20
+NATIVE      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=0;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: DIFFER
+====================================================================================================
+# star-only-nonref-default
+# why: a '*' record whose only ALT is '*' plus <NON_REF>: isProperlyPolymorphic() is false, so default mode drops it
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-default.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-default.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-default.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-default.native.vcf   [exit 0]
+  GATK rows: <none>
+NATIVE rows: <none>
+# VERDICT: EQUAL
+====================================================================================================
+# star-only-nonref-dense
+# why: the same '*' record in dense mode, where :167 is reached
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-dense.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/star-only-nonref-dense.native.vcf   [exit 0]
+# compared positions: [4] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['4', '5']
+# native rows at all positions: ['4']
+  GATK      chr1	4	.	AA	.	163.06	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+NATIVE      chr1	4	.	AA	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+# VERDICT: DIFFER
+====================================================================================================
+# p3-trim
+# why: axis e: --sample-ploidy 3, Number=G width 10; trailing-run clip applies and the wider PL row must survive
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-trim.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-trim.g.vcf --sample-ploidy 3 -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-trim.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-trim.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-trim.g.vcf --sample-ploidy 3 --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-trim.native.vcf   [exit 2]
+# native stderr tail: fastgatk-genotype-gvcf: unknown option: --sample-ploidy
+
+  GATK      chr1	2	.	AAA	AAC	94.02	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+NATIVE rows: <none>
+# VERDICT: DIFFER
+====================================================================================================
+# p4-trim
+# why: axis e: --sample-ploidy 4, Number=G width 15
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-trim.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-trim.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-trim.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-trim.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-trim.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-trim.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	AAC	94.92	.	AC=1;AF=0.250;AN=4;DP=20;MLEAC=1;MLEAF=0.250;QD=4.75	GT:AD:DP:GQ:PL	0/0/0/1:0,20:20:99:100,0,100,100,100
+NATIVE      chr1	2	.	AAA	AAC	94.92	.	AC=1;AF=0.250;AN=4;DP=20;MLEAC=1;MLEAF=0.250;QD=4.75	GT:AD:DP:GQ:PL	0/0/0/1:0,20:20:99:100,0,100,100,100
+# VERDICT: EQUAL
+====================================================================================================
+# p3-guard
+# why: axis e: ploidy 3 with a surviving one-base ALT (guard protects the record)
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-guard.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-guard.g.vcf --sample-ploidy 3 -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-guard.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-guard.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-guard.g.vcf --sample-ploidy 3 --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-guard.native.vcf   [exit 2]
+# native stderr tail: fastgatk-genotype-gvcf: unknown option: --sample-ploidy
+
+  GATK      chr1	2	.	AAAA	A	93.98	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+NATIVE rows: <none>
+# VERDICT: DIFFER
+====================================================================================================
+# g-star-chain-dense
+# why: axis g: AAAAAA>AA at 2 emits a deletion of size 4 (span 2..6 recorded BEFORE the trim); the '*' record at 4 with REF=AAAAA is owned by it and its own emitted deletion size (5-1=4, span 4..8) is what keeps the '*' record at 7 non-spurious.  Trimming before recordDeletions would give record 2 a REF of one base, hence deletion size 0, and the record at 7 would be pruned as an orphan spanning deletion.
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-chain-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-chain-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-chain-dense.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-chain-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-chain-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-star-chain-dense.native.vcf   [exit 0]
+# compared positions: [2, 4, 7] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['2', '3', '4', '5', '6', '7', '8', '9', '10']
+# native rows at all positions: ['2', '4', '7']
+  GATK      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+  GATK      chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+  GATK      chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+NATIVE      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+NATIVE      chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+# VERDICT: EQUAL
+====================================================================================================
+# g-longref-phantom
+# why: axis g adjacency check: a 12-base REF with an 11-base concrete ALT (deletion size 1, span 2..3) plus <NON_REF>.  htsjdk gives a symbolic allele length()==0, so if <NON_REF> reached recordDeletions() either tool would record a spurious span; native would compute 12-9=3.  The '*' at 4 is covered by neither real span (2..3) and must therefore be treated as a spurious spanning deletion by BOTH tools.
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-phantom.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-phantom.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-phantom.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-phantom.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-phantom.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-phantom.native.vcf   [exit 0]
+# compared positions: [2, 4] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13']
+# native rows at all positions: ['2', '4']
+  GATK      chr1	2	.	AA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+  GATK      chr1	4	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+NATIVE      chr1	2	.	AA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	4	.	A	.	159.55	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+# VERDICT: DIFFER
+====================================================================================================
+# g-longref-default
+# why: the 12-base REF / 11-base ALT locus alone, default mode: the emptiness rule with a long shared run (clip 10 of 11, REF->AA, ALT->A)
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-default.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-default.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-default.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/g-longref-default.native.vcf   [exit 0]
+  GATK      chr1	2	.	AA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: EQUAL
+====================================================================================================
+# h-stream-end
+# why: axis h: the END fixture through --stream-by-locus
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-end.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-end.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-end.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-end.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-end.g.vcf --gatk-compatible-annotations --stream-by-locus -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-end.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=5	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: DIFFER
+====================================================================================================
+# h-stream-placement-chain
+# why: axis h+g: the three-record '*' chain through --stream-by-locus, where the locus group is built by the bounded k-way merge
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-placement-chain.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-placement-chain.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-placement-chain.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-placement-chain.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-placement-chain.g.vcf --include-non-variant-sites --gatk-compatible-annotations --stream-by-locus -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-placement-chain.native.vcf   [exit 0]
+# compared positions: [2, 4, 7] (dense-mode row shape/materialization differences at other positions are out of scope)
+# GATK rows at all positions: ['2', '3', '4', '5', '6', '7', '8', '9', '10']
+# native rows at all positions: ['2', '4', '7']
+  GATK      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+  GATK      chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+  GATK      chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+NATIVE      chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+NATIVE      chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+# VERDICT: EQUAL
+====================================================================================================
+# h-stream-p3
+# why: axis e+h: ploidy 3 through the streaming path
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-p3.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-p3.g.vcf --sample-ploidy 3 -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-p3.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-p3.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-p3.g.vcf --sample-ploidy 3 --gatk-compatible-annotations --stream-by-locus -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/h-stream-p3.native.vcf   [exit 2]
+# native stderr tail: fastgatk-genotype-gvcf: unknown option: --sample-ploidy
+
+  GATK      chr1	2	.	AAA	AAC	94.02	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+NATIVE rows: <none>
+# VERDICT: DIFFER
+====================================================================================================
+DIFFER  end-no-trim-control
+DIFFER  end-trim-consistent
+DIFFER  end-guard-no-trim
+DIFFER  end-block-dense
+EQUAL   prune-refonly-dense
+EQUAL   prune-refonly-default
+EQUAL   dp1-dense
+DIFFER  dp0-dense
+EQUAL   star-only-nonref-default
+DIFFER  star-only-nonref-dense
+DIFFER  p3-trim
+EQUAL   p4-trim
+DIFFER  p3-guard
+EQUAL   g-star-chain-dense
+DIFFER  g-longref-phantom
+EQUAL   g-longref-default
+DIFFER  h-stream-end
+EQUAL   h-stream-placement-chain
+DIFFER  h-stream-p3
+# 8/19 fixtures byte-identical

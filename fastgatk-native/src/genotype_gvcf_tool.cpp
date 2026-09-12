@@ -2983,6 +2983,108 @@ bool gatk_prefer_pls_row_is_uninformative(const std::vector<int32_t>& pl,
 // the ALT list, PL width, AC/AF/MLEAC/MLEAF vectors and downstream QUAL/QD.
 // Apply the same output-allele boundary after the shared Kokkos AF result and
 // before the ordinary site/standard-annotation passes.
+// GenotypeGVCFs' reverse allele trim (GATK's reverseTrimAlleles).
+//
+// GenotypeGVCFsEngine.java:160-169 regenotypes a locus, then rewrites the
+// record before any site annotation runs:
+//
+//     finalizeAnnotations(...);                                     // :165
+//     regenotypedVC = GATKVariantContextUtils.reverseTrimAlleles(regenotypedVC); // :167
+//     annotateContext(regenotypedVC, ...);                          // :189
+//
+// GATKVariantContextUtils.reverseTrimAlleles() (:1443-1445) is
+// trimAlleles(vc, trimForward=false, trimReverse=true), so only the trailing
+// bases move:
+//
+//   * :1458 -- the guard.  A record with one allele, or with ANY allele whose
+//     length() is 1 that is not the symbolic '*' (Allele.SPAN_DEL), is returned
+//     untouched.  Because GenotypingEngine.calculateOutputAlleleSubset() has
+//     already run (:155, mirrored by the caller of this helper), the guard sees
+//     the SURVIVING allele list -- a one-base ALT that the standard-confidence
+//     threshold pruned no longer protects the locus.
+//   * :1462-1467 -- the candidates are the non-symbolic, non-'*' alleles (the
+//     REF is one of them), and AlignmentUtils.normalizeAlleles(..., maxShift=0,
+//     trim=true) (AlignmentUtils.java:818-845) consumes the common trailing run
+//     while the shortest candidate still has a base left, so the run is capped
+//     by the shortest candidate and endShift is that capped value.
+//   * :1469-1475 -- if the cap was reached a whole allele was consumed, and
+//     because nothing was clipped from the front (trimForward is false) exactly
+//     one base is restored, so an allele can never be emptied.
+//   * :1489-1521 -- every non-symbolic, non-'*' allele loses those trailing
+//     bases (:1504) while symbolic alleles and '*' are copied untouched
+//     (:1497-1501); genotypes are remapped by allele identity, so GT indices,
+//     phase and the likelihood fields are unchanged; and the record is rebuilt
+//     at the SAME start with stop = start + REF.length() - 1 (:1515-1518).
+//
+// Measured against pinned GATK 4.6.2.0 (see
+// scripts/verify_genotype_gvcf_reverse_trim_gatk_oracle.py): AAAA/AACA -> AAA/AAC
+// at POS 2, ACGTACGT/ACGT -> ACGTA/A (the common run is four, three are
+// clipped), AAAA/AACC unchanged, and AA/* -> A/* with the '*' intact.
+//
+// Placement: this helper must run *after* the emitted-deletion bookkeeping of
+// EmittedDeletions::record(), because GATK records the deletion size of the
+// alleles the locus emits at GenotypingEngine.java:178-179 -- before :167 --
+// and a 'AA'->'A' rewrite would otherwise change that size.
+void apply_gatk_reverse_trim(const bcf_hdr_t* output_header, Record& record) {
+    if (record.alleles.size() <= 1) return;  // :1458 (getNAlleles() <= 1)
+    const auto symbolic = [](const std::string& allele) {
+        return !allele.empty() && allele.front() == '<';
+    };
+    for (const auto& allele : record.alleles) {
+        // :1458.  '*' is Allele.SPAN_DEL and is explicitly exempt; a symbolic
+        // allele is longer than one base, so it never triggers the guard.
+        if (!symbolic(allele) && allele != "*" && allele.size() == 1) return;
+    }
+    std::vector<std::size_t> candidates;
+    std::size_t shortest = std::numeric_limits<std::size_t>::max();
+    for (std::size_t index = 0; index < record.alleles.size(); ++index) {
+        const auto& allele = record.alleles[index];
+        if (symbolic(allele) || allele == "*") continue;
+        candidates.push_back(index);
+        shortest = std::min(shortest, allele.size());
+    }
+    // Unreachable in practice (the REF is always a concrete allele, and a
+    // one-base REF is removed by the guard above), but AlignmentUtils
+    // .normalizeAlleles() requires a non-empty sequence list.
+    if (candidates.empty() || shortest == 0) return;
+    std::size_t end_trim = 0;
+    while (end_trim < shortest && [&] {
+               const auto& first = record.alleles[candidates.front()];
+               const char probe = first[first.size() - 1 - end_trim];
+               for (const auto index : candidates) {
+                   const auto& allele = record.alleles[index];
+                   if (allele[allele.size() - 1 - end_trim] != probe) return false;
+               }
+               return true;
+           }())
+        ++end_trim;
+    // AlignmentUtils.java:818-838 stops when a candidate would be emptied, and
+    // GATKVariantContextUtils.java:1469-1475 restores one base for exactly that
+    // case (startTrim is 0 there, since the front loop only runs while
+    // minSize > 0).
+    const std::size_t rev_trim = end_trim == shortest ? end_trim - 1 : end_trim;
+    if (rev_trim == 0) return;  // :1492-1493, nothing to do
+    std::vector<std::string> trimmed;
+    trimmed.reserve(record.alleles.size());
+    for (const auto& allele : record.alleles) {
+        if (symbolic(allele) || allele == "*") {
+            trimmed.push_back(allele);
+            continue;
+        }
+        trimmed.push_back(allele.substr(0, allele.size() - rev_trim));
+    }
+    std::string joined = trimmed.front();
+    for (std::size_t index = 1; index < trimmed.size(); ++index) {
+        joined += ',';
+        joined += trimmed[index];
+    }
+    // htslib recomputes rlen from the new REF, which is GATK's
+    // builder.stop(start + REF.length() - 1).
+    if (bcf_update_alleles_str(output_header, record.value, joined.c_str()) != 0)
+        throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot apply the reverse allele trim");
+    record.alleles = std::move(trimmed);
+}
+
 bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
                                      Record& record,
                                      Options& options,
@@ -3015,6 +3117,9 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
         // No subset was computed, so every allele of the merged record is
         // emitted; a reference-only record contributes nothing to the state.
         upstream_deletions.record(record, record.alleles);
+        // GenotypeGVCFsEngine.java:167 runs for every locus it regenotypes,
+        // whether or not the standard-confidence subset pruned anything.
+        apply_gatk_reverse_trim(output_header, record);
         return true;
     }
     const auto threshold = -0.1 * options.standard_confidence_for_calling;
@@ -3050,6 +3155,8 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     }
     if (pruned == 0) {
         upstream_deletions.record(record, output_alleles);
+        // The emitted allele list is the merged one, and the trim still applies.
+        apply_gatk_reverse_trim(output_header, record);
         return true;
     }
     ++genotype_kernel_telemetry.output_allele_pruning_calls;
@@ -3276,6 +3383,10 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
     // annotation pass after remapping.
     record.cohort_log10_p_allele_absent.clear();
     record.cohort_integer_allele_counts.clear();
+    // GenotypeGVCFsEngine.java:167: the trim runs on the projected record, after
+    // the deletions this locus emitted were recorded at :178-179 above and
+    // before any site annotation (which the callers run after this helper).
+    apply_gatk_reverse_trim(output_header, record);
     return true;
 }
 

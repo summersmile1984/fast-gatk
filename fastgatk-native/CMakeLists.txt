@@ -1567,6 +1567,18 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_malformed_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-malformed-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # GenotypeGVCFs reverse-trims the alleles it emits
+    # (GenotypeGVCFsEngine.java:167 -> GATKVariantContextUtils.java:1443-1521):
+    # native published the merged REF/ALT untrimmed, so a locus whose alleles
+    # share trailing bases (AAAA/AACA) came out two bases longer than GATK's
+    # (AAA/AAC).  The gate pins the one-base-ALT guard, the clip-one-fewer
+    # emptiness corner, the ordering against the output-allele subset, and the
+    # untouched '*'.
+    add_test(NAME fastgatk-genotype-gvcf-reverse-trim-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_reverse_trim_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-reverse-trim-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # Systemic guard: an htslib read failure (-2) must not be mistaken for EOF
     # (-1), which silently truncated output across many tools while exiting 0.
     add_test(NAME fastgatk-malformed-input-fail-loud-oracle

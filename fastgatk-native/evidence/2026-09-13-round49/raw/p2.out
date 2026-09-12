@@ -1,0 +1,12 @@
+symbolic: base= display=<NON_REF> toString=<NON_REF> len=0 baseslen=0 isSymbolic=true equals(Allele.NON_REF_ALLELE)=true
+SPAN_DEL: * len=1 isSymbolic=false isNonRef=true
+Exception in thread "main" htsjdk.tribble.TribbleException: Badly formed variant context at location chr1:100; getEnd() was 102 but this VariantContext contains an END key with value 103
+	at htsjdk.variant.variantcontext.VariantContext.validateStop(VariantContext.java:1438)
+	at htsjdk.variant.variantcontext.VariantContext.validate(VariantContext.java:1420)
+	at htsjdk.variant.variantcontext.VariantContext.<init>(VariantContext.java:493)
+	at htsjdk.variant.variantcontext.VariantContextBuilder.make(VariantContextBuilder.java:647)
+	at htsjdk.variant.variantcontext.VariantContextBuilder.make(VariantContextBuilder.java:638)
+	at org.broadinstitute.hellbender.utils.variant.GATKVariantContextUtils.trimAlleles(GATKVariantContextUtils.java:1521)
+	at org.broadinstitute.hellbender.utils.variant.GATKVariantContextUtils.trimAlleles(GATKVariantContextUtils.java:1477)
+	at org.broadinstitute.hellbender.utils.variant.GATKVariantContextUtils.reverseTrimAlleles(GATKVariantContextUtils.java:1444)
+	at P2.main(P2.java:25)

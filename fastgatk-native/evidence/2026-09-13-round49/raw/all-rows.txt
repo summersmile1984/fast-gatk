@@ -1,0 +1,335 @@
+====================================================================================================
+# a-end-with-concrete-alt  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=5	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# a-end-with-concrete-alt-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	.	.	.	DP=20	GT:AD	./.:0
+        chr1	4	.	A	.	.	.	DP=20	GT:AD	./.:0
+        chr1	5	.	A	.	.	.	DP=20	GT:AD	./.:0
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=5	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# b-block-multibase-ref-default  EQUAL
+====================================================================================================
+# b-block-multibase-ref-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAAA	.	.	.	DP=20	GT:AD	./.:20
+        chr1	3	.	A	.	.	.	DP=20	GT:AD	./.:20
+        chr1	4	.	A	.	.	.	DP=20	GT:AD	./.:20
+        chr1	5	.	A	.	.	.	DP=20	GT:AD	./.:20
+    NATIVE (1 rows):
+        chr1	2	.	A	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+====================================================================================================
+# b-block-multibase-ref-end  EQUAL
+====================================================================================================
+# b-block-plus-symbolic-del  EQUAL
+====================================================================================================
+# c-star-multibase-ref-no-upstream  EQUAL
+====================================================================================================
+# c-star-multibase-ref-with-upstream  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (2 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# d-three-sample-one-base-alt-pruned  EQUAL
+    both: chr1	2	.	AAA	AAC	289.97	.	AC=3;AF=0.500;AN=6;DP=20;ExcessHet=3.9794;MLEAC=3;MLEAF=0.500;QD=4.83	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# d-two-sample-one-base-alt-survives  DIFFER
+    GATK   (2 rows):
+        chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+        chr1	2	.	AAAA	A	190.46	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# d2-merged-two-het-default  DIFFER
+    GATK   (2 rows):
+        chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+        chr1	2	.	AAAA	A	190.46	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# d2-merged-two-het-dense  DIFFER
+    GATK   (0 rows):
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# dp0-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAAA	AACA	.	.	DP=0	GT:AD	./.:0,20
+        chr1	3	.	A	.	.	.	.	GT:AD	./.:0
+        chr1	4	.	A	.	.	.	.	GT:AD	./.:0
+        chr1	5	.	A	.	.	.	.	GT:AD	./.:0
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=0;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# dp0-star-ownership-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAAA	AA	.	.	DP=0	GT:AD	./.:0,20
+        chr1	3	.	A	*	.	.	.	GT:AD	./.:0,20
+        chr1	4	.	AA	.	163.06	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	5	.	A	.	171.22	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+    NATIVE (2 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=0;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# dp1-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=1;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	.	.	.	DP=1	GT:AD	./.:0
+        chr1	4	.	A	.	.	.	DP=1	GT:AD	./.:0
+        chr1	5	.	A	.	.	.	DP=1	GT:AD	./.:0
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=1;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# e-ploidy3-guard: incomplete (gatk=True native=False)
+# e-ploidy3-one-base-alt: incomplete (gatk=True native=False)
+# e-ploidy3-trim: incomplete (gatk=True native=False)
+# e-ploidy4-trim: incomplete (gatk=True native=False)
+====================================================================================================
+# e-wide-diploid-3alt  EQUAL
+    both: chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# end-block-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	ACGT	.	.	.	DP=20	GT:AD	./.:20
+        chr1	3	.	G	.	.	.	DP=20	GT:AD	./.:20
+        chr1	4	.	T	.	.	.	DP=20	GT:AD	./.:20
+        chr1	5	.	A	.	.	.	DP=20	GT:AD	./.:20
+    NATIVE (4 rows):
+        chr1	2	.	C	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+        chr1	3	.	G	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+        chr1	4	.	T	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+        chr1	5	.	A	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+====================================================================================================
+# end-guard-no-trim  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=4	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# end-no-trim-control  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAAA	AACC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAAA	AACC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=5	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# end-trim-consistent  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=4	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# g-longref-default  EQUAL
+    both: chr1	2	.	AA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# g-longref-phantom  DIFFER
+    GATK   (12 rows):
+        chr1	2	.	AA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	5	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	6	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	7	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	8	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	9	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	10	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	11	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	12	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	13	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+    NATIVE (2 rows):
+        chr1	2	.	AA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	.	159.55	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+====================================================================================================
+# g-placement-deletion-size  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	5	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+    NATIVE (2 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# g-placement-long-ref-star-4  DIFFER
+    GATK   (6 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	5	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	6	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	7	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+    NATIVE (2 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# g-star-at-emitted-span-end  DIFFER
+    GATK   (9 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	5	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	6	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	7	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	8	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	9	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	10	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+    NATIVE (2 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	6	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# g-star-chain-dense  DIFFER
+    GATK   (9 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	5	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	6	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	8	.	A	*	0	LowQual	AC=4;AF=1.00;AN=4;DP=40;ExcessHet=0.0000;MLEAC=4;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	9	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	10	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+    NATIVE (3 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# g-star-mid-only-control  DIFFER
+    GATK   (7 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	5	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	6	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	7	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	8	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+    NATIVE (2 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# g-star-nomid-control  DIFFER
+    GATK   (9 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	5	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	6	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	7	.	AAAA	.	163.06	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	8	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	9	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	10	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+    NATIVE (2 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	7	.	AAAA	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+====================================================================================================
+# h-stream-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	.	.	.	DP=20	GT:AD	./.:0
+        chr1	4	.	A	.	.	.	DP=20	GT:AD	./.:0
+        chr1	5	.	A	.	.	.	DP=20	GT:AD	./.:0
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# h-stream-end  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63;END=5	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# h-stream-p3: incomplete (gatk=True native=False)
+====================================================================================================
+# h-stream-placement-chain  DIFFER
+    GATK   (9 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	3	.	A	*	0	LowQual	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=-0.00	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	5	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	6	.	A	*	0	LowQual	AC=3;AF=0.750;AN=4;DP=40;ExcessHet=0.0000;MLEAC=3;MLEAF=0.750;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	8	.	A	*	0	LowQual	AC=4;AF=1.00;AN=4;DP=40;ExcessHet=0.0000;MLEAC=4;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	9	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	10	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=-0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+    NATIVE (3 rows):
+        chr1	2	.	AAAAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+        chr1	7	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# h-stream-star-locus-group  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (2 rows):
+        chr1	2	.	AAA	A	92.60	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+        chr1	4	.	A	*	0	LowQual	AC=2;AF=1.00;AN=2;DP=20;ExcessHet=0.0000;MLEAC=2;MLEAF=1.00;QD=0.00	GT:AD:DP:GQ:PL	1/1:0,20:20:99:100,100,0
+====================================================================================================
+# h-stream-suffix-substitution  EQUAL
+    both: chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# p3-guard: incomplete (gatk=True native=False)
+====================================================================================================
+# p3-nop-guard  EQUAL
+    both: chr1	2	.	AAAA	A	93.98	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+====================================================================================================
+# p3-nop-triploid-gt  EQUAL
+    both: chr1	2	.	AAA	AAC	94.02	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+# p3-trim: incomplete (gatk=True native=False)
+====================================================================================================
+# p4-nop-tetraploid-gt  EQUAL
+    both: chr1	2	.	AAA	AAC	94.92	.	AC=1;AF=0.250;AN=4;DP=20;MLEAC=1;MLEAF=0.250;QD=4.75	GT:AD:DP:GQ:PL	0/0/0/1:0,20:20:99:100,0,100,100,100
+====================================================================================================
+# p4-trim  EQUAL
+    both: chr1	2	.	AAA	AAC	94.92	.	AC=1;AF=0.250;AN=4;DP=20;MLEAC=1;MLEAF=0.250;QD=4.75	GT:AD:DP:GQ:PL	0/0/0/1:0,20:20:99:100,0,100,100,100
+====================================================================================================
+# prune-refonly-default  EQUAL
+====================================================================================================
+# prune-refonly-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAAA	.	127.78	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	3	.	A	.	.	.	DP=20	GT:AD	./.:20
+        chr1	4	.	A	.	.	.	DP=20	GT:AD	./.:20
+        chr1	5	.	A	.	.	.	DP=20	GT:AD	./.:20
+    NATIVE (1 rows):
+        chr1	2	.	AAAA	.	127.78	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+====================================================================================================
+# r-info-dp-zero-default  DIFFER
+    GATK   (0 rows):
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=0;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# r-info-dp-zero-dense  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	AAAA	AACA	.	.	DP=0	GT:AD	./.:0,20
+        chr1	3	.	A	.	.	.	.	GT:AD	./.:0
+        chr1	4	.	A	.	.	.	.	GT:AD	./.:0
+        chr1	5	.	A	.	.	.	.	GT:AD	./.:0
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=0;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# r-no-info-dp  DIFFER
+    GATK   (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+    NATIVE (1 rows):
+        chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+====================================================================================================
+# star-only-nonref-default  EQUAL
+====================================================================================================
+# star-only-nonref-dense  DIFFER
+    GATK   (2 rows):
+        chr1	4	.	AA	.	163.06	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+        chr1	5	.	A	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+    NATIVE (1 rows):
+        chr1	4	.	AA	.	Infinity	.	DP=20;MLEAC=.;MLEAF=.	GT	./.
+====================================================================================================
+# x-attrib-block-ref-base  DIFFER
+    GATK   (4 rows):
+        chr1	2	.	ACGT	.	.	.	DP=20	GT:AD	./.:20
+        chr1	3	.	G	.	.	.	DP=20	GT:AD	./.:20
+        chr1	4	.	T	.	.	.	DP=20	GT:AD	./.:20
+        chr1	5	.	A	.	.	.	DP=20	GT:AD	./.:20
+    NATIVE (1 rows):
+        chr1	2	.	C	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+====================================================================================================
+# 45 compared, 31 DIFFER

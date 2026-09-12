@@ -1,0 +1,87 @@
+====================================================================================================
+# p3-nop-triploid-gt
+# why: axis e: the native binary rejects --sample-ploidy, so the polyploid record is compared with the ploidy carried by the GT field on BOTH sides; Number=G width 10 for a triploid 3-allele record
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-triploid-gt.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-triploid-gt.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-triploid-gt.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-triploid-gt.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-triploid-gt.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-triploid-gt.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	AAC	94.02	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+NATIVE      chr1	2	.	AAA	AAC	94.02	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+# VERDICT: EQUAL
+====================================================================================================
+# p4-nop-tetraploid-gt
+# why: axis e: tetraploid GT, Number=G width 15
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-nop-tetraploid-gt.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-nop-tetraploid-gt.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-nop-tetraploid-gt.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-nop-tetraploid-gt.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-nop-tetraploid-gt.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p4-nop-tetraploid-gt.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	AAC	94.92	.	AC=1;AF=0.250;AN=4;DP=20;MLEAC=1;MLEAF=0.250;QD=4.75	GT:AD:DP:GQ:PL	0/0/0/1:0,20:20:99:100,0,100,100,100
+NATIVE      chr1	2	.	AAA	AAC	94.92	.	AC=1;AF=0.250;AN=4;DP=20;MLEAC=1;MLEAF=0.250;QD=4.75	GT:AD:DP:GQ:PL	0/0/0/1:0,20:20:99:100,0,100,100,100
+# VERDICT: EQUAL
+====================================================================================================
+# p3-nop-guard
+# why: axis e: triploid with a surviving one-base ALT (guard)
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-guard.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-guard.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-guard.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-guard.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-guard.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/p3-nop-guard.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAAA	A	93.98	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+NATIVE      chr1	2	.	AAAA	A	93.98	.	AC=1;AF=0.333;AN=3;DP=20;MLEAC=1;MLEAF=0.333;QD=4.70	GT:AD:DP:GQ:PL	0/0/1:0,20:20:99:100,0,100,100
+# VERDICT: EQUAL
+====================================================================================================
+# e-wide-diploid-3alt
+# why: axis e: a wider Number=G array at diploid ploidy -- two concrete ALTs, so the pre-trim PL row is 10 values wide
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/e-wide-diploid-3alt.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/e-wide-diploid-3alt.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/e-wide-diploid-3alt.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/e-wide-diploid-3alt.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/e-wide-diploid-3alt.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/e-wide-diploid-3alt.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AAA	AAC	92.64	.	AC=1;AF=0.500;AN=2;DP=20;ExcessHet=0.0000;MLEAC=1;MLEAF=0.500;QD=4.63	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100
+# VERDICT: EQUAL
+====================================================================================================
+# d2-merged-two-het-dense
+# why: axis d in DENSE mode, where GATK really does merge same-position records: both records are het for their own ALT, so the merged emitted list [AAAA, AACA, A] contains a one-base concrete ALT and the guard at :1458 must protect the whole record from the trim
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-dense.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-dense.gatk.vcf --create-output-variant-index false   [exit 3]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-dense.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-dense.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-dense.native.vcf   [exit 0]
+# GATK stderr tail: ker.traverse(VariantLocusWalker.java:154)
+	at org.broadinstitute.hellbender.engine.GATKTool.doWork(GATKTool.java:1119)
+	at org.broadinstitute.hellbender.cmdline.CommandLineProgram.runTool(CommandLineProgram.java:150)
+	at org.broadinstitute.hellbender.cmdline.CommandLineProgram.instanceMainPostParseArgs(CommandLineProgram.java:203)
+	at org.broadinstitute.hellbender.cmdline.CommandLineProgram.instanceMain(CommandLineProgram.java:222)
+	at org.broadinstitute.hellbender.Main.runCommandLineProgram(Main.java:166)
+	at org.broadinstitute.hellbender.Main.mainEntry(Main.java:209)
+	at org.broadinstitute.hellbender.Main.main(Main.java:306)
+Caused by: java.lang.IllegalStateException: Variant input contains more than one variant starting at location: chr1:2-5
+	at org.broadinstitute.hellbender.tools.walkers.GenotypeGVCFsEngine.getVariantSubsetToProcess(GenotypeGVCFsEngine.java:362)
+	at org.broadinstitute.hellbender.tools.walkers.GenotypeGVCFsEngine.callRegion(GenotypeGVCFsEngine.java:128)
+	at org.broadinstitute.hellbender.tools.walkers.GenotypeGVCFs.apply(GenotypeGVCFs.java:324)
+	at org.broadinstitute.hellbender.engine.VariantLocusWalker.lambda$traverse$1(VariantLocusWalker.java:168)
+	... 15 more
+
+# GATK positions: []
+# native positions: ['2']
+# compared positions: [2]
+  GATK rows: <none>
+NATIVE      chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+# VERDICT: DIFFER
+====================================================================================================
+# d2-merged-two-het-default
+# why: axis d in DEFAULT mode: GATK's by-variant traversal regenotypes each input record separately (VariantLocusWalker.traverse + changeTraversalModeToByVariant), so the two records are never merged and the one-base-ALT record is returned untrimmed by the guard
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-default.g.vcf -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-default.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-default.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-default.g.vcf --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/d2-merged-two-het-default.native.vcf   [exit 0]
+  GATK      chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+  GATK      chr1	2	.	AAAA	A	190.46	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+NATIVE      chr1	2	.	AAA	AAC	190.50	.	AC=2;AF=0.500;AN=4;DP=20;ExcessHet=1.7609;MLEAC=2;MLEAF=0.500;QD=4.76	GT:AD:DP:GQ:PL	0/1:0,20:20:99:100,0,100	0/1:0,20:20:99:100,0,100
+# VERDICT: DIFFER
+====================================================================================================
+# x-attrib-block-ref-base
+# why: attribution probe (input REF deliberately disagrees with the reference at this locus: reference 2-5 is CGTA but the record says ACGT).  The block's dense-mode REF therefore discriminates the three candidate sources: FASTA base at POS ('C'), the reverse trim of REF ('A'), or no rewrite ('ACGT')
+# gatk  : /home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/x-attrib-block-ref-base.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/x-attrib-block-ref-base.g.vcf --include-non-variant-sites -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/x-attrib-block-ref-base.gatk.vcf --create-output-variant-index false   [exit 0]
+# native: /home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/.diag/round49/work/x-attrib-block-ref-base.fa -V /home/turing-agents/Documents/fast-gatk/.diag/round49/work/x-attrib-block-ref-base.g.vcf --include-non-variant-sites --gatk-compatible-annotations -O /home/turing-agents/Documents/fast-gatk/.diag/round49/work/x-attrib-block-ref-base.native.vcf   [exit 0]
+# GATK positions: ['2', '3', '4', '5']
+# native positions: ['2']
+# compared positions: [2]
+  GATK      chr1	2	.	ACGT	.	.	.	DP=20	GT:AD	./.:20
+NATIVE      chr1	2	.	C	.	.	.	.	GT:AD:DP:RGQ	./.:20:.:.
+# VERDICT: DIFFER
+====================================================================================================
+EQUAL   p3-nop-triploid-gt
+EQUAL   p4-nop-tetraploid-gt
+EQUAL   p3-nop-guard
+EQUAL   e-wide-diploid-3alt
+DIFFER  d2-merged-two-het-dense
+DIFFER  d2-merged-two-het-default
+DIFFER  x-attrib-block-ref-base
+# 4/7 fixtures byte-identical
