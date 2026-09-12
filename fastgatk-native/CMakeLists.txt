@@ -1579,6 +1579,15 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_reverse_trim_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-reverse-trim-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # GenotypeGVCFs regenotypes a locus only when the merged INFO/DP is positive
+    # (GenotypeGVCFsEngine.java:160 and again at :181, with the depth computed by
+    # ReferenceConfidenceVariantContextMerger.calculateVCDepth()); native used to
+    # publish a fully called variant row for a locus GATK never regenotypes.
+    add_test(NAME fastgatk-genotype-gvcf-depth-gate-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_depth_gate_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-depth-gate-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # Systemic guard: an htslib read failure (-2) must not be mistaken for EOF
     # (-1), which silently truncated output across many tools while exiting 0.
     add_test(NAME fastgatk-malformed-input-fail-loud-oracle

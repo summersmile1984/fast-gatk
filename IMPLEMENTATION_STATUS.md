@@ -716,11 +716,11 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
    ReblockGVCF 的 QUAL/键序/ref-block FILTER、BQSR 60 记录夹具的模型数值差（55/60 行逐字节相同）。
 8. **Mutect2**：14 个 owner 选择站点中 6 处理论易感，但**未能在任何夹具上复现**（44/44 行与 GATK 一致、
    590 owners、跨 5 个 `-L` 起点稳定）——属潜伏风险，非已证缺陷。
-9. **GenotypeGVCFs 缺 GATK `regenotypeVC` 的 `INFO/DP > 0` 前置条件**（第 49 轮新测得，已亲自复测）：
-   输入 `INFO/DP=0` 而 `FORMAT/DP=20` 时，GATK 默认模式**不输出**、dense 模式输出 REF-only 直通行；
-   native 输出完整的变异行（`GenotypeGVCFsEngine.java:160` 的 `&& getAttributeAsInt(DP,0) > 0`
-   与 `:181` 的同一条件都未实现）。属**既有**分歧（行的有无与 trim 无关）。
-   修法需同时决定 dense 直通形状，而 dense 物化本身是未修的结构性缺口，故**未修**；无门禁。
+9. ~~**GenotypeGVCFs 缺 GATK `regenotypeVC` 的 `INFO/DP > 0` 前置条件**~~
+   **已修（第 50 轮，第 32 个已修 bug）**：默认模式不再输出 GATK 不会重新基因分型的位点；
+   门禁 `fastgatk-genotype-gvcf-depth-gate-gatk-oracle`。dense 模式的直通形状仍属未修的物化缺口。
+   同根的**反向**残差（输入无 `INFO/DP` 时 GATK 会发布算出的 `INFO/DP` 与 QD，native 两者都不写）
+   **仍未修、无门禁**，见第 50 轮节末。
 10. **GenotypeGVCFs 对具体记录透传 `INFO/END`**（第 49 轮新测得，已亲自复测）：GATK 因
    `stop == start + REF.length() - 1` 而**不写** END，native 原样透传；trim 生效时该 END 还会过期
    （span 2-4 而 `END=5`）。属**既有**分歧（裁/不裁/守卫三组对照均分歧）。无门禁。
@@ -774,7 +774,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–49 轮增量（累计 **31** 个已证真 bug 已修并上锁）
+## 第 36–50 轮增量（累计 **32** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -788,7 +788,8 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 28 | GATK 兼容 header 的整体顺序 | htsjdk 排序规则；改动前先评估影响面（`c971cf3`） |
 | 29 | GenotypeGVCFs 自身的 `FILTER=LowQual` | 阈值判在**原始 double**上，不是打印出的 QUAL 令牌（`dce568f`） |
 | 30 | 删除归属改为追踪**已发射**等位基因 | 判定为状态记账；顺带修出两处此前未知分歧（含反向）（`f0a8277`） |
-| 31 | GenotypeGVCFs **反向 trim**（本轮的修复） | 见下节 |
+| 31 | GenotypeGVCFs **反向 trim**（第 49 轮） | 见下节 |
+| 32 | GenotypeGVCFs 缺 `INFO/DP > 0` 前置条件（第 50 轮） | 见下文「第 50 轮」一节 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -881,31 +882,87 @@ contig 顺序两边都跟随首个输入；contig 长度冲突两边都报错拒
    （5 参数 builder 不拷贝 filters、`%f` 渲染无穷、字典单例）。这是介于「读源码」与「跑实验」
    之间的第三种证据。
 
-## 收尾基线（第 42 轮，主会话亲自运行）
+## 第 50 轮：GenotypeGVCFs 的 `INFO/DP > 0` 前置条件（第 32 个已修 bug）
 
-**最新基线（第 49 轮，主会话亲自运行）：commit `56e2ea6` + 本轮 reverse-trim 修复（即下一次提交的内容，
-运行时工作树未提交变更 5 项，全部为本轮修复/门禁/证据）上
-OpenMP 305/305（1566.2s）、Serial 305/305（1531.5s），零陈旧告警，
+第 49 轮的对抗性复核发现的「native 把 GATK 根本不重新基因分型的位点也输出了」，
+在本轮先建门禁、再按 GATK 规则修掉。
+
+### 规则（源码逐行核对，非推理）
+
+`GenotypeGVCFsEngine.java:157-174` 的**整个**重新基因分型块（等位基因子集、`:167` 反向 trim、
+以及全部站点注释）只在「记录是变异 **且** 合并后 `INFO/DP > 0`」时才进入：
+
+```java
+if ( originalVC.isVariant() && originalVC.getAttributeAsInt(VCFConstants.DEPTH_KEY,0) > 0 ) {
+    ... calculateGenotypes / finalizeAnnotations / reverseTrimAlleles ...
+} else {
+    result = originalVC;                       // :174 直通
+}
+```
+且 `:181` 再次施加同一深度判据后才注释/发射，故在**非 dense** 模式下直通记录走到 `:198 return null`
+——**该位点一条记录都不输出**。深度取**合并后**记录的值：
+`ReferenceConfidenceVariantContextMerger.calculateVCDepth()`（`:352-360`）在存在 `INFO/DP` 时**只用它**
+（不回退到基因型），否则对每个样本取 `getBestDepthValue()`（有 `MIN_DP` 用 `MIN_DP`，否则用 `DP`）求和，
+并在 `:382` 仅在 `depth > 0` 时发布。
+
+### 实测（主会话亲自跑 pinned GATK 4.6.2.0）
+
+| fixture（默认模式） | GATK | native（修前） |
+| --- | --- | --- |
+| 变异位点 + `INFO/DP=0`、`FORMAT/DP=20`、PL 强杂合 | **无记录** | `chr1 2 . AAA AAC 92.64 … 0/1` |
+| 同上但无 `INFO/DP`、`FORMAT/DP=0` | **无记录** | `chr1 2 . AAA AAC 92.64 … 0/1` |
+| `INFO/DP=0` 而 `MIN_DP=20`（`calculateVCDepth` 优先 INFO/DP） | **无记录** | `… DP=0 … 0/1` |
+| 边界：`INFO/DP=1`（对照） | 输出并（反向）裁剪 | 一致 |
+| `INFO/DP=0` 且 PL 为纯合参考（对照） | 无记录 | 一致（子集已剪掉 ALT） |
+
+dense 模式同一输入下 GATK 的直通形状是 `chr1 2 . AAAA AACA . . DP=0`（`FORMAT` 仅 `GT:AD`、`./.:0,20`）
+外加覆盖位点 3-5 的 `ALT='.'` 行——该臂与未修的「覆盖位点物化」缺口纠缠，**本轮刻意不动**
+（门禁 docstring 里写明了这个边界）。
+
+### 修复与门禁
+
+- 助手 `gatk_merged_record_depth()`（复刻 `calculateVCDepth`）+ `gatk_skips_regenotyping()`，
+  在**两条遍历**的 compute 阶段**最前面**判定（必须在 `apply_gatk_output_allele_subset` 之前：
+  GATK 在该路径上根本不会执行 `recordDeletions()`，故也不能登记删除状态）；
+- 新严格门禁 `fastgatk-genotype-gvcf-depth-gate-gatk-oracle`（5 用例：3 个分歧用例 + 2 个对照，
+  含 `INFO/DP=1` 边界与纯合参考对照）；
+- 既有语料回归风险评估：注册夹具中**没有** `DP=0` 的记录，真实 HC gVCF 的 `INFO/DP` 恒 > 0
+  （真实语料可达性见上一轮报告：165,527 条记录中 0 条命中该形状）。
+
+### 仍然存在的**相邻**分歧（已测，未修，无门禁）
+
+输入**没有** `INFO/DP` 而 `FORMAT/DP=20` 时：GATK 会按 `calculateVCDepth` 算出 20 并**发布** `INFO/DP=20`
+（且 QD=4.63），native 既不发布 `INFO/DP` 也不写 QD。与深度前提条件同根（同一深度计算），
+但方向相反（不是多输出而是少注释）；真实 HC gVCF 恒带 `INFO/DP`，故可达性同样接近 0。
+
+
+## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
+
+**最新基线（第 50 轮，主会话亲自运行）：commit `640678b` + depth-gate 修复
+（即下一次提交的内容；运行时工作树未提交变更 3 项，全部为本轮修复/门禁/文档）上
+OpenMP 306/306（1497.9s）、Serial 306/306（1538.3s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-证据块（可直接复核）：`.diag/regression/20260912-235455/summary.txt`
-（305 = 304 + 本轮新注册的 `fastgatk-genotype-gvcf-reverse-trim-gatk-oracle`）。
+证据块（可直接复核）：`.diag/regression/20260913-003111/summary.txt`
+（306 = 304 + `fastgatk-genotype-gvcf-reverse-trim-gatk-oracle`
++ `fastgatk-genotype-gvcf-depth-gate-gatk-oracle`）。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
+第 49 轮 `640678b` 上 305/305（1566.2s / 1531.5s）；
 `0862251` 上 304/304（1622.6s / 1444.9s，工作树干净）；
 `c971cf3` 上 303/303；`b3cd293` 上 302/302。
-本轮之所以必须重跑，是因为生产代码改了 `genotype_gvcf_tool.cpp`。）
+第 49/50 轮之所以必须重跑，都是因为生产代码改了 `genotype_gvcf_tool.cpp`。）
 
 这条基线的意义：此前数轮的全量结果由委派方运行、我只做了 md5/时序核对；
 自 `c971cf3` 起补上了「最终提交树上由主会话亲自测得」的那一步，因此
-**「305/305 在强制 oracle 存在下成立」这一宣称有同源证据。**
+**「306/306 在强制 oracle 存在下成立」这一宣称有同源证据。**
 
 配套的可信度条件（均已在本会话建立）：
 1. `run_regression.sh` 默认要求 GATK oracle 在场（缺失即响亮失败），
    并只与**最新产物**比较陈旧性（消除假告警）；
 2. 176 个脚本经 `oracle_guard.py` 改为 fail-closed（原可静默降级为「与自身比较」）；
-3. 本会话新注册 24 道严格 GATK 门禁（另有 1 道 `-diagnostic` 门禁以 exit 0 记录差异、
-   刻意不使全量变红），覆盖本会话 31 个修复中的关键行为；
+3. 本会话新注册 25 道严格 GATK 门禁（另有 1 道 `-diagnostic` 门禁以 exit 0 记录差异、
+   刻意不使全量变红），覆盖本会话 32 个修复中的关键行为；
 4. 5 道刻意未注册（`verify_hc_forced_alleles_emission_gate_oracle.py`、
    `verify_reblock_gvcf_triploid_gatk_oracle.py`、
    `verify_genotype_gvcf_dense_materialize_gatk_oracle.py` 等），因其**按设计必须失败**——
@@ -913,14 +970,13 @@ OpenMP 305/305（1566.2s）、Serial 305/305（1531.5s），零陈旧告警，
 
 **仍未达成 1:1**（按剩余体量排序，均已在正文各节记录并可复现）：
 1. dense 模式跨位点记录物化（结构性：需同时改聚合遍历与流式遍历）；
-2. GenotypeGVCFs 缺 `INFO/DP > 0` 前置条件（第 49 轮新测得；默认模式多输出整行，
-   dense 模式的直通形状又落在未修的物化缺口里）；
-3. 多输入 header：**对齐目标已更正**——GATK 拒绝多个 `-V`，故应对齐 `CombineGVCFs` 合并语义；
+2. 多输入 header：**对齐目标已更正**——GATK 拒绝多个 `-V`，故应对齐 `CombineGVCFs` 合并语义；
    实测分歧为样本列顺序（字典序 vs 输入序）与后续输入声明（INFO/FORMAT/FILTER/ALT）丢失；
-4. ReblockGVCF case B（修法已验证但会使现有 trim/gap/NON_REF-AD 断言块不可满足，
+3. ReblockGVCF case B（修法已验证但会使现有 trim/gap/NON_REF-AD 断言块不可满足，
    需先重做其约 25 个派生值）；
-5. 退出码类分歧（空等位基因 `--alleles` GATK exit 3 vs 本实现 exit 0；
-   SAM 文本路径受 htslib `sam_read1_sam` 折叠解析失败为 -1 所限，不可修）。
+4. 退出码类分歧（空等位基因 `--alleles` GATK exit 3 vs 本实现 exit 0；
+   SAM 文本路径受 htslib `sam_read1_sam` 折叠解析失败为 -1 所限，不可修）；
+5. 第 50 轮记下的同根反向残差：输入无 `INFO/DP` 时 GATK 发布算出的 `INFO/DP` 与 QD，native 两者都不写。
 
 此外还有一批**已测量但尚未设门禁**的残差（多 contig 顺序、非 ASCII Description、
 NaN 补集、「同一位点两条记录」、跨位点替换的 REF-only 物化、默认模式 `*`-only 行、

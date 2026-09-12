@@ -2983,6 +2983,66 @@ bool gatk_prefer_pls_row_is_uninformative(const std::vector<int32_t>& pl,
 // the ALT list, PL width, AC/AF/MLEAC/MLEAF vectors and downstream QUAL/QD.
 // Apply the same output-allele boundary after the shared Kokkos AF result and
 // before the ordinary site/standard-annotation passes.
+// GenotypeGVCFs' merged-depth precondition (GATK's regenotypeVC gate).
+//
+// GenotypeGVCFsEngine.java:157-174 enters the whole regenotyping block -- the
+// output-allele subset, the reverse trim at :167 and every site annotation --
+// only for a record that is a variant with a positive merged depth:
+//
+//     if ( originalVC.isVariant() && originalVC.getAttributeAsInt(VCFConstants.DEPTH_KEY,0) > 0 ) {
+//         ... calculateGenotypes / finalizeAnnotations / reverseTrimAlleles ...
+//     } else {
+//         result = originalVC;                       // :174 passthrough
+//     }
+//
+// and :181 applies the same depth test again before anything is annotated or
+// emitted, so that a passthrough record falls through to `return null` at :198
+// unless --include-non-variant-sites is set.
+//
+// The depth is that of the MERGED record, and
+// ReferenceConfidenceVariantContextMerger.calculateVCDepth() (:352-360) returns
+// INFO/DP whenever the key is present -- never falling back to the genotypes --
+// and otherwise sums getBestDepthValue() over the samples, which is MIN_DP when
+// the genotype carries it and DP otherwise.
+std::int64_t gatk_merged_record_depth(const bcf_hdr_t* output_header,
+                                      const Record& record) {
+    int32_t* info_dp = nullptr;
+    int info_dp_count = 0;
+    const auto info_length = bcf_get_info_int32(output_header, record.value, "DP",
+                                                &info_dp, &info_dp_count);
+    const bool has_info_dp = info_length > 0 && info_dp_count >= 1 &&
+        info_dp[0] != bcf_int32_missing && info_dp[0] != bcf_int32_vector_end;
+    std::int64_t depth = has_info_dp ? info_dp[0] : 0;
+    free(info_dp);
+    if (has_info_dp) return depth;
+    for (std::size_t sample = 0; sample < record.dp.size(); ++sample) {
+        const auto usable = [](const int32_t value) {
+            return value != bcf_int32_missing && value != bcf_int32_vector_end &&
+                   value >= 0;
+        };
+        const auto min_dp = sample < record.min_dp.size() ? record.min_dp[sample]
+                                                          : bcf_int32_missing;
+        const auto dp = record.dp[sample];
+        const auto value = usable(min_dp) ? min_dp : (usable(dp) ? dp : bcf_int32_missing);
+        if (usable(value)) depth += value;
+    }
+    return depth;
+}
+
+// True when GATK would not regenotype this locus at all, i.e. when native must
+// publish nothing for it in the default (non dense) traversal.  The dense arm
+// of the same rule is GATK's passthrough record (FORMAT `GT:AD` hom-ref no-call
+// with INFO/DP=0) plus ALT='.' rows for the covered positions; that shape is
+// entangled with the tracked covered-locus materialization gap and is left
+// untouched here on purpose.
+bool gatk_skips_regenotyping(const bcf_hdr_t* output_header, const Record& record,
+                             const Options& options) {
+    if (!options.gatk_annotation_compatibility) return false;
+    if (options.include_non_variant_sites) return false;
+    if (record.alleles.size() < 2) return false;  // originalVC.isVariant()
+    return gatk_merged_record_depth(output_header, record) <= 0;
+}
+
 // GenotypeGVCFs' reverse allele trim (GATK's reverseTrimAlleles).
 //
 // GenotypeGVCFsEngine.java:160-169 regenotypes a locus, then rewrites the
@@ -6342,6 +6402,18 @@ int run_streaming_genotype_gvcf(Options& options,
             },
             [&](GenotypeDecoded decoded) -> std::optional<GenotypeComputed> {
                 auto record = std::move(decoded.record);
+                if (gatk_skips_regenotyping(output_header, record, options)) {
+                    // GenotypeGVCFsEngine.java:160 sends a variant record whose
+                    // merged INFO/DP is not positive to the passthrough arm at
+                    // :174, and :181 then rejects the locus because the depth
+                    // test fails again; the default traversal therefore emits no
+                    // record for it, even with a confident call in the
+                    // genotypes.  No deletion is recorded either, because GATK
+                    // never reaches recordDeletions() on this path.
+                    bcf_destroy(record.value);
+                    record.value = nullptr;
+                    return std::nullopt;
+                }
                 std::vector<double> posterior_priors;
                 annotate_num_discovered_alleles(output_header, record, options);
                 (void)apply_gatk_max_alternate_alleles(output_header, record, options);
@@ -7062,6 +7134,18 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
             },
             [&](GenotypeDecoded decoded) -> std::optional<GenotypeComputed> {
                 auto record = std::move(decoded.record);
+                if (gatk_skips_regenotyping(output_header, record, options)) {
+                    // GenotypeGVCFsEngine.java:160 sends a variant record whose
+                    // merged INFO/DP is not positive to the passthrough arm at
+                    // :174, and :181 then rejects the locus because the depth
+                    // test fails again; the default traversal therefore emits no
+                    // record for it, even with a confident call in the
+                    // genotypes.  No deletion is recorded either, because GATK
+                    // never reaches recordDeletions() on this path.
+                    bcf_destroy(record.value);
+                    record.value = nullptr;
+                    return std::nullopt;
+                }
                 std::vector<double> posterior_priors;
                 annotate_num_discovered_alleles(output_header, record, options);
                 (void)apply_gatk_max_alternate_alleles(output_header, record, options);
