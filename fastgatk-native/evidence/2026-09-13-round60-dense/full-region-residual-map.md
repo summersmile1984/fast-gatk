@@ -262,3 +262,25 @@ reference_block / alleles / allele_count`，一次运行即可确定来源；
 （前者用 `record.pos`，后者用 `records[index].pos`），连同另两处一起跑一次即可定位来源；
 随后把抑制挂到正确判据上并复验（预期整段残差 84 → 73）。第 68 轮的排除结论
 （这些行 span=0/mono=0/block=0）不受影响。
+
+## 第 70 轮：创建点插桩=第二次失败（标记落在变量不可见的作用域），结论与建议
+
+按第 69 轮记录的锚点注入四处标记，编译仍失败，且错误全部落在**注入的标记行**上：
+
+```
+6606:75: error: 'record' was not declared in this scope
+7315:74: error: no match for 'operator[]' (std::vector<Record> and <unresolved overloaded function type>)
+```
+
+说明这两处的「调用首行」锚点实际位于**变量不可见的嵌套作用域/续行**上（两条
+`materialize_reference_only(...)` 都是跨行调用，匹配到的行并不是语句起始作用域）。
+
+**建议**：下一次不要靠文本锚点盲插，改为**用 `nm`/`gdb` 之外的两条更稳的路子**任一：
+1. 直接读代码把两处 `materialize_reference_only` 调用的**完整作用域**读清楚（两条调用前后各 ±10 行），
+   再决定标记插在哪一行；或
+2. 反过来做——**不改代码**，用「哪一处被调用」的侧面证据：
+   把 `materialize_reference_only()` 的函数体第一行打标记（函数级插桩，作用域一定正确，
+   只是无法区分调用者），配合 `-L` 窗口逐步缩小范围（例如把区间缩到只含 10008965-10008970）。
+
+函数级插桩是**零风险**的一步（作用域一定正确），建议下一轮先用它确认「这些行确实由
+`materialize_reference_only()` 产生」，再用 ±10 行读取把调用者钉死。
