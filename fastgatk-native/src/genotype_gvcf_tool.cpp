@@ -4502,7 +4502,65 @@ int write_vcf_text_line(htsFile* output, const std::string& line) {
 constexpr const char* kGatkLowQualFilterLine =
     "##FILTER=<ID=LowQual,Description=\"Low quality\">";
 
-std::string gatk_compatible_header_text(const std::string& formatted) {
+// HTSlib's synthetic PASS declaration, injected into every header it parses.
+constexpr const char* kHtslibSyntheticPassFilterLine =
+    "##FILTER=<ID=PASS,Description=\"All filters passed\">";
+
+// GATK's GenotypeGVCFs propagates the input header's own ##FILTER lines
+// verbatim: the writer seeds its header set from the input's lines
+// (`final Set<VCFHeaderLine> headerLines = new LinkedHashSet<>(
+// inputVCFHeader.getMetaDataInInputOrder())`, GenotypeGVCFsEngine.java:395) and
+// the only line it removes is the GVCF block band (`headerLines.removeIf(
+// vcfHeaderLine -> vcfHeaderLine.getKey().startsWith(GVCF_BLOCK))`, :398-399),
+// so a `##FILTER=<ID=PASS,...>` the input declares is written back out with the
+// input's own text.  GATK never synthesizes that line: neither the pinned
+// gatk-package jar nor htsjdk 4.2.0 contains the string "All filters passed",
+// and GATK's own PASS line (GATKVCFHeaderLines.java:90, "Site contains at least
+// one allele that passes filters") is used only by VQSR.
+//
+// HTSlib cannot report the input's line.  bcf_hdr_parse() injects a synthetic
+// `##FILTER=<ID=PASS,Description="All filters passed">` record as the second
+// record of EVERY header it parses -- "The filter PASS must appear first in the
+// dictionary" (third_party/htslib-build/htslib-src/vcf.c:1271-1276) -- and
+// bcf_hdr_add_hrec()/bcf_hdr_register_hrec() then destroy any later ##FILTER
+// record whose ID is already registered (vcf.c:1092-1112), so the parsed header
+// carries HTSlib's canonical text whether or not the input declared PASS, and
+// loses the input's own text when it did.  Measured: an input with no ##FILTER
+// line at all still yields that line from bcf_hdr_format(), and an input
+// declaring `Description="Some other PASS text"` yields the canonical text.
+// Reading the input file's own text back is therefore the only way to tell
+// "the input declared PASS" from "HTSlib injected it".
+//
+// Returns an empty string when the input has no readable text header (no input,
+// stdin, BCF, an unreadable or GenomicsDB-expanded path), in which case the
+// caller falls back to the previous behaviour of dropping the synthetic line.
+std::string input_pass_filter_line(const std::string& path) {
+    if (path.empty() || path == "-") return {};
+    htsFile* input = hts_open(path.c_str(), "r");
+    if (input == nullptr) return {};
+    std::string found;
+    // A BCF header is binary and its text form is HTSlib's reconstruction
+    // anyway, so only a text-format input can answer this question.
+    if (input->format.format == vcf) {
+        kstring_t line{0, 0, nullptr};
+        while (hts_getline(input, '\n', &line) >= 0) {
+            if (line.l == 0) continue;
+            const std::string text(line.s, line.l);
+            if (text.rfind("#CHROM", 0) == 0) break;
+            if (text.rfind("##FILTER=<ID=PASS,", 0) == 0 ||
+                text.rfind("##FILTER=<ID=PASS>", 0) == 0) {
+                found = text;
+                break;
+            }
+        }
+        free(line.s);
+    }
+    hts_close(input);
+    return found;
+}
+
+std::string gatk_compatible_header_text(const std::string& formatted,
+                                        const std::string& input_pass_filter) {
     std::vector<std::string> lines;
     std::size_t begin = 0;
     while (begin <= formatted.size()) {
@@ -4525,7 +4583,12 @@ std::string gatk_compatible_header_text(const std::string& formatted) {
         // VCF, even though HTSlib's duplicated input header would otherwise
         // retain them verbatim.
         if (line.rfind("##GVCFBlock", 0) == 0) continue;
-        if (line == "##FILTER=<ID=PASS,Description=\"All filters passed\">") continue;
+        // HTSlib's own synthetic PASS declaration, not the input's: bcf_hdr_parse()
+        // inserts `##FILTER=<ID=PASS,Description="All filters passed">` into every
+        // header it parses (see input_pass_filter_line() below), so this line is
+        // present here whether or not the input declared it.  The input's own
+        // PASS line, when it has one, is re-added from the raw input text.
+        if (line == kHtslibSyntheticPassFilterLine) continue;
         if (line.rfind("##INFO=<ID=RCQ,", 0) == 0 ||
             line.rfind("##INFO=<ID=RCP,", 0) == 0) continue;
         if (line.rfind("##INFO=", 0) == 0) {
@@ -4570,6 +4633,15 @@ std::string gatk_compatible_header_text(const std::string& formatted) {
     std::vector<std::string> filter_lines;
     for (const auto& line : retained)
         if (line.rfind("##FILTER=", 0) == 0) filter_lines.push_back(line);
+    // The input's own PASS declaration, when the input file really has one.  It
+    // is read from the raw input text because HTSlib replaced it with its
+    // synthetic record (input_pass_filter_line() above); GATK keeps it verbatim,
+    // so it goes back into the group with the input's own Description and is
+    // ordered with the rest by the sort below.
+    if (!input_pass_filter.empty() &&
+        std::find(filter_lines.begin(), filter_lines.end(), input_pass_filter) ==
+            filter_lines.end())
+        filter_lines.emplace_back(input_pass_filter);
     if (std::find(filter_lines.begin(), filter_lines.end(), kGatkLowQualFilterLine) ==
         filter_lines.end())
         filter_lines.emplace_back(kGatkLowQualFilterLine);
@@ -5601,7 +5673,10 @@ int run_streaming_genotype_gvcf(Options& options,
             if (bcf_hdr_format(output_header, 0, &formatted_header) < 0 ||
                 write_vcf_text_line(output, gatk_compatible_header_text(
                     std::string(formatted_header.s == nullptr ? "" : formatted_header.s,
-                                formatted_header.l))) != 0) {
+                                formatted_header.l),
+                    input_paths.empty()
+                        ? std::string{}
+                        : input_pass_filter_line(input_paths.front()))) != 0) {
                 free(formatted_header.s);
                 bcf_close(output);
                 output_file = nullptr;
@@ -6421,7 +6496,10 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
             if (bcf_hdr_format(output_header, 0, &formatted_header) < 0 ||
                 write_vcf_text_line(output, gatk_compatible_header_text(
                     std::string(formatted_header.s == nullptr ? "" : formatted_header.s,
-                                formatted_header.l))) != 0) {
+                                formatted_header.l),
+                    input_paths.empty()
+                        ? std::string{}
+                        : input_pass_filter_line(input_paths.front()))) != 0) {
                 free(formatted_header.s);
                 bcf_close(output);
                 throw std::runtime_error("cannot write GATK-compatible VCF header");

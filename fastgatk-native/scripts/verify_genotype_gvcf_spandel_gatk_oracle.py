@@ -241,6 +241,47 @@ compatibility header deliberately preserves input order and its own INFO rank
 list rather than reproducing htsjdk's fully sorted header, and it never writes
 ``##GATKCommandLine`` (see ``header_observations`` in each case's result).
 
+``##FILTER=<ID=PASS,...>`` is propagated, not generated
+-------------------------------------------------------
+The reserved ``PASS`` filter is not a special case for GenotypeGVCFs.  The
+writer's header set is seeded from the input header's own lines --
+
+    final Set<VCFHeaderLine> headerLines = new LinkedHashSet<>(inputVCFHeader.getMetaDataInInputOrder());
+                                                    // GenotypeGVCFsEngine.java:395
+
+-- and the only line the tool removes is the GVCF block band
+(``headerLines.removeIf(vcfHeaderLine -> vcfHeaderLine.getKey().startsWith(GVCF_BLOCK))``,
+``:398-399``); every addition afterwards is ``##INFO``/``##FORMAT`` except the
+LowQual filter at ``:416``.  So an input ``##FILTER=<ID=PASS,Description="All
+filters passed">`` is written back **verbatim**, whatever its ``Description``
+says, and its position inside the group follows htsjdk's sorted emission
+(``LowQual`` < ``PASS`` < ``q10``).
+
+This is *GATK propagation*, not an htsjdk rule and not htsjdk synthesis: the
+byte string ``All filters passed`` does not occur in the pinned
+``gatk-package-4.6.2.0-local.jar`` nor in ``htsjdk-4.2.0.jar``, htsjdk's
+``VCFHeader`` never references ``VCFConstants.PASSES_FILTERS_v4``, and GATK's
+own PASS line (``GATKVCFHeaderLines.java:90``, used only by VQSR and
+``LabeledVariantAnnotationsWalker.java:317``) carries a different description
+(``"Site contains at least one allele that passes filters"``).  Measured on this
+gate's fixture matrix (``.diag/filter-pass-probe-before.log``): an input with no
+``##FILTER`` line at all produces **no** PASS line in GATK's output, which
+settles that nothing synthesizes it.
+
+Pinned GATK 4.6.2.0, measured (``##FILTER`` group, in order, with the whole
+header index of the first element):
+
+    input: (none)                       -> [LowQual]                  @2
+    input: PASS "All filters passed"    -> [LowQual, PASS]            @2
+    input: PASS "Some other PASS text"  -> [LowQual, PASS(that text)] @2
+    input: PASS + q10                   -> [LowQual, PASS, q10]       @2
+    input: q10 + PASS (input order)     -> [LowQual, PASS, q10]       @2
+    input: LowQual only                 -> [LowQual]                  @2
+    input: AAA, LowQual, q10, PASS      -> [AAA, LowQual, PASS, q10]  @2
+
+The group is therefore asserted as a whole **ordered list**, so a case fails
+both when a line is missing and when it is ordered differently.
+
 Scope and comparison contract
 -----------------------------
 Pinned GATK and native run with identical arguments on the same plain
@@ -307,6 +348,34 @@ HEADER_WITH_LOWQUAL_FILTER = HEADER.replace(
 # is the only one the input declared.
 HEADER_WITH_Q10_FILTER = HEADER.replace(
     "##FORMAT=<ID=GT", '##FILTER=<ID=q10,Description="Quality below 10">\n'
+                       "##FORMAT=<ID=GT")
+
+# The input declares the reserved ``PASS`` filter.  This is a header-propagation
+# case, not a filter-generation case: GATK's output header is built as
+# ``new LinkedHashSet<>(inputVCFHeader.getMetaDataInInputOrder())``
+# (GenotypeGVCFsEngine.java:395) and nothing removes a ``FILTER`` line but
+# ``GVCFBlock`` (:398-399), so whatever the input declared -- PASS included -- is
+# written back out verbatim.  ``All filters passed`` is not a GATK or htsjdk
+# constant (neither the pinned gatk-package jar nor htsjdk 4.2.0 contains that
+# byte string), so the line and its text can only come from the input.
+HEADER_WITH_PASS_FILTER = HEADER.replace(
+    "##FORMAT=<ID=GT", '##FILTER=<ID=PASS,Description="All filters passed">\n'
+                       "##FORMAT=<ID=GT")
+
+# The same declaration with a DIFFERENT Description.  GATK keeps the input's text
+# verbatim -- it neither normalizes nor replaces a ``PASS`` line, because neither
+# it nor htsjdk ever synthesizes one (only GenotypeGVCFsEngine.java:416's LowQual
+# line is added, and that is a different ID).
+HEADER_WITH_NONSTANDARD_PASS_FILTER = HEADER.replace(
+    "##FORMAT=<ID=GT", '##FILTER=<ID=PASS,Description="Some other PASS text">\n'
+                       "##FORMAT=<ID=GT")
+
+# PASS together with a non-reserved filter: the whole group must be reproduced in
+# htsjdk's sorted order, i.e. LowQual (added by the tool) first, then PASS, then
+# q10 -- measured, see the docstring section on the output header's FILTER lines.
+HEADER_WITH_PASS_AND_Q10_FILTER = HEADER.replace(
+    "##FORMAT=<ID=GT", '##FILTER=<ID=PASS,Description="All filters passed">\n'
+                       '##FILTER=<ID=q10,Description="Quality below 10">\n'
                        "##FORMAT=<ID=GT")
 
 # GenotypeGVCFsEngine.java:416 + GATKVCFHeaderLines.java:89 +
@@ -899,6 +968,57 @@ CASES = [
                "when it is appended at the wrong place in the group",
         "body": STAR_ONLY_COVERED_RECORD,
         "header": HEADER_WITH_Q10_FILTER,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
+        "case": "header-filter-line-with-input-pass-declaration",
+        "why": "THE PASS CASE.  The input declares the reserved "
+               "`##FILTER=<ID=PASS,Description=\"All filters passed\">`.  GATK "
+               "KEEPS it: the writer's header starts from the input's own "
+               "metadata (`new LinkedHashSet<>(inputVCFHeader."
+               "getMetaDataInInputOrder())`, GenotypeGVCFsEngine.java:395) and "
+               "the only removal is the GVCFBlock strip at :398-399, so the line "
+               "is written back verbatim; the only filter GATK adds is LowQual "
+               "(:416).  htsjdk does not synthesize a PASS line either (the byte "
+               "string `All filters passed` occurs in neither the pinned "
+               "gatk-package jar nor htsjdk 4.2.0), so the text proves "
+               "propagation rather than generation.  Measured group, in order: "
+               "[LowQual, PASS].",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "header": HEADER_WITH_PASS_FILTER,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
+        "case": "header-filter-line-with-nonstandard-pass-description",
+        "why": "the same case with a non-standard Description.  GATK keeps the "
+               "input's text byte for byte -- it does not replace or normalize a "
+               "PASS declaration, because it never generates one at all "
+               "(GenotypeGVCFsEngine.java:395 + :416).  This case separates "
+               "'propagate the input's PASS line' from 'emit a canonical PASS "
+               "line', which the standard-description case alone could not "
+               "distinguish.  Measured group, in order: "
+               "[LowQual, PASS(\\\"Some other PASS text\\\")].",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "header": HEADER_WITH_NONSTANDARD_PASS_FILTER,
+        "args": [],
+        "gated": True,
+        "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
+    },
+    {
+        "case": "header-filter-line-with-pass-and-other-filter",
+        "why": "PASS together with an unrelated filter.  The whole group is "
+               "propagated and htsjdk emits its header in sorted order, so the "
+               "measured GATK group is [LowQual, PASS, q10] at indices 2-4: "
+               "LowQual first because the tool adds it (:416) and 'L' < 'P' < "
+               "'q', and PASS before q10 for the same reason.  The order is the "
+               "assertion here, not just the set -- dropping only the PASS line "
+               "leaves [LowQual, q10], which this case must reject.",
+        "body": STAR_ONLY_COVERED_RECORD,
+        "header": HEADER_WITH_PASS_AND_Q10_FILTER,
         "args": [],
         "gated": True,
         "expect": [GATK_DEL_UPSTREAM_LOCUS_ROW],
