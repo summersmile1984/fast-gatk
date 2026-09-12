@@ -243,3 +243,22 @@ reference_block / alleles / allele_count`，一次运行即可确定来源；
 各打一个不同的标记（解码阶段的块展开、`split_reference_blocks_at_variants()` 的分段、
 分组阶段的 `materialize_reference_only()` 调用），一次运行即可看出这些行由哪一处产生；
 确认后再把抑制挂到正确判据上（预期整段残差 84 → 73）。插桩已回退。
+
+## 第 69 轮：创建点插桩的**尝试失败**（注入的标记在其中一个调用点编译不过），锚点已记下
+
+按第 68 轮的计划在三个创建点注入标记，编译报错：
+`genotype_gvcf_tool.cpp:6606: 'record' was not declared in this scope`。
+原因：两个 `materialize_reference_only(...)` 调用点的参数名不同——正确锚点为
+
+| 位置 | 实际写法 |
+| --- | --- |
+| `:6604`（分组阶段，含具体记录变量） | `materialize_reference_only(output_header, record, options.gatk_annotation_compatibility);` |
+| `:7311`（另一分组分支） | 形参是 `records[index]`，**不是** `record`（故用 `record.pos` 的标记在此处编译失败） |
+
+其余两个创建点（解码阶段的逐坐标展开 `Record expanded = staged;`、`split_reference_blocks_at_variants()`
+里的 `split.reference_block = true;`）注入成功且能编译。
+
+**下一步（锚点已给全，可直接照做）**：在 `:6604` 与 `:7311` 分别用各自的变量名注入标记
+（前者用 `record.pos`，后者用 `records[index].pos`），连同另两处一起跑一次即可定位来源；
+随后把抑制挂到正确判据上并复验（预期整段残差 84 → 73）。第 68 轮的排除结论
+（这些行 span=0/mono=0/block=0）不受影响。
