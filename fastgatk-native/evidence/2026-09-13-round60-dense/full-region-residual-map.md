@@ -284,3 +284,28 @@ reference_block / alleles / allele_count`，一次运行即可确定来源；
 
 函数级插桩是**零风险**的一步（作用域一定正确），建议下一轮先用它确认「这些行确实由
 `materialize_reference_only()` 产生」，再用 ±10 行读取把调用者钉死。
+
+## 第 71 轮：C/E 来源=第四次未命中，给出当前最稳的定位手段
+
+又试了「输出等位基因子集里 `uncovered` 的 REF-only 物化分支」这一假设（在该分支打标 + 抑制），
+**整段残差仍为 84，C/E 一行未变**。至此 C/E 的候选来源逐一被排除：
+
+| 假设 | 轮次 | 结果 |
+| --- | --- | --- |
+| `materialized_spanning_locus`（跨位点物化行） | 66 | ✗ 打标后无变化 |
+| `finalized_monomorphic_ref`（含早退出口） | 66 | ✗ |
+| 解码阶段块逐坐标展开 | 67 | ✗（且汇合点插桩实测 span=0/mono=0/block=0） |
+| `split_reference_blocks_at_variants()` 分段 | 69/70 | 未能安全插桩（锚点作用域问题） |
+| 子集内 `uncovered` REF-only 物化分支 | 71 | ✗ |
+
+**当前最稳的定位手段（下一步，作用域一定正确）**：把标记打在**编码器接收处**
+（`[&](GenotypeComputed computed)` 或 `[&](GenotypeEncoded encoded)` 分支的第一行）——
+那里 `computed.record` 一定在作用域内，打印
+`pos / materialized_spanning_locus / materialized_reference_only / finalized_monomorphic_ref /
+reference_block / alleles / INFO 键列表`；一次 11 坐标的小窗口运行即可看到这些行在**输出时刻**的
+全部状态（本会话已有 `FASTGATK_DEBUG_SUBSET` / `FASTGATK_DEBUG_QD` / `FASTGATK_DEBUG_MAT` 三个
+同类插桩先例，都能编译运行）。查询器插桩在本代码库里被反复证明比「猜创建点」可靠。
+
+**注意**：第 68 轮汇合点（抑制器入口）的插桩已给出 `span=0 mono=0 block=0 alleles=1`，
+说明这些行在到达抑制器时**三个标志全为 0**；因此**要么**它们从未被打标，**要么**标志在中途被清
+（例如 `reference_block = false` 这类赋值）。编码器处的插桩会顺带回答这个问题。
