@@ -1073,3 +1073,62 @@ if (bcf_update_format_int32(output_header, record.value, "RGQ", rgq.data(), ...)
 整段跑一次、grep 这 3 个 POS：命中即确认；未命中再用同样方式把其余候选（`:1386`/`:1457`/`:1753-1801`/
 `:1860-1927`）逐个二分（每处一个标记，一次运行可见全部）。确认后按 GATK 的
 `0/0` + RGQ=99 补齐，预期该类 3 行消失（残差 81 → 78）。
+
+### 第 103 轮续：`(9,)` 类根因已定位到函数与判据（输入侧证据）
+
+`(9,)` 3 行（10008964 / 10008965 / 10076991）的正确位置已确认是
+`materialize_gatk_monomorphic_ref_call()`（`src/genotype_gvcf_tool.cpp:2804`），关键代码：
+
+```cpp
+std::vector<int32_t> rgq(sample_count, bcf_int32_missing);   // :2821
+if (record.source_has_gq)                                     // :2829
+    bcf_get_format_int32(output_header, record.value, "GQ", &source_gq, &source_gq_count);
+...
+const auto gq = source_gq != nullptr && sample < source_gq_count
+    ? source_gq[sample] : bcf_int32_missing;                  // :2836
+if (depth <= 0 || gq == bcf_int32_missing || gq == vector_end) continue;   // :2838
+if (gq > 0)                                                   // :2840  <-- 判据
+    for (int copy = 0; copy < ploidy; ++copy) gt[...] = bcf_gt_unphased(0);
+rgq[sample] = gq;                                             // :2844
+dp[sample] = depth;                                           // :2845
+any_rgq = true;                                               // :2846
+```
+
+**观测到的输出形状与这段代码自洽且唯一**：`./.:34:0` 要求 `depth > 0`（34）、`gq == 0`
+（故 `:2838` 的 `continue` 未命中、`rgq` 被写成 0）、但 `gq > 0` 为假（故 GT 保持
+`bcf_gt_missing` → `./.`）。即 **走到了 `:2844-2846`，却在 `:2840` 处不满足**——只有
+`gq == 0` 能同时产生这三个观测。
+
+**输入侧（GATK 自己的 `expected.testGVCFMode.gatk4.g.vcf`）在同一坐标的实测**：
+
+| 位置 | 覆盖它的输入记录 | 该记录 sample |
+|---|---|---|
+| 10008964/10008965 | `POS=10008952 REF=CACACACACACACA ALT=C,CCA,CCACACACACA,CCACACACACACA,<NON_REF>`（REF 跨 10008952–10008965，**下一个记录从 10008966 才开始**） | `GT=2/4, AD=1,3,14,5,11,0, DP=34, GQ=99, SB=1,0,25,8` |
+| 10076991 | `POS=10076989 REF=CAA ALT=C,CA,CAAA,<NON_REF>`（REF 跨 10076989–10076991，下一个记录从 10076992 开始） | `GT=2/3, AD=7,4,13,7,0, DP=41, GQ=31, SB=4,3,12,12` |
+
+两条独立结论：
+1. 这两个坐标**正是"落在某条记录 REF 跨度内、但不是记录起点"的位置**，与
+   `materialize_spanning_loci()` 的物化条件一致，`record.materialized_spanning_locus` 应为真。
+2. 10008952 那条记录的 `DP=34`、`GQ=99` 与 GATK 输出该行的 `0/0:34:99` **逐字段相等**——
+   说明 GATK 对这类物化行的规则是 **继承来源记录的 DP 与 GQ，并把 GT 写成 hom-ref `0/0`**；
+   而 native 的 `DP=34` 也对上了（`:2845` 成功），只有 `GQ` 读成了 **0**、GT 因此没转 hom-ref。
+
+**因此根因只剩两个互斥可能，一次插桩即可判定**：
+- (A) `:2830` 的 `bcf_get_format_int32(..., record.value, "GQ", ...)` 读的是**已被前序阶段改写过的
+  输出记录**（GQ 此时已是 0），而 `source_has_gq` 为真——于是 `gq == 0`，完全复现观测。
+  修法：在 GQ 被清除前缓存来源 GQ（或改读来源向量的 `record.gq`）。
+- (B) `source_gq` 读到了正确值但该 sample 的 GQ 本来就是 0；若如此则是 `:2840` 的 `gq > 0`
+  判据与 GATK 不一致（`:2824` 的注释已指出 GATK 的依据是 **GQ 的存在性**而非 `> 0`），
+  修法即把 `gq > 0` 改为 `gq != missing`。
+
+**插桩方案（一次运行定案）**：在 `:2832` 循环内、`:2838` 之前按 POS 打印
+`pos / allele_count / materialized_spanning_locus / finalized_monomorphic_ref / source_has_gq /
+source_gq_count / source_gq[sample] / min_dp / dp / gq`，整段跑一次并 grep 这 3 个 POS。
+注意 **`record.pos` 是 0-based**（文本 POS 才是 1-based），grep 时别用错。
+
+**每行值不同，需逐行核对**：10008964/10008965 的来源是 `DP=34/GQ=99`，而 10076991 的来源是
+`DP=41/GQ=31`；若 GATK 在 3 行上打印的并非同一个 `34/99`，则"继承来源 DP/GQ"这条规则要按行区分，
+插桩输出里一并打印 GATK 侧对应行以对拍。
+
+预期收益：该类 3 行消失（残差 81 → 78）；若同一函数也是 `star/refonly (4,5,6,7,8,9)` 那 30 行的
+成因，收益更大——插桩时把 `-` 这三行之外再 grep 一条 `star/refonly` 的 POS 一起看。
