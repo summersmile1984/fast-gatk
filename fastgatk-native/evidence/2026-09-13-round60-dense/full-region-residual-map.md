@@ -1712,3 +1712,55 @@ QD 的零符号（10012573/10068159 等）是同一个量派生出来的（`QD =
 块+跨接变异的样本级合并（30 行），两者的缺口清单已在第 108 轮列全。
 
 **本轮未改生产代码**（插桩字段与打印已回滚，两后端重建，复测 73 / only-GATK=[] / only-native=[]）。
+
+## 第 112 轮：把验证面从"语料"扩到"**选项轴**"，立刻抓到 GQ 重算缺陷（bug 49）
+
+第 109 轮换语料抓到了两个文本层缺陷；本轮再把验证面从"输入语料"扩到"**命令行选项**"：
+在同一/另一份真实语料上跑 `--max-alternate-alleles`、`--annotate-with-num-discovered-alleles`、
+`--sample-ploidy`、`--only-output-calls-starting-in-intervals`、`--no-use-new-qual-calculator`
+等变体，与 GATK 逐字节比对。
+
+### 结果一览（第一版，仅在双工具都产出时才比对）
+| 变体 | 结果 |
+| --- | --- |
+| `--annotate-with-num-discovered-alleles`（chr20 语料） | differ **0** ✓ |
+| `--max-alternate-alleles 2`（YRI 语料） | differ **0** ✓ |
+| **`--max-alternate-alleles 2`（chr20 语料）** | differ **2** ✗ → 修后 **0** ✓（见下） |
+| `--sample-ploidy 1` | **native 退出码 2**，GATK 正常 ⇒ 单倍体支持缺失（**能力缺口，记在案**）|
+| `--only-output-calls-starting-in-intervals` / `--no-use-new-qual-calculator` | GATK 侧退出码 3/1（需要配套参数）⇒ 本轮未能测得 |
+
+### bug 49：等位基因子集后 **GQ 未重算**（也没有 99 上限）
+```
+POS=10002458  GATK  1/2:0,6,6:18:**82**:2172,655,493,249,0,82
+              NATIV 1/2:0,6,6:18:** 9**:2172,655,493,249,0,82     ← PL 完全一致，只有 GQ 错
+```
+GATK 的 `AlleleSubsettingUtils.subsetAlleles()` 会用**子集后的 PL 行**重建每个保留的基因型，
+于是标量 GQ 也被重算：`GQ = min(99, 次小 PL − 最小 PL)`（该行次小/最小 = 82/0 ⇒ 82 ✓）。
+native 的 `apply_gatk_max_alternate_alleles()` 只做 `remap_record_to_allele_union` +
+把被丢弃基因型的 GQ 置 missing + 把 PL 行归一到最小 0，**没有重算 GQ** ⇒ 保留了子集前的 9 ✗。
+
+另两例给出上限证据：`1717,539,803,595,0,533`（次小−最小 = 533）与 `650,163,340,134,0,106`（=106）
+GATK 都发布 **99** ⇒ 重算结果必须 **cap 99** ✓（首版未加 cap，这两行反而从"恰好正确"变成错误，
+加 cap 后归零）。
+
+修复：在 `apply_gatk_max_alternate_alleles()` 里、PL 归一到最小 0 **之后**，
+对每个仍有调用的样本按子集 PL 行重算 `GQ = min(99, 次小 − 最小)`（被丢弃调用保持 missing）。
+
+### 实测效果
+| 参照 | 修复前 | 修复后 |
+| --- | --- | --- |
+| chr20 语料 `--max-alternate-alleles 2` | 2 行差异 | **0 / 252 行** ✓ |
+| YRI 语料 `--max-alternate-alleles 2` | 0 | 0 ✓（未回归）|
+| chr20 语料 dense 整段 | 73 | **73** ✓（未回归）|
+| YRI 语料 dense 整段 | 81 | **81** ✓（未回归）|
+
+门禁 `fastgatk-genotype-gvcf-independent-corpus-gatk-oracle` 新增第三组断言：
+两个语料的 `--max-alternate-alleles 2` 必须**整行逐字节一致**（252 / 300 行 + 行数对照）。
+
+### 测量纪律（本轮踩到并已纠正）
+第一版批量脚本把 native 的输出先写进了"GATK 输出路径"，GATK 那一步失败（退出码 2）时
+`$G` 仍是 native 的输出 ⇒ 得到"differ=0"的**假阳性**。教训：**比对前必须先确认被比对的另一方
+真的产出了文件**（门禁脚本里的 `run()` 正是因此会 raise，第一版手工脚本缺少这一步）。
+该假阳性已作废并撤回，未进入任何文档结论；GATK 对该 ReblockGVCF 夹具报的是
+`Input files reference and features have incompatible contigs: No overlapping contigs found`
+（参考是 `20`、夹具是 `chr20`，仓库里没有 `chr20` 命名的参考）⇒ 该夹具不可用。

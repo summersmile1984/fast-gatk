@@ -158,6 +158,43 @@ def main() -> int:
                 "differing": len(differing),
             }
 
+        # Third axis: --max-alternate-alleles subsets a multiallelic record, where
+        # GATK's AlleleSubsettingUtils.subsetAlleles() rebuilds every retained
+        # genotype from the SUBSET PL row and caps the recomputed GQ at 99.
+        # Measured byte-identical on both corpora (chr20 252 rows, YRI 300 rows);
+        # before the fix chr20 differed in GQ (9 vs GATK's 82 at 10002458).
+        chr20_source = root / ("gatk-source/src/test/resources/org/broadinstitute/"
+                               "hellbender/tools/haplotypecaller/"
+                               "expected.testGVCFMode.gatk4.g.vcf")
+        for corpus, expected, label in ((chr20_source, 252, "chr20"),
+                                        (source, 300, "yri")):
+            gatk_vcf = work / f"maxalt-gatk-{label}.vcf"
+            native_vcf = work / f"maxalt-native-{label}.vcf"
+            run([str(java), "-Xmx4g", "-jar", str(gatk), "GenotypeGVCFs",
+                 "-R", str(reference), "-V", str(corpus),
+                 "--max-alternate-alleles", "2",
+                 "-O", str(gatk_vcf), "--create-output-variant-index", "false"])
+            run([str(native), "-R", str(reference), "-V", str(corpus),
+                 "--max-alternate-alleles", "2", "--gatk-compatible-annotations",
+                 "-O", str(native_vcf)])
+            gatk_rows = read_rows(gatk_vcf)
+            native_rows = read_rows(native_vcf)
+            differing = sorted(p for p in set(gatk_rows) & set(native_rows)
+                               if gatk_rows[p] != native_rows[p])
+            if len(gatk_rows) != expected or len(native_rows) != expected:
+                violations.append(
+                    f"maxalt {label}: rows GATK={len(gatk_rows)} "
+                    f"native={len(native_rows)}, control expects {expected}")
+            if gatk_rows != native_rows:
+                violations.append(
+                    f"maxalt {label}: {len(differing)} rows differ "
+                    f"(first {differing[:5]})")
+            reported[f"maxalt_{label}"] = {
+                "gatk_rows": len(gatk_rows),
+                "native_rows": len(native_rows),
+                "differing": len(differing),
+            }
+
     payload = {
         "gate": "genotype-gvcf-independent-corpus",
         "gatk_version": "4.6.2.0",

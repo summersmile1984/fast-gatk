@@ -2628,6 +2628,48 @@ bool apply_gatk_max_alternate_alleles(const bcf_hdr_t* output_header,
             }
         }
     }
+    // GenotypingEngine's AlleleSubsettingUtils.subsetAlleles() rebuilds every
+    // retained genotype from the SUBSET PL row, so the scalar GQ is recomputed
+    // there rather than carried over from the pre-subset record.  Measured with
+    // --max-alternate-alleles 2 at chr20:10002458: GATK publishes GQ=82 for the
+    // row 2172,655,493,249,0,82 (the two smallest PLs differ by 82) while native
+    // kept the pre-subset 9.  Samples whose call was dropped stay no-call with a
+    // missing GQ (handled above).
+    if (projected_width != 0 && !record.pl.empty() &&
+        record.pl.size() % projected_width == 0) {
+        const auto samples = record.pl.size() / static_cast<std::size_t>(projected_width);
+        for (std::size_t sample = 0; sample < samples && sample < record.gq.size(); ++sample) {
+            bool missing_call = false;
+            for (int copy = 0; copy < record.ploidy; ++copy) {
+                const auto encoded =
+                    record.gt[sample * static_cast<std::size_t>(record.ploidy) +
+                              static_cast<std::size_t>(copy)];
+                if (encoded == bcf_int32_vector_end || bcf_gt_is_missing(encoded)) {
+                    missing_call = true;
+                    break;
+                }
+            }
+            if (missing_call) continue;
+            std::int32_t smallest = bcf_int32_missing;
+            std::int32_t second = bcf_int32_missing;
+            for (std::size_t genotype = 0;
+                 genotype < static_cast<std::size_t>(projected_width); ++genotype) {
+                const auto value = record.pl[sample * static_cast<std::size_t>(projected_width) +
+                                              genotype];
+                if (value == bcf_int32_missing || value == bcf_int32_vector_end) continue;
+                if (smallest == bcf_int32_missing || value < smallest) {
+                    second = smallest;
+                    smallest = value;
+                } else if (second == bcf_int32_missing || value < second) {
+                    second = value;
+                }
+            }
+            if (smallest != bcf_int32_missing && second != bcf_int32_missing)
+                // GATK caps the recomputed scalar GQ at 99 (measured: a subset row
+                // whose two smallest PLs differ by 533 publishes GQ=99).
+                record.gq[sample] = std::min<std::int32_t>(99, second - smallest);
+        }
+    }
     const auto publish_format = [&](const char* tag, const std::vector<int32_t>& values) {
         if (values.empty()) return;
         if (bcf_update_format_int32(output_header, record.value, tag, values.data(),
