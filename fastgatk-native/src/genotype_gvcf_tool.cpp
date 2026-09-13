@@ -4777,6 +4777,23 @@ void apply_gatk_annotation_compatibility(const bcf_hdr_t* output_header,
         if (bcf_update_filter(output_header, record.value, &low_qual, 1) != 0)
             throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write LowQual FILTER");
     }
+    // Derive MQ here, before RAW_MQandDP is removed below: this is the last point
+    // where the raw [sum(mapq^2), depth] pair still exists, and it is the only
+    // point that also covers the REF-only rows, whose annotation path skips
+    // update_gatk_standard_annotations() (measured: GATK publishes MQ=58.63 at
+    // 20:10041698 and MQ=60.00 at 20:10098308 while native wrote none).
+    if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MQ") >= 0) {
+        int32_t* raw_mq = nullptr;
+        int raw_mq_count = 0;
+        const auto raw_mq_length = bcf_get_info_int32(output_header, record.value,
+                                                      "RAW_MQandDP", &raw_mq, &raw_mq_count);
+        if (raw_mq_length >= 2 && raw_mq_count >= 2 && raw_mq[1] > 0 && raw_mq[0] > 0) {
+            const float mq = static_cast<float>(std::sqrt(
+                static_cast<double>(raw_mq[0]) / static_cast<double>(raw_mq[1])));
+            (void)bcf_update_info_float(output_header, record.value, "MQ", &mq, 1);
+        }
+        free(raw_mq);
+    }
     // RAW_MQandDP is the reducible input annotation used to derive MQ; GATK's
     // finalized GenotypeGVCFs records do not retain it.  RCQ/RCP are native
     // cross-sample diagnostics rather than standard GATK INFO fields.

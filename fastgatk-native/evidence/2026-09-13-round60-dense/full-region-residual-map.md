@@ -1009,3 +1009,37 @@ REF-only 物化路径没有把它带下去）。
    只是数据缺失）。预期 `(7,)` 类的 3 行恢复 `MQ`，与 GATK 只差 `ExcessHet` 渲染（第 94 轮的前置项）。
 
 本轮改动已回退（无效果），树保持第 97 轮已验证状态。
+
+## 第 102 轮：MQ 缺失修好（第 43 个已修 bug）——在 `RAW_MQandDP` 被移除**之前**推导
+
+第 101 轮定位到「REF-only 行没有 MQ」有两道门：① `update_gatk_standard_annotations()` 的
+`allele_count < 2` 守卫；② 数据本身已丢。本轮找到第二道门的确切位置：
+
+```
+apply_gatk_annotation_compatibility()（:4710 起）
+    ...
+    (void)bcf_update_info_int32(output_header, record.value, "RAW_MQandDP", nullptr, 0);   // :4783 把它删掉
+```
+
+而 `finalized_monomorphic_ref` 早退路径**只**调用这个函数（不调用 `update_gatk_standard_annotations()`），
+所以 REF-only 行既没被算 MQ、`RAW_MQandDP` 也已被删。
+
+**修复**：在 :4783 删除之前**就地推导 MQ**（这是唯一同时覆盖两条路径、且数据仍在的位置）：
+
+```cpp
+if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MQ") >= 0) {
+    ... bcf_get_info_int32(..., "RAW_MQandDP", ...);
+    if (raw_mq[1] > 0 && raw_mq[0] > 0) {
+        const float mq = sqrt(raw_mq[0] / raw_mq[1]);
+        bcf_update_info_float(output_header, record.value, "MQ", &mq, 1);
+    }
+}
+```
+
+**验证（整段语料）**：`20:10041698` MQ=58.63、`20:10098308` MQ=60.00、`20:10099270` MQ=56.49
+**与 GATK 逐一相同** ✓；位点级残差仍 **81**（这些行另有 `ExcessHet` 零值渲染差异，第 94/99 轮已记录）；
+五个基因型门禁全部通过。
+
+> 记账方式的教训：本轮我先用"与上一次输出文件比较"的临时脚本得出 `FIXED 9`，
+> 但那个基线文件其实是更早（differ=90）的中间构建 ⇒ 数字虚高。**权威口径要以 GATK 为参照、
+> 用 `measure_dense_residual.py` 复算**（本轮复算为 81），临时脚本的比较对象必须确认清楚。
