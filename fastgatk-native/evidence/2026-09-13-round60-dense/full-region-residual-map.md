@@ -902,3 +902,34 @@ positions with matching INFO: 99918 → 99597
    判别式还要再拆一层）。
 
 两次尝试均已回退（净负收益）；树保持第 93 轮已验证状态。
+
+## 第 98 轮：把整段残差比对固化成**一条命令**（本会话的测量手段此前都是临时命令）
+
+新增 `fastgatk-native/scripts/measure_dense_residual.py`：对同一输入、同一参考、同一 `-L`
+窗口跑 pinned GATK 4.6.2.0 与 native，输出
+
+- 两侧行数/位点数、仅 GATK / 仅 native / 共有但不同的位点数；
+- 差异按（GATK ALT 形状、native ALT 形状、不同的前导列）分组计数；
+- `--positions` 指定的位点逐列 dump（便于单点排查）；
+- 末尾一行 JSON（可直接归档）。
+
+也支持 `--gatk-vcf/--native-vcf` 直接比较已有输出（不必重跑工具），
+`--require-identical` 可当作"零残差"断言使用（默认不退出码非零——它是测量工具，不是门禁）。
+
+**已实测复现当前状态**（与本文档此前的数字一致）：
+
+```
+# GATK rows=100000 positions=100000
+# native rows=99993 positions=99993
+# only GATK=7 only native=0 differ=81
+GATK shape   native shape differing columns        count
+star         star         (7, 9)                   38
+star         refonly      (4, 5, 6, 7, 8, 9)       30
+refonly      refonly      (7,)                     5
+refonly      refonly      (9,)                     3
+refonly      refonly      (5, 9)                   3
+star         star         (7,)                     2
+```
+
+顺带把分类细化了一档：此前文档里把 `*`/`*` 记成"40 行"，现在看清是
+**38 行同时差 INFO 与样本列、2 行只差 INFO**；REF-only 类也从"11 行"细化为 5+3+3。
