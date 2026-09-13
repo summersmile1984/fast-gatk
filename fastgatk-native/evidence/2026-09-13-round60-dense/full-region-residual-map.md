@@ -987,3 +987,25 @@ NATIVE ... ExcessHet=0.0000 ... (无 MQ)
 取值应来自 **Host 侧的原始 MQ 累加量**（与具体变异行同源，参照 `update_gatk_standard_annotations()`
 里 MQ 的算法），而不是从输出 bcf 的 INFO 里找 `RAW_MQandDP`。
 本轮改动已回退。
+
+## 第 101 轮：`MQ` 缺失的两个门都找到了，但数据本身在 REF-only 行上已丢失
+
+第 100 轮把 MQ 的算法读清了（`update_gatk_standard_annotations()` 里，从 **输出 bcf 的
+`RAW_MQandDP`** 取 `[sumMQ2, DP]` 算 `sqrt(sumMQ2/DP)` ✓ 与 GATK 一致）。本轮据此把整段 MQ 代码
+**移到 `if (record.allele_count < 2 || record.gt.empty() || record.ploidy <= 0) return;` 之前**
+（这就是"REF-only 行没有 MQ"的第一道门），编译通过、整段复验：**`20:10041698` 仍无 MQ**，
+残差仍 81。
+
+⇒ 该行在**输出阶段**的 INFO 里**已经不含 `RAW_MQandDP`**（`bcf_get_info_int32` 取不到），
+所以第二道门是**数据本身在 REF-only 行上已被丢弃**（`RAW_MQandDP` 是输入侧注解，
+REF-only 物化路径没有把它带下去）。
+
+**完整修法（下一轮，三小步，均已定位）**：
+1. 在 `Record` 上加两个 int32（例如 `raw_mq_sum_of_squares`、`raw_mq_depth`），
+   在**解码阶段**从输入记录的 INFO `RAW_MQandDP` 读入并随记录传递（此时数据还在）；
+2. 在 `update_gatk_standard_annotations()` 的 MQ 分支里，优先用这两个 Host 字段
+   （而不是输出 bcf 的 INFO）；
+3. 保持第 101 轮已验证的"MQ 计算放在 `allele_count < 2` 守卫之前"这一位置（本轮已证该位置正确，
+   只是数据缺失）。预期 `(7,)` 类的 3 行恢复 `MQ`，与 GATK 只差 `ExcessHet` 渲染（第 94 轮的前置项）。
+
+本轮改动已回退（无效果），树保持第 97 轮已验证状态。
