@@ -1661,3 +1661,54 @@ GATK 则始终在**合并后的完整等位基因集合**上跑 AF（`GenotypeGV
 这是一个 1e-17 级、且与上文同一个 AF 后验相关的量，**应随同一处修复一起消失**，不应单独打补丁。
 
 **本轮未改生产代码**（插桩字段与打印已全部回滚，两后端重建并复测 73 / only-GATK=[] / only-native=[]）。
+
+## 第 111 轮：AF-epsilon 类的机制**完整证明**（并证伪第 110 轮的排序猜测）
+
+### 先证伪自己上一轮的猜测
+第 110 轮我写"native 把孤儿跨接删除先强制 no-call，AF 核随后看到无 ALT 支持的记录"。实读代码后**证伪**：
+两处 encode 循环里的顺序是 `update_cohort_af_annotations`（AF 核，`:6790`）**先**、
+`apply_gatk_output_allele_subset`（剪枝，`:6791`）**后** ⇒ AF 核看到的是**剪枝前**的 2 等位基因记录 ✓。
+
+### 插桩：AF 核的输入根本不是退化的
+按位点打印 AF 核的输入与输出：
+
+```
+[AF] pos1=10024301 allele_count=2 alleles=N,* gt=0,0 pl=151,94,400  dp=17 force_no_call=1 npl=3 p0=0 raw=0 qual=0
+[AF] pos1=10008964 allele_count=2 alleles=N,* gt=0,0 pl=1717,539,803 dp=34 force_no_call=1 npl=3 p0=0 raw=0 qual=0
+[AF] pos1=10067058 allele_count=2 alleles=N,* gt=0,0 pl=650,163,340  dp=22 force_no_call=1 npl=3 p0=0 raw=0 qual=0
+[AF] pos1=10008953 allele_count=2 alleles=N,* gt=0,0 pl=1717,539,803 dp=34 force_no_call=1 npl=3 p0=0 raw=0 qual=0
+```
+
+PL 是**真实的**（ALT 有 ~2e-6 相对支持）⇒ "AF 拿到退化似然"的假设也**证伪** ✓。
+所有目标位点的行形状都是 **`alleles=N,*`（biallelic REF/SPAN_DEL）**。
+
+### 机制（两侧源码核对后完整闭合）
+- native 核（`fastgatk-kernels/src/genotype.cpp:1506-1518`）：`spanning_deletion_index >= 0` 时，
+  "non-variant 基因型" = **只含 REF 与 `*` 的基因型**；
+- GATK（`AlleleFrequencyCalculator.java:203-222`）：`spanningDeletionPresent` 时
+  `log10PNoVariant += Math.min(0, log10SumLog10(nonVariantLog10Posteriors))`，
+  而 `nonVariantIndices` 来自 `genotypeIndicesWithOnlyRefAndSpanDel(ploidy, alleles)` —— **同一条规则** ✓。
+
+⇒ 对一条 `{REF, *}` 记录，该集合就是**全部 3 个基因型**（REF/REF、REF/\*、\*/\*），
+它们归一化后的后验**按定义相加恰好为 1**：
+
+| | 三个后验之和 | p = log10 Σ | 单态分支 QUAL = -10·log10(1-10^p) |
+| --- | --- | --- | --- |
+| GATK（舍入向下） | `1 - 4.3e-17` | **`-1.871e-17`** | **`163.67`** ✓ |
+| native（精确） | `1` | `0` | `log10OneMinusPow10(0) = -inf` ⇒ **`Infinity`** ✗ |
+
+⇒ 两个实现**规则相同、公式相同、clamp 相同**（`Math.min(0, …)` 两侧都有），差别只在
+"三个后验之和"这个必然等于 1 的量上，**最后一位往哪边偏**。
+
+### 结论（重要，决定后续路线）
+这一类的差值不是设计问题、也不是公式问题，而是**浮点最后一位的方向**，它取决于
+GATK EM 与基因型后验归一化的具体运算次序（`log10NormalizedGenotypePosteriors` +
+`log10SumLog10` 的中间值）。要 1:1 复现 `163.67`，必须**逐位复刻 GATK 的 EM/后验算术**，
+而不是改公式或加特判 —— 第 108/110 轮的判断至此**完整证明** ✓。
+QD 的零符号（10012573/10068159 等）是同一个量派生出来的（`QD = QUAL/depth`），会随同一处一起变。
+
+⇒ **chr20 剩余 73 行里，5 行属于这一类（3 行 QUAL + 2 行 QD 符号，独立语料上 55 行 QD）**；
+**真正还能靠设计修下来的是 68 行** —— 即跨接位点的等位基因投影（38 行）与
+块+跨接变异的样本级合并（30 行），两者的缺口清单已在第 108 轮列全。
+
+**本轮未改生产代码**（插桩字段与打印已回滚，两后端重建，复测 73 / only-GATK=[] / only-native=[]）。
