@@ -1764,3 +1764,43 @@ GATK 都发布 **99** ⇒ 重算结果必须 **cap 99** ✓（首版未加 cap�
 该假阳性已作废并撤回，未进入任何文档结论；GATK 对该 ReblockGVCF 夹具报的是
 `Input files reference and features have incompatible contigs: No overlapping contigs found`
 （参考是 `20`、夹具是 `chr20`，仓库里没有 `chr20` 命名的参考）⇒ 该夹具不可用。
+
+## 第 113 轮：选项轴继续扩展（6 个变体逐字节一致）并补上 `--sample-ploidy`
+
+### 逐字节一致的选项变体（chr20 与 YRI 语料，default 模式）
+| 变体 | 结果 |
+| --- | --- |
+| `--heterozygosity 0.001`（chr20 / YRI） | differ **0** ✓ |
+| `--indel-heterozygosity 0.000125` | differ **0** ✓ |
+| `--standard-min-confidence-threshold-for-calling 30` | differ **0** ✓ |
+| `--use-posteriors-to-calculate-qual` | differ **0** ✓ |
+| `-XL 20:10020000-10030000`（242 行） | differ **0** ✓ |
+| `-L … -L …`（多区间，6 行） | differ **0** ✓ |
+| `--max-alternate-alleles 2`（上一轮已修，252 / 300 行） | differ **0** ✓ |
+
+⇒ AF 先验参数、后验 QUAL 模式与区间选择器整条链都已对齐 ✓。这些断言已全部进入门禁
+`fastgatk-genotype-gvcf-independent-corpus-gatk-oracle`（现在共 **12 组断言**，其中 11 组要求整行逐字节一致）。
+
+### bug 50：GATK 支持而 native **直接拒绝**的选项 `--sample-ploidy`
+```
+native: fastgatk-genotype-gvcf: unknown option: --sample-ploidy     ← 退出码 2
+GATK  : 正常，退出码 0
+```
+先测清 GATK 的语义与可观测性：对**二倍体 gVCF 输入**，`--sample-ploidy 1` 的输出与默认运行
+**数据行完全相同** ✓ ⇒ 该参数只是"基因型自身未声明倍性时的兜底值"
+（`AlleleFrequencyCalculator` 里 `g.getPloidy() == 0 ? defaultPloidy : g.getPloidy()`）。
+native 里这样的兜底点只有 **一处**（`materialize_gatk_monomorphic_ref_call()` 的
+`record.ploidy > 0 ? record.ploidy : 2`），因此实现面很小、且对现有语料**行为等价**。
+
+修复：Options 增 `sample_ploidy = 2`；解析 `--sample-ploidy N`（<1 报
+`UNSUPPORTED_PARAMETER: sample ploidy must be at least 1`）；把该值作为那处兜底传入。
+
+实测：`native --sample-ploidy 1` vs `GATK --sample-ploidy 1` → 252 行 **differ=0** ✓；
+`native --sample-ploidy 2` vs GATK 默认 → differ=0 ✓；YRI 语料 `--sample-ploidy 1` → 300 行 differ=0 ✓；
+chr20 dense 仍 **73**、YRI dense 仍 **81**（零回归）。门禁新增 `option_ploidy1/2` 两组断言。
+
+### 仍未闭合的选项缺口（记在案）
+`--dbsnp/-D`：native 同样报 `unknown option: --dbsnp`（GATK 支持）。本轮用仓库里的
+`1000G.phase3.broad.withGenotypes.chr20.10100000.vcf` 作 dbSNP 跑 GATK，输出 **0 行带 ID** ⇒
+在这份输入上**观测不到差异**，因此"接受选项但不实现查找"会造成静默错误 ✗，
+**保持当前的响亮失败**才是诚实的；要实现它需要真正的特征文件查找与 ID 赋值（下一轮候选）。

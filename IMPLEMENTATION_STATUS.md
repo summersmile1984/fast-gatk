@@ -92,7 +92,8 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 112 轮，当前树） | **311/311 通过**（1577.2s） | **311/311 通过**（1582.4s） | `--max-alternate-alleles` 子集后 GQ 重算（bug 49：chr20 该选项 2 行差异 → 0/252，dense 73 与 YRI 81 未回归）；门禁加「选项轴」断言；证据 `.diag/regression/20260913-131914/` |
+| 全量回归（第 113 轮，当前树） | **311/311 通过**（1662.1s） | **311/311 通过**（1647.9s） | `--sample-ploidy` 支持（bug 50，252/300 行逐字节一致，dense 73/81 未回归）；门禁扩到 12 组断言（11 组逐字节一致）；证据 `.diag/regression/20260913-135644/` |
+| 全量回归（第 112 轮） | 311/311 通过（1577.2s） | 311/311 通过（1582.4s） | `--max-alternate-alleles` 子集后 GQ 重算（bug 49）|
 | 全量回归（第 109 轮） | 310/310 通过（1502.4s，测试表未含新门禁） | 311/311 通过（1567.0s） | 独立语料 `ClippingRankSum`（bug 47）+ REF-only `ExcessHet` 非零（bug 48）；独立语料 default 132/300 → 0/300 逐字节一致 |
 | 全量回归（第 106 轮） | 310/310 通过（1541.8s） | 310/310 通过（1474.3s） | REF-only 行 `ExcessHet` 走 htsjdk 原始 double 路径（bug 46） |
 | 全量回归（第 105 轮） | 310/310 通过（1546.7s） | 310/310 通过（1514.1s） | 跨接位点覆盖补 GQ 分支（only-GATK 7 → 0） |
@@ -790,7 +791,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–112 轮增量（累计 **49** 个已证真 bug 已修并上锁）
+## 第 36–113 轮增量（累计 **50** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -823,6 +824,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 47 | `ClippingRankSum` 未被认作秩和族（第 109 轮：键序 + 数值格式 + 物化行抑制三处） | 见下文「第 109 轮」一节；**独立语料 default 模式 132/300 → 0/300 逐字节一致** |
 | 48 | REF-only 行 `ExcessHet` 非零渲染（第 109 轮，补全第 106 轮规则） | `3.0103 → 3.01`（独立语料实测）；独立语料 dense 285 → 81 |
 | 49 | 等位基因子集后 GQ 未重算、也没有 99 上限（第 112 轮） | 见下文「第 112 轮」一节；chr20 `--max-alternate-alleles 2` **2 行差异 → 0 / 252 行**，dense 73 与 YRI 81 均未回归 |
+| 50 | GATK 支持而 native 直接拒绝的 `--sample-ploidy`（第 113 轮） | 见下文「第 113 轮」一节；`--sample-ploidy 1/2` 与 GATK **逐字节一致**（252/300 行），dense 73/81 未回归 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -1800,17 +1802,36 @@ native 只重映射 PL、把被丢弃基因型的 GQ 置 missing、把 PL 行归
 GATK 失败（退出 2）时该路径仍是 native 的输出 ⇒ 得到"differ=0"的**假阳性**，已作废撤回。
 教训：比对前必须确认另一方真的产出了文件（门禁的 `run()` 正是如此）。
 
+## 第 113 轮：选项轴再扩展，并补上 `--sample-ploidy`（第 50 个已修 bug）
+
+选项轴继续扩展，以下变体在 chr20 / YRI 语料上**逐字节一致**（differ=0）：
+`--heterozygosity`、`--indel-heterozygosity`、`--standard-min-confidence-threshold-for-calling`、
+`--use-posteriors-to-calculate-qual`、`-XL`（242 行）、多 `-L`（6 行）、`--max-alternate-alleles 2`。
+⇒ AF 先验参数、后验 QUAL 模式与区间选择器整条链已对齐。这些断言全部进入门禁
+`fastgatk-genotype-gvcf-independent-corpus-gatk-oracle`（现共 **12 组**，其中 11 组要求整行逐字节一致）。
+
+**bug 50**：`--sample-ploidy` 是 GATK 支持而 native **直接拒绝**（`unknown option`，退出码 2）的选项。
+先测清语义：对二倍体 gVCF 输入，GATK 的 `--sample-ploidy 1` 输出与默认运行**数据行完全相同**
+⇒ 它只是"基因型未声明倍性时的兜底值"。native 里这类兜底点只有一处
+（`materialize_gatk_monomorphic_ref_call()` 的 ploidy 默认 2）⇒ 实现面小且行为等价。
+修复后 `--sample-ploidy 1/2` 与 GATK **逐字节一致**（252 行 / YRI 300 行），dense 73/81 未回归，
+非法值（<1）以 `UNSUPPORTED_PARAMETER: sample ploidy must be at least 1` 拒绝。
+
+**仍未闭合**：`--dbsnp/-D` native 同样拒绝；但用仓库里的 1000G chr20 VCF 作 dbSNP 时 GATK 输出
+**0 行带 ID** ⇒ 观测不到差异，"接受选项但不实现查找"会静默出错 ✗，故保持响亮失败，
+真正实现需要特征文件查找 + ID 赋值（下一轮候选）。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
-**最新基线（第 112 轮，主会话亲自运行）：`--max-alternate-alleles` 子集后的 GQ 重算（bug 49）
-+ 门禁新增「选项轴」断言上 OpenMP **311/311**（1577.2s）、Serial **311/311**（1582.4s），
+**最新基线（第 113 轮，主会话亲自运行）：`--sample-ploidy` 支持（bug 50）+ 门禁扩到 **12 组断言**
+（11 组要求整行逐字节一致）上 OpenMP **311/311**（1662.1s）、Serial **311/311**（1647.9s），
 零陈旧告警，运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
 > 两点说明：① 本次 omp 全量开跑时其测试表尚未包含新门禁（该次 310/310），
 > 事后 `cmake -S/-B` 重建测试表后两后端均为 **311** 个测试，新门禁在 omp 上**单独跑过并通过**
 > （64.9s，`ctest -R independent-corpus`）；② 两后端二进制在开跑前均确认 `FRESH`。
 
-证据块（可直接复核）：`.diag/regression/20260913-131914/summary.txt`
+证据块（可直接复核）：`.diag/regression/20260913-135644/summary.txt`
 （整段字段级残差复算仍用 `fastgatk-native/scripts/measure_dense_residual.py`）。
 
 > 流程教训（本轮第二次踩到同类坑）：改完源码只重建了 omp，serial 后端陈旧，运行器在第一轮
@@ -1823,6 +1844,7 @@ GATK 失败（退出 2）时该路径仍是 native 的输出 ⇒ 得到"differ=0
 > 该次运行作废（`.diag/regression/20260913-024535/`），重建 serial 后重跑才是本基线。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
+第 112 轮上 311/311（1577.2s / 1582.4s，max-alternate-alleles 子集后 GQ 重算）；
 第 109 轮上 311/311（serial 1567.0s；omp 该次 310/310 后补跑新门禁 64.9s 通过，reconfigure 后两后端均 311）；
 第 106 轮上 310/310（1541.8s / 1474.3s，REF-only 行 `ExcessHet` 原始 double 路径）；
 第 105 轮上 310/310（1546.7s / 1514.1s，跨接位点覆盖补 GQ 分支 + only-GATK 7 → 0）；

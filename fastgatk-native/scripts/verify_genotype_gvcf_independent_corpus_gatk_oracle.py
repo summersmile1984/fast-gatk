@@ -195,6 +195,44 @@ def main() -> int:
                 "differing": len(differing),
             }
 
+        # Option axis: further GenotypeGVCFs options whose output must be
+        # byte-identical on the tuned corpus.  All measured differ=0: the AF
+        # prior parameters, the posterior-QUAL mode and the interval selectors.
+        for label, flags, expected in (
+                ("het", ["--heterozygosity", "0.001"], 252),
+                ("indelhet", ["--indel-heterozygosity", "0.000125"], 252),
+                ("minconf", ["--standard-min-confidence-threshold-for-calling", "30"], 252),
+                ("postqual", ["--use-posteriors-to-calculate-qual"], 252),
+                ("exclude", ["-XL", "20:10020000-10030000"], 242),
+                ("multil", ["-L", "20:10005000-10006000",
+                            "-L", "20:10020000-10021000"], 6),
+                ("ploidy1", ["--sample-ploidy", "1"], 252),
+                ("ploidy2", ["--sample-ploidy", "2"], 252)):
+            gatk_vcf = work / f"opt-{label}-gatk.vcf"
+            native_vcf = work / f"opt-{label}-native.vcf"
+            run([str(java), "-Xmx4g", "-jar", str(gatk), "GenotypeGVCFs",
+                 "-R", str(reference), "-V", str(chr20_source), *flags,
+                 "-O", str(gatk_vcf), "--create-output-variant-index", "false"])
+            run([str(native), "-R", str(reference), "-V", str(chr20_source), *flags,
+                 "--gatk-compatible-annotations", "-O", str(native_vcf)])
+            gatk_rows = read_rows(gatk_vcf)
+            native_rows = read_rows(native_vcf)
+            differing = sorted(p for p in set(gatk_rows) & set(native_rows)
+                               if gatk_rows[p] != native_rows[p])
+            if len(gatk_rows) != expected or len(native_rows) != expected:
+                violations.append(
+                    f"option {label}: rows GATK={len(gatk_rows)} "
+                    f"native={len(native_rows)}, control expects {expected}")
+            if gatk_rows != native_rows:
+                violations.append(
+                    f"option {label}: {len(differing)} rows differ "
+                    f"(first {differing[:5]})")
+            reported[f"option_{label}"] = {
+                "gatk_rows": len(gatk_rows),
+                "native_rows": len(native_rows),
+                "differing": len(differing),
+            }
+
     payload = {
         "gate": "genotype-gvcf-independent-corpus",
         "gatk_version": "4.6.2.0",

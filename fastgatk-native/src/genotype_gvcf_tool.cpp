@@ -78,6 +78,9 @@ struct Options {
     // calculation.  The symbolic <NON_REF> sentinel is never counted toward
     // this bound; the default is the GATK 4.6.2.0 value of six.
     int max_alternate_alleles = 6;
+    // GATK's --sample-ploidy: the fallback ploidy for a genotype that declares
+    // none of its own.
+    int sample_ploidy = 2;
     // Optional GATK GenotypingEngine annotation.  NDA records the number of
     // concrete ALT alleles discovered before max-ALT subsetting, so callers
     // can distinguish an intentionally reduced site from a site that never
@@ -639,6 +642,17 @@ Options parse(int argc, char** argv) {
                 ? "--stand-call-conf" : "--standard-min-confidence-threshold-for-calling";
             options.standard_confidence_for_calling = std::stod(require_value(
                 i, argc, argv, argument, name));
+        } else if (is_option(argument, "--sample-ploidy")) {
+            // GATK's GenotypingEngineConfiguration.samplePloidy: the ploidy used
+            // for a genotype that carries none of its own (Genotype.getPloidy()
+            // == 0).  Measured on a diploid GVCF input, GATK's `--sample-ploidy 1`
+            // output is byte-identical to the default run, so the value is only a
+            // fallback wherever native previously hard-coded 2.
+            options.sample_ploidy = std::stoi(require_value(
+                i, argc, argv, argument, "--sample-ploidy"));
+            if (options.sample_ploidy < 1)
+                throw std::runtime_error(
+                    "UNSUPPORTED_PARAMETER: sample ploidy must be at least 1");
         } else if (is_option(argument, "--max-alternate-alleles")) {
             options.max_alternate_alleles = std::stoi(require_value(
                 i, argc, argv, argument, "--max-alternate-alleles"));
@@ -2852,10 +2866,11 @@ double gatk_log10_one_minus_pow10(const double log10_value) {
 // This must be materialized before the shared Number=G remap, which requires at
 // least two target alleles and therefore cannot represent a REF-only output.
 void materialize_gatk_monomorphic_ref_call(const bcf_hdr_t* output_header,
-                                           Record& record) {
+                                           Record& record,
+                                           int default_ploidy = 2) {
     if (record.value == nullptr || record.alleles.empty())
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: invalid REF-only call");
-    const auto ploidy = record.ploidy > 0 ? record.ploidy : 2;
+    const auto ploidy = record.ploidy > 0 ? record.ploidy : default_ploidy;
     const auto sample_count = static_cast<std::size_t>(record.value->n_sample);
     if (sample_count == 0)
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: REF-only call has no samples");
@@ -3378,7 +3393,8 @@ bool apply_gatk_output_allele_subset(const bcf_hdr_t* output_header,
         // Dense mode keeps the locus as GATK's REF-only no-call instead of
         // projecting it through the Number=G remap, which has no representation
         // for a single-allele output.
-        materialize_gatk_monomorphic_ref_call(output_header, record);
+        materialize_gatk_monomorphic_ref_call(output_header, record,
+                                              options.sample_ploidy);
         return true;
     }
     // GenotypingEngine.java:178-179: the deletions of the alleles this locus
