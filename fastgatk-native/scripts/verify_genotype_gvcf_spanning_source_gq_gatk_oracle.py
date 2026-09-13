@@ -85,6 +85,17 @@ PINNED_MONOMORPHIC = {
     10098309: "0/0:2:6",     # source 10098308 (GT 0/0, DP=2, GQ=6)
     10098310: "0/0:2:6",
 }
+# REF-only rows whose ExcessHet GATK renders through htsjdk's raw-double path
+# ("0.00", probed: formatVCFDouble(0.0) == "0.00") instead of the "%.4f" String
+# that ExcessHet.java builds for every other row ("0.0000").  Native used to
+# print four decimals everywhere, which cost these five rows.
+PINNED_REF_ONLY_EXCESS_HET = {
+    10041698: "0.00",
+    10077008: "0.00",
+    10077010: "0.00",
+    10098308: "0.00",
+    10099270: "0.00",
+}
 DENSE = "--include-non-variant-sites"
 
 
@@ -191,10 +202,29 @@ def main() -> int:
                     f"POS {position}: native {columns(row)} != GATK "
                     f"{columns(truth)}")
 
+        # REF-only rows that must carry GATK's raw-double ExcessHet rendering.
+        for position, expected in sorted(PINNED_REF_ONLY_EXCESS_HET.items()):
+            truth = gatk_rows.get(position)
+            row = native_rows.get(position)
+            if truth is None or row is None:
+                violations.append(
+                    f"POS {position}: missing row (GATK={truth is not None}, "
+                    f"native={row is not None})")
+                continue
+            if f"ExcessHet={expected}" not in truth.split("\t")[7]:
+                violations.append(
+                    f"POS {position}: GATK ExcessHet is not the measured {expected}")
+            if row != truth:
+                violations.append(
+                    f"POS {position}: REF-only ExcessHet row is not byte-identical")
+
     report = {
         "gate": "genotype-gvcf-spanning-source-gq",
         "gatk_version": "4.6.2.0",
         "intervals": WINDOW,
+        "ref_only_excess_het": {str(position): token
+                                for position, token
+                                in sorted(PINNED_REF_ONLY_EXCESS_HET.items())},
         "pinned": {str(position): sample
                    for position, sample in sorted({**PINNED, **PINNED_MONOMORPHIC}.items())},
         "violations": violations,

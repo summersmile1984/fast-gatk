@@ -1368,3 +1368,59 @@ chr20 整段仍是 `100000/100000`、`only-GATK=[]`、`only-native=[]`、`differ
 2. **`star/star` 38 行**的等位基因投影（把"短于本记录 REF 的每个**被调用**等位基因"都映射到 `*`，
    并按 GATK 的 `AlleleSubsettingUtils` 规则把 PL 折到新等位基因集合，实测目标值
    `1184,62,0` vs native 现输出 `1717,539,803`）。
+
+## 第 106 轮：REF-only 行的 ExcessHet 渲染路径（bug 46），残差 78 → 73
+
+### 现象（第 105 轮末的字段级地图又把这一类缩小到 7 行）
+`(7,)` 类 7 行（INFO 单列差异）实测分成两种：
+
+| 位点 | GATK | native | 差异键 |
+| --- | --- | --- | --- |
+| 10041698 / 10077008 / 10077010 / 10098308 / 10099270 | `ExcessHet=0.00` | `ExcessHet=0.0000` | `ExcessHet` |
+| 10012573 / 10068159 | `QD=0.00` | `QD=-0.00` | `QD` |
+
+### 机制（**源码级 + 探针级**双重确认，不是拟合）
+1. **GATK 源码**：`ExcessHet.java:91` 与 `:272` 都把值**预先格式化成字符串**：
+   `Collections.singletonMap(getKeyNames().get(0), (Object) String.format("%.4f", eh))`
+   ⇒ htsjdk 原样写出 ⇒ 全语料 361 行都是 `0.0000` ✓（native 现状正确）。
+2. **htsjdk 探针**（`javap` 找到 `VCFEncoder.formatVCFDouble(double)`，反射调用，pinned JDK17 + pinned jar）：
+
+   | 输入 | 输出 |
+   | --- | --- |
+   | `0.0` | `0.00` |
+   | `-0.0` | `0.00`（**符号丢失**） |
+   | `1e-30` | `0.00` |
+   | `1e-20` | `1.000e-20` |
+   | `1e-16` | `1.000e-16` |
+   | `0.005` | `5.000e-03` |
+   | `0.5` | `0.500` |
+   | `1.5` | `1.50` |
+   | `12.26` | `12.26` |
+   | `-3.891` | `-3.891e+00` |
+
+   `formatQualValue`：`0.0→0`、`-0.0→-0`、`0.005→0.01`、`1.0→1`、`12.26→12.26`。
+3. 只有**这 5 行 REF-only** 的 ExcessHet 是"裸数值属性"（由 htsjdk 的 `formatVCFDouble` 渲染 ⇒ 精确零 = `0.00`），
+   其余 361 行走 GATK 自己 `%.4f` 的字符串路径 ⇒ `0.0000`。
+
+### 修复（最小、可验证部分）
+`format_gatk_float_value()` 增 `bool ref_only`；REF-only 且 `|值| < 1e-20` 时直接返回 `"0.00"`，
+其余保持 4 位小数。参数由两处编码 lambda 在 `std::move(computed.record)` **之前**捕获
+（`computed.record.allele_count == 1`）并透传。
+
+**未实现的部分（同一条 htsjdk 路径的另一半）**：REF-only 行若带**非零** ExcessHet，GATK 会输出
+`0.500`/`1.50`/`5.000e-03` 这类形式（探针已给出规则），而 native 仍输出 4 位小数。
+chr20 语料里没有这种行，故**不落地未验证行为**，记录在此。
+
+### 验证
+整段 chr20 dense：位点级 **78 → 73**，5 行**逐字节一致**，`only-GATK=[]`、`only-native=[]`；
+`(7,)` 类从 7 行降到 2 行（剩下的正是 QD 符号零）。门禁
+`fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle` 增加第三组 pin（5 行 REF-only ExcessHet，
+断言 GATK 侧确为 `ExcessHet=0.00` 且 native 行逐字节相同）。
+
+### 下一个靶子：`QD` 的零符号（已定位到判别式）
+16 行的 `QD` 是 `0.00`（GATK）vs `-0.00`（native），**全部是 `*` 行**：GATK 侧
+`QD=-0.00` 的 115 行几乎都是 `GT 0/1`（`MLEAC=1`），`QD=0.00` 的 24 行几乎都是 `GT 1|1`/`1/1`
+（`MLEAC=2`/`3`）⇒ 判别式是**位点是否 hom-alt**，而 htsjdk 的 `formatVCFDouble(-0.0)` 会丢符号
+⇒ `-0.00` 必然来自另一个保留符号的路径/数值。native 15 行/24 行两侧都是 `-0.00`，
+说明 native 的 **QD 数值本身**（或它派生的未取整 QUAL 的符号）在 hom-alt `*` 行上是错的。
+下一轮应从"`*`-only 行的未取整 QUAL 符号"入手（AF 计算器 ~1e-16 的舍入方向），而不是格式化层。

@@ -4882,7 +4882,8 @@ std::vector<std::string> split_tab_fields(const std::string& line) {
 }
 
 std::string format_gatk_float_value(const std::string& key,
-                                    const std::string& value) {
+                                    const std::string& value,
+                                    bool ref_only = false) {
     if (value.empty() || value == ".") return value;
     int precision = -1;
     // htsjdk's VCFEncoder formats Float/Double values with the following
@@ -4897,7 +4898,23 @@ std::string format_gatk_float_value(const std::string& key,
                           key == "ReadPosRankSum";
     if (key == "AF" || key == "MLEAF") precision = 3;
     else if (key == "FS") precision = 3;
-    else if (key == "ExcessHet" || key == "InbreedingCoeff") precision = 4;
+    else if (key == "ExcessHet" || key == "InbreedingCoeff") {
+        // Measured: on a REF-only row GATK's ExcessHet is a raw numeric
+        // attribute rendered by htsjdk's VCFEncoder.formatVCFDouble(), whose
+        // exact zero is the literal "0.00" (probed on the pinned jar:
+        // formatVCFDouble(0.0) == "0.00"), whereas every other row carries the
+        // String that ExcessHet.java itself built with String.format("%.4f", eh)
+        // (ExcessHet.java:91,272) -- hence the four decimals native already
+        // matches on all 361 annotated chr20 rows.  Only the zero case is
+        // measured; no REF-only row in the corpus carries a non-zero ExcessHet.
+        if (ref_only) {
+            try {
+                if (std::abs(std::stod(value)) < 1.0e-20) return std::string("0.00");
+            } catch (...) {
+            }
+        }
+        precision = 4;
+    }
     else if (key == "MQ" || key == "QD") precision = 2;
     else if (key == "SOR") precision = 3;
     if (precision < 0 && !rank_sum) return value;
@@ -5000,7 +5017,8 @@ std::string format_gatk_qual_value(const std::string& value) {
 
 std::string gatk_compatible_record_text(const std::string& formatted,
                                         bool drop_read_level = false,
-                                        bool drop_excess_het = false) {
+                                        bool drop_excess_het = false,
+                                        bool ref_only = false) {
     if (formatted.empty()) return formatted;
     std::string line = formatted;
     while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) line.pop_back();
@@ -5063,7 +5081,7 @@ std::string gatk_compatible_record_text(const std::string& formatted,
             info_text << ordered[index].key;
             if (ordered[index].has_value) {
                 info_text << '=' << format_gatk_float_value(ordered[index].key,
-                                                             ordered[index].value);
+                                                             ordered[index].value, ref_only);
             }
         }
         fields[7] = info_text.str();
@@ -6817,6 +6835,9 @@ int run_streaming_genotype_gvcf(Options& options,
                 const bool drop_read_level = computed.record.materialized_spanning_locus;
                 const bool drop_excess_het = computed.record.materialized_spanning_locus &&
                                              computed.record.finalized_monomorphic_ref;
+                // A REF-only row is the shape whose INFO floats GATK renders
+                // through htsjdk's raw-double path (see format_gatk_float_value).
+                const bool ref_only = computed.record.allele_count == 1;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};
@@ -6825,7 +6846,7 @@ int run_streaming_genotype_gvcf(Options& options,
                         throw std::runtime_error("cannot format GATK-compatible streaming VCF record");
                     }
                     encoded.text = gatk_compatible_record_text(
-                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het);
+                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het, ref_only);
                     free(formatted.s);
                 }
                 return encoded;
@@ -7603,6 +7624,9 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 const bool drop_read_level = computed.record.materialized_spanning_locus;
                 const bool drop_excess_het = computed.record.materialized_spanning_locus &&
                                              computed.record.finalized_monomorphic_ref;
+                // A REF-only row is the shape whose INFO floats GATK renders
+                // through htsjdk's raw-double path (see format_gatk_float_value).
+                const bool ref_only = computed.record.allele_count == 1;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};
@@ -7611,7 +7635,7 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                         throw std::runtime_error("cannot format GATK-compatible VCF record");
                     }
                     encoded.text = gatk_compatible_record_text(
-                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het);
+                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het, ref_only);
                     free(formatted.s);
                 }
                 return encoded;

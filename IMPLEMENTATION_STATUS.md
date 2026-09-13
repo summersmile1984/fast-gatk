@@ -92,7 +92,8 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 105 轮，当前树） | **310/310 通过**（1546.7s） | **310/310 通过**（1514.1s） | 跨接位点覆盖补 GQ 分支（bug 45，only-GATK 7 → 0）；两后端均 `FRESH` 后重跑；证据 `.diag/regression/20260913-105353/` |
+| 全量回归（第 106 轮，当前树） | **310/310 通过**（1541.8s） | **310/310 通过**（1474.3s） | REF-only 行 `ExcessHet` 走 htsjdk 原始 double 路径（bug 46，differ 78 → 73）；两后端 `FRESH` 后重跑；证据 `.diag/regression/20260913-112838/` |
+| 全量回归（第 105 轮） | 310/310 通过（1546.7s） | 310/310 通过（1514.1s） | 跨接位点覆盖补 GQ 分支（only-GATK 7 → 0） |
 | 全量回归（第 104 轮） | 310/310 通过（1546.4s） | 310/310 通过（1547.1s） | 物化跨位点行改读来源 GQ（commit `550b334`） |
 | 全量回归（第 97 轮） | 309/309 通过（1494.0s） | 309/309 通过（1470.1s） | REF-only 行相位清除 |
 | 全量回归（第 93 轮） | 309/309 通过（1517.0s） | 309/309 通过（1493.5s） | 两个开关判据按实测拆分 |
@@ -787,7 +788,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–105 轮增量（累计 **45** 个已证真 bug 已修并上锁）
+## 第 36–106 轮增量（累计 **46** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -816,6 +817,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 43 | REF-only 行缺 `MQ`（第 102 轮，在 `RAW_MQandDP` 被移除前推导） | 三个探针位点的 MQ 与 GATK 逐一相同；位点级仍 81（另差 ExcessHet 渲染） |
 | 44 | 物化跨位点行的样本列读错 GQ 来源（第 104 轮，`source_gq` 在解码时留存） | 见下文「第 104 轮」一节；整段 dense 残差 **81 → 78**，3 行逐字节一致 |
 | 45 | 跨接位点的覆盖被要求"有 called deletion"，7 行整行丢失（第 105 轮） | 见下文「第 105 轮」一节；**only-GATK 7 → 0**、only-native 0、differ 仍 78 |
+| 46 | REF-only 行的 `ExcessHet` 渲染路径（第 106 轮） | 见下文「第 106 轮」一节；整段 dense **78 → 73**、5 行逐字节一致 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -1658,14 +1660,42 @@ star 覆盖 = 该跨度最前面的 max_i(R - L_i) 个碱基
 （`fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle`：native 在那两个夹具里发出了
 `QUAL=Infinity` 的错形状行），该次运行作废；补上 `source_has_gq` 条件后该门禁重新零违规。
 
+## 第 106 轮：REF-only 行的 `ExcessHet` 渲染路径（第 46 个已修 bug）
+
+残差 78 里的 `(7,)` 类（INFO 单列差异）实测分两种：5 行是 `ExcessHet`（GATK `0.00` vs native
+`0.0000`），2 行是 `QD` 的零符号（GATK `0.00` vs native `-0.00`）。
+
+**机制用两个独立证据源确认（不是拟合）**：
+1. GATK 源码 `ExcessHet.java:91,272` 把值**预先格式化成字符串**
+   `String.format("%.4f", eh)` ⇒ htsjdk 原样写出 ⇒ 全语料 361 行都是 `0.0000`（native 现状正确）；
+2. htsjdk 探针（`VCFEncoder.formatVCFDouble`，pinned JDK17 + pinned jar）：
+   `0.0→"0.00"`、`-0.0→"0.00"`（**丢符号**）、`1e-30→"0.00"`、`1e-20→"1.000e-20"`、
+   `0.005→"5.000e-03"`、`0.5→"0.500"`、`1.5→"1.50"`、`12.26→"12.26"`、`-3.891→"-3.891e+00"`。
+
+⇒ 只有那 5 行 REF-only 的 ExcessHet 是**裸数值属性**（走 htsjdk 原始 double 路径，精确零 = `0.00`），
+其余 361 行走 GATK 自己的 `%.4f` 字符串路径。
+
+**修复**：`format_gatk_float_value()` 增 `bool ref_only`，REF-only 且 `|值| < 1e-20` 时返回 `"0.00"`；
+参数在两处编码 lambda 里于 `std::move(computed.record)` **之前**捕获（`allele_count == 1`）并透传。
+REF-only 且 ExcessHet 非零的形式（`0.500`/`1.50`/科学计数）语料中不存在，**不落地未验证行为**。
+
+**验证**：整段 chr20 dense 位点级 **78 → 73**、5 行逐字节一致、`only-GATK=[]`、`only-native=[]`；
+门禁 `...-spanning-source-gq-gatk-oracle` 增第三组 pin（5 行 REF-only ExcessHet，对 GATK 侧断言
+`ExcessHet=0.00` 且逐字节相同）。
+
+**下一个靶子（已定位判别式）**：`QD` 零符号 16 行全部是 `*` 行，GATK 侧 `-0.00` 的 115 行几乎都是
+`GT 0/1`（`MLEAC=1`）、`0.00` 的 24 行几乎都是 `GT 1|1`/`1/1`（`MLEAC=2/3`）⇒ 判别式是"位点是否
+hom-alt"；htsjdk 会丢 `-0.0` 的符号 ⇒ `-0.00` 来自另一条保号路径，说明 native 的 **QD 数值/未取整
+QUAL 的符号**在 hom-alt `*` 行上是错的，应从数值层（AF 计算器 ~1e-16 舍入方向）而非格式化层入手。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
-**最新基线（第 105 轮，主会话亲自运行）：跨接位点覆盖补上"无 called deletion 且来源带 GQ"的分支
-（bug 45，only-GATK 7 → 0；两后端均已重建）上
-OpenMP **310/310**（1546.7s）、Serial **310/310**（1514.1s），零陈旧告警，
+**最新基线（第 106 轮，主会话亲自运行）：REF-only 行的 `ExcessHet` 走 htsjdk 原始 double 路径
+（bug 46，differ 78 → 73；两后端均已重建并确认 `FRESH`）上
+OpenMP **310/310**（1541.8s）、Serial **310/310**（1474.3s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-证据块（可直接复核）：`.diag/regression/20260913-105353/summary.txt`
+证据块（可直接复核）：`.diag/regression/20260913-112838/summary.txt`
 （整段字段级残差复算仍用 `fastgatk-native/scripts/measure_dense_residual.py`）。
 
 > 流程教训（本轮第二次踩到同类坑）：改完源码只重建了 omp，serial 后端陈旧，运行器在第一轮
@@ -1678,6 +1708,7 @@ OpenMP **310/310**（1546.7s）、Serial **310/310**（1514.1s），零陈旧告
 > 该次运行作废（`.diag/regression/20260913-024535/`），重建 serial 后重跑才是本基线。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
+第 105 轮上 310/310（1546.7s / 1514.1s，跨接位点覆盖补 GQ 分支 + only-GATK 7 → 0）；
 第 104 轮上 310/310（1546.4s / 1547.1s，物化跨位点行改读来源 `GQ` + 新门禁）；
 第 102 轮上 309/309（1492.3s / 1500.0s，REF-only 行补 `MQ`）；
 第 97 轮上 309/309（1494.0s / 1470.1s，REF-only 行相位清除）；
