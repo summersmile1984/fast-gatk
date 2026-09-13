@@ -1804,3 +1804,51 @@ chr20 dense 仍 **73**、YRI dense 仍 **81**（零回归）。门禁新增 `opt
 `1000G.phase3.broad.withGenotypes.chr20.10100000.vcf` 作 dbSNP 跑 GATK，输出 **0 行带 ID** ⇒
 在这份输入上**观测不到差异**，因此"接受选项但不实现查找"会造成静默错误 ✗，
 **保持当前的响亮失败**才是诚实的；要实现它需要真正的特征文件查找与 ID 赋值（下一轮候选）。
+
+## 第 114 轮：打开**多样本**轴（此前从未比较过），并测出 FS/SOR 新类
+
+### 怎么造出多本语料
+仓库里的多本 gVCF 要么 contig 不匹配（`newMQcalc.combined.g.vcf` 是 contig 1、
+`twoSamples.MT.g.vcf` 是 contig 1 而参考是 `chrM`），要么长度不符（YRI 文件声明 contig 1 长度
+249250621 ⇒ GATK CombineGVCFs 报 incompatible contigs）。可用做法：把 chr20 语料的**样本列改名**
+得到第二份单本 gVCF，再用 GATK `CombineGVCFs` 合并 ⇒ 2 样本、1416 条输入记录、contig 一致 ✓。
+
+### 结果
+| 模式 | differ | 组成 |
+| --- | --- | --- |
+| 2 样本 default（252 行） | **5** | `FS`×4、`SOR`×1 |
+| 2 样本 dense（100001 行） | **152** | `QD` 119（已知符号零类）、样本列 77（已知跨接投影类）、`FS` 34、`SOR` 31、`QUAL` 33、`AF/AN` 30（已知类） |
+
+⇒ 多样本轴上**新出现**的类就是 **FS/SOR**（65 行），单本语料上从未出现 ✓。
+
+### 实测样本
+```
+POS=10010393  GATK  FS=22.002  SOR=0.609
+              NATIV FS=22.003  SOR=0.609      ← 只有末位差
+输入 SB（两个样本相同）：24,12,19,24 ⇒ 合并表 (48,24,38,48)
+```
+
+### GATK 算法（源码级，非推断）
+`FisherExactTest.java`（仓库内有源码）：`twoSidedPValue(int[][])` =
+① 用 **Apache Commons `HypergeometricDistribution.logProbability`**（鞍点展开 + logGamma）逐点求对数概率；
+② `threshold = logds[observed] * REL_ERR`，`REL_ERR = 1 - 10e-7`（**乘性**容差）；
+③ 取 `d <= threshold` 的点，映射到 log10 后用 **`MathUtils.sumLog10`（对数域求和）**；
+④ `min(p, 1)`。而 `FisherStrand.java:85` 是 `String.format("%.3f", phredScaleErrorRate(max(p, MIN_PVALUE)))`
+——即 **先格式化成字符串**（与 ExcessHet 同类）。
+
+native 的 `fisher_two_sided_pvalue()` 则是：`std::lgamma` 组合式 + **加性**容差 `observed + 1e-12`
++ **线性域** `exp()` 求和。
+
+### 实验与未解之谜（已回滚，记录以便下一轮）
+把 ②③ 改成 GATK 的乘性容差 + log10 域求和后：**位点级无变化**（default 仍 5、dense 仍 152），
+也没有回归 ✗。而**同一规则**的 Python 复刻给出的 p = 0.0063060065462276 ⇒ phred 22.002456
+⇒ 令牌 **22.002**（与 GATK 完全一致 ✓），GATK 探针（反射调用仓库内的 `FisherExactTest`）
+对同一张表也给出 phred 22.002456 ⇒ **22.002** ✓；但**确认已重新编译**（源/目标文件时间戳 + 目标文件里
+存在新常量 0.999999）的 native 二进制仍输出 **22.003** ✗。
+又排除了 float32 往返（float32(22.002456) → "22.002457" → `%.3f` = "22.002" ✓）与
+"小范围改表"（±3/cell 内没有任何表能给出 22.003 ✓）。
+⇒ **native 运行时实际使用的表或 p 值与我读到的代码不符**，下一轮第一步就是插桩
+`[FS] pos1=… table=a,b,c,d total=… p=… fs=…`（本轮已写好该打印但未落地）把两者对齐。
+
+**本轮未改生产代码**：实验无位点级收益且未定位到根因，按纪律回滚（源码 `git checkout`），
+两后端重建，复测 chr20 dense 仍 **73**、2 样本 default 仍 5、`only-GATK=[]`。
