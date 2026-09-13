@@ -1172,6 +1172,12 @@ struct Record {
     // to it.
     double call_confidence = 0.0;
     bool call_confidence_available = false;
+    // Unrounded FS/SOR for the text layer.  GATK renders both from the double it
+    // computed (FisherStrand / StrandOddsRatio build a String with
+    // format("%.3f", ...)), while HTSlib stores INFO floats as float32, so
+    // re-formatting its shortened text double-rounds the printed value.
+    double fs_exact = std::numeric_limits<double>::quiet_NaN();
+    double sor_exact = std::numeric_limits<double>::quiet_NaN();
 };
 
 // The joint-materialization pass is Host/HTSlib heavy, but its final
@@ -4795,9 +4801,11 @@ void update_gatk_standard_annotations(const bcf_hdr_t* output_header, Record& re
     // FisherStrand uses MIN_COUNT=2.  GATK still materializes the standard
     // FS field as zero for a lower-depth table, so preserve that observable
     // output contract while avoiding a spurious low-count p-value.
-    const float fs = total <= 2 ? 0.0F : static_cast<float>(std::min(
+    const double fs_exact = total <= 2 ? 0.0 : std::min(
         999.0, -10.0 * std::log10(std::max(fisher_two_sided_pvalue(
-            table[0], table[1], table[2], table[3]), 1.0e-320))));
+            table[0], table[1], table[2], table[3]), 1.0e-320)));
+    record.fs_exact = fs_exact;
+    const float fs = static_cast<float>(fs_exact);
     if (bcf_update_info_float(output_header, record.value, "FS", &fs, 1) != 0)
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write FS annotation");
 
@@ -4809,9 +4817,10 @@ void update_gatk_standard_annotations(const bcf_hdr_t* output_header, Record& re
                          (t01 / t00) * (t10 / t11);
     const double ref_ratio = std::min(t00, t01) / std::max(t00, t01);
     const double alt_ratio = std::min(t10, t11) / std::max(t10, t11);
-    const float sor = static_cast<float>(std::log(ratio) +
-                                         std::log(ref_ratio) -
-                                         std::log(alt_ratio));
+    const double sor_exact = std::log(ratio) + std::log(ref_ratio) -
+                             std::log(alt_ratio);
+    record.sor_exact = sor_exact;
+    const float sor = static_cast<float>(sor_exact);
     if (bcf_update_info_float(output_header, record.value, "SOR", &sor, 1) != 0)
         throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write SOR annotation");
 }
@@ -4942,8 +4951,27 @@ std::vector<std::string> split_tab_fields(const std::string& line) {
 
 std::string format_gatk_float_value(const std::string& key,
                                     const std::string& value,
-                                    bool ref_only = false) {
+                                    bool ref_only = false,
+                                    double exact_fs = std::numeric_limits<double>::quiet_NaN(),
+                                    double exact_sor = std::numeric_limits<double>::quiet_NaN()) {
     if (value.empty() || value == ".") return value;
+    // GATK pre-formats FS and SOR from the double it computed
+    // (FisherStrand.makeValueObjectForAnnotation / StrandOddsRatio ->
+    // String.format("%.3f", ...)).  Rendering HTSlib's float32 text instead
+    // double-rounds the last digit: measured on a 2-sample chr20 corpus, an
+    // internal 22.002456665 printed "22.0025" and re-rounded to 22.003 where
+    // GATK's double gives 22.002, and 17.995515823 printed "17.9955" and
+    // re-rounded to 17.995 where GATK gives 17.996.
+    const auto render_exact = [](const double number) {
+        std::ostringstream rendered;
+        // GATK's phred score for a certain site is -10 * log10(1.0) = -0.0 and
+        // its formatters add 0.0 (the `+ 0.0` idiom used throughout
+        // GenotypingEngine) so the published token is "0.000", never "-0.000".
+        rendered << std::fixed << std::setprecision(3) << (number + 0.0);
+        return rendered.str();
+    };
+    if (key == "FS" && std::isfinite(exact_fs)) return render_exact(exact_fs);
+    if (key == "SOR" && std::isfinite(exact_sor)) return render_exact(exact_sor);
     int precision = -1;
     // htsjdk's VCFEncoder formats Float/Double values with the following
     // value-dependent rule (formatVCFDouble): values below one use three
@@ -5084,7 +5112,9 @@ std::string format_gatk_qual_value(const std::string& value) {
 std::string gatk_compatible_record_text(const std::string& formatted,
                                         bool drop_read_level = false,
                                         bool drop_excess_het = false,
-                                        bool ref_only = false) {
+                                        bool ref_only = false,
+                                        double exact_fs = std::numeric_limits<double>::quiet_NaN(),
+                                        double exact_sor = std::numeric_limits<double>::quiet_NaN()) {
     if (formatted.empty()) return formatted;
     std::string line = formatted;
     while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) line.pop_back();
@@ -5147,7 +5177,8 @@ std::string gatk_compatible_record_text(const std::string& formatted,
             info_text << ordered[index].key;
             if (ordered[index].has_value) {
                 info_text << '=' << format_gatk_float_value(ordered[index].key,
-                                                             ordered[index].value, ref_only);
+                                                             ordered[index].value, ref_only,
+                                                             exact_fs, exact_sor);
             }
         }
         fields[7] = info_text.str();
@@ -6904,6 +6935,8 @@ int run_streaming_genotype_gvcf(Options& options,
                 // A REF-only row is the shape whose INFO floats GATK renders
                 // through htsjdk's raw-double path (see format_gatk_float_value).
                 const bool ref_only = computed.record.allele_count == 1;
+                const double exact_fs = computed.record.fs_exact;
+                const double exact_sor = computed.record.sor_exact;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};
@@ -6912,7 +6945,7 @@ int run_streaming_genotype_gvcf(Options& options,
                         throw std::runtime_error("cannot format GATK-compatible streaming VCF record");
                     }
                     encoded.text = gatk_compatible_record_text(
-                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het, ref_only);
+                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het, ref_only, exact_fs, exact_sor);
                     free(formatted.s);
                 }
                 return encoded;
@@ -7693,6 +7726,8 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 // A REF-only row is the shape whose INFO floats GATK renders
                 // through htsjdk's raw-double path (see format_gatk_float_value).
                 const bool ref_only = computed.record.allele_count == 1;
+                const double exact_fs = computed.record.fs_exact;
+                const double exact_sor = computed.record.sor_exact;
                 encoded.record = std::move(computed.record);
                 if (options.gatk_annotation_compatibility) {
                     kstring_t formatted{0, 0, nullptr};
@@ -7701,7 +7736,7 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                         throw std::runtime_error("cannot format GATK-compatible VCF record");
                     }
                     encoded.text = gatk_compatible_record_text(
-                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het, ref_only);
+                        std::string(formatted.s == nullptr ? "" : formatted.s, formatted.l), drop_read_level, drop_excess_het, ref_only, exact_fs, exact_sor);
                     free(formatted.s);
                 }
                 return encoded;

@@ -1852,3 +1852,49 @@ native 的 `fisher_two_sided_pvalue()` 则是：`std::lgamma` 组合式 + **加�
 
 **本轮未改生产代码**：实验无位点级收益且未定位到根因，按纪律回滚（源码 `git checkout`），
 两后端重建，复测 chr20 dense 仍 **73**、2 样本 default 仍 5、`only-GATK=[]`。
+
+## 第 115 轮：FS/SOR 的**双重取整**被定位并修掉（bug 51），多样本轴进门禁
+
+### 上一轮遗留之谜的答案：值是对的，**文本层**错了
+按上一轮计划插桩 `[FS] table/p/fs`，在 2 样本语料的两个位点实测：
+
+```
+[FS] pos1=10010393 table=48,24,38,48 total=158 p=0.0063060065462286468 fs=22.002456665039062
+[FS] pos1=10012631 table=16,0,18,8   total=42  p=0.015865305980838657 fs=17.995515823364258
+```
+内部值完全正确（`fs=22.002456…` ⇒ `%.3f` 应为 **22.002**；`17.995515…` ⇒ 应为 **17.996**），
+**但输出令牌是 22.003 / 17.995** —— 两个方向都错 ⇒ 不是数值问题，而是**文本层的双重取整**：
+HTSlib 把 INFO 浮点存成 float32 并按"最短表示"打印（22.002456665 → `22.0025`），
+native 的兼容文本层再对这个**已缩短的文本**做 `%.3f` ⇒ 22.003 ✗。
+GATK 侧则是 `FisherStrand.makeValueObjectForAnnotation()` 直接
+`String.format("%.3f", phredScaleErrorRate(...))`（与 ExcessHet 同类的"先格式化字符串"）。
+
+### 修复（bug 51）
+在 Record 上保留**未取整的 double**（`fs_exact` / `sor_exact`），把它们透传给
+`gatk_compatible_record_text()` / `format_gatk_float_value()`，FS/SOR 直接按该 double 以 3 位小数渲染。
+首版漏了 GATK 的 `+ 0.0` 归一 ⇒ 零值渲染成 `-0.000`（chr20 default 0 → 72 行差异 ✗），
+补上后归零。
+
+### 实测
+| 参照 | 修复前 | 修复后 |
+| --- | --- | --- |
+| 2 样本 default（chr20 语料） | 5 | **0 / 252 行** ✓ |
+| 2 样本 dense | 152 | 147（剩余是已知类） |
+| chr20 default | 0 | **0** ✓ |
+| YRI default | 0 | **0** ✓ |
+| chr20 dense | 73 | **73** ✓ |
+| YRI dense | 81 | **81** ✓ |
+
+### 顺带发现并**证伪**的一条修法：QD 的"平局取整"
+YRI 语料的 2 样本运行里有 1 行差异：GATK `QD=11.49` vs native `11.48`
+（Java 的 `%.2f` 是 HALF_UP，C++ iostream 是 half-even ⇒ 恰在 `xx.x5` 平局时不同）。
+把 native 已有的"秩和键跨表示平局微调"推广到 QD 后：该行修好 ✓，但
+**chr20 dense 73 → 140、YRI dense 81 → 113** ✗（微调同时翻转了大量"略低于平局"的值，
+而 Java 在那些值上是往下取的）⇒ 该修法**已回滚**，记为已知类：
+需要"仅在**精确**十进制平局时微调"的判据（二进制下判"精确平局"本身需要新的判据），
+当前仅在 YRI-2 样本语料上体现 1 行。
+
+### 门禁
+`fastgatk-genotype-gvcf-independent-corpus-gatk-oracle` 新增**多样本轴**断言
+（用 chr20 语料改名样本列 + GATK `CombineGVCFs` 造 2 样本输入，default 模式 252 行必须逐字节一致）
+⇒ 现共 **13 组断言**，其中 12 组要求整行逐字节一致。

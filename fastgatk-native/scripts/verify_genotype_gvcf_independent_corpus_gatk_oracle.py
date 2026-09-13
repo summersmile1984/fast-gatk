@@ -233,6 +233,54 @@ def main() -> int:
                 "differing": len(differing),
             }
 
+        # Multi-sample axis.  The repository has no contig-compatible multi-sample
+        # chr20 gVCF (the MT/combined fixtures declare contig 1 or mismatched
+        # lengths), so the 2-sample input is built from the tuned corpus: rename
+        # its sample column and combine with GATK's CombineGVCFs.
+        chr20_multisample_source = root / (
+            "gatk-source/src/test/resources/org/broadinstitute/hellbender/"
+            "tools/haplotypecaller/expected.testGVCFMode.gatk4.g.vcf")
+        sample2 = work / "sample2.g.vcf"
+        with sample2.open("w", encoding="utf-8") as handle:
+            for line in chr20_multisample_source.read_text(
+                    encoding="utf-8").splitlines(keepends=True):
+                if line.startswith("#CHROM"):
+                    fields = line.rstrip("\n").split("\t")
+                    fields[-1] = "SAMPLE2"
+                    line = "\t".join(fields) + "\n"
+                handle.write(line)
+        combined = work / "combined.g.vcf"
+        run([str(java), "-Xmx4g", "-jar", str(gatk), "CombineGVCFs",
+             "-R", str(reference), "-V", str(chr20_multisample_source),
+             "-V", str(sample2), "-O", str(combined)])
+        # Gated: default mode byte-identical (252 rows).  Getting there needed
+        # rendering FS and SOR from the unrounded double, because HTSlib stores
+        # INFO floats as float32 and re-rounding its shortened text produced
+        # 22.003 where GATK's double gives 22.002 (and -0.000 for a zero FS).
+        gatk_vcf = work / "multisample-gatk.vcf"
+        native_vcf = work / "multisample-native.vcf"
+        run([str(java), "-Xmx4g", "-jar", str(gatk), "GenotypeGVCFs",
+             "-R", str(reference), "-V", str(combined),
+             "-O", str(gatk_vcf), "--create-output-variant-index", "false"])
+        run([str(native), "-R", str(reference), "-V", str(combined),
+             "--gatk-compatible-annotations", "-O", str(native_vcf)])
+        gatk_rows = read_rows(gatk_vcf)
+        native_rows = read_rows(native_vcf)
+        differing = sorted(p for p in set(gatk_rows) & set(native_rows)
+                           if gatk_rows[p] != native_rows[p])
+        if len(gatk_rows) != 252 or len(native_rows) != 252:
+            violations.append(
+                f"multisample: rows GATK={len(gatk_rows)} native={len(native_rows)}, "
+                f"control expects 252")
+        if gatk_rows != native_rows:
+            violations.append(
+                f"multisample: {len(differing)} rows differ (first {differing[:5]})")
+        reported["multisample_default"] = {
+            "gatk_rows": len(gatk_rows),
+            "native_rows": len(native_rows),
+            "differing": len(differing),
+        }
+
     payload = {
         "gate": "genotype-gvcf-independent-corpus",
         "gatk_version": "4.6.2.0",
