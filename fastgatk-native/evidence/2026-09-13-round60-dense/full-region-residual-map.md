@@ -1424,3 +1424,57 @@ chr20 语料里没有这种行，故**不落地未验证行为**，记录在此�
 ⇒ `-0.00` 必然来自另一个保留符号的路径/数值。native 15 行/24 行两侧都是 `-0.00`，
 说明 native 的 **QD 数值本身**（或它派生的未取整 QUAL 的符号）在 hom-alt `*` 行上是错的。
 下一轮应从"`*`-only 行的未取整 QUAL 符号"入手（AF 计算器 ~1e-16 的舍入方向），而不是格式化层。
+
+## 第 107 轮：`star/refonly` 30 行的根因已定位（块记录的"内部坐标所有权"），修复试过但未达标，已回滚
+
+### 根因（插桩实测）
+用既有的 `FASTGATK_DEBUG_SUBSET`（`apply_gatk_output_allele_subset`，全部 100 kb 只有 387 行）
+加临时 `[COV]`/`[SPAN]` 打印，对 10097436 那条记录（`REF=CTTTTCTTT…` 37bp、`GT 0/1`、
+`ALT=C,<NON_REF>`、`spanEnd1=10097472`）实测：
+
+```
+[COV]  srcPos1=10097436 refLen=37 spanEnd1=10097472 deletion=1 gq_ok=1 pushed=1
+[SPAN] srcPos1=10097436 … position1=10097438   ← 合成
+[SPAN] srcPos1=10097436 … position1=10097439   ← 合成
+[SPAN] srcPos1=10097436 … position1=10097440   ← 合成
+[SPAN] srcPos1=10097436 … position1=10097441   ← 合成
+（10097442 之后一行都没有）
+```
+
+跨度明明到 10097472，却只在 4 个坐标合成——原因是 `materialize_spanning_loci()` 的
+`occupied` 集合由**所有记录的起点**构成，而 dense 模式在**解码阶段**就把每个参考块展开成
+"每坐标一条 REF-only 记录"（`genotype_gvcf_tool.cpp:7225-7280`）⇒ **块的每个内部坐标都成了
+某条记录自己的起点**，把跨接变异记录的 `*` 行全部挡掉。
+
+这条规则同时解释了第 105 轮那个"找不到解释的 mid-span monomorphic 行"：
+**10097442 正是那个块自己的起点**——GATK 在"有记录始于该坐标"时只保留起始记录
+（`GenotypeGVCFsEngine.java:339-354`），于是该坐标是 REF-only 行；其余内部坐标则把块当作
+**跨接事件**参与合并（REF→NO_CALL），所以跨接变异的 `*` 照样出现 ✓✓。
+
+### 修复实验（已验证形状变对，但位点级不达标，**已回滚**）
+给 Record 加 `expanded_block_interior`（块展开时 `position != start` 置真），并在 `occupied`
+里跳过这些内部块记录（只保留真正的起点）。实测整段 chr20 dense：
+
+| 类别 | 修复前 | 修复后 |
+| --- | --- | --- |
+| `star/refonly (4,5,6,7,8,9)` | 30 | **12** |
+| `star/star (7,9)` | 38 | **56** |
+| 位点级 differ | 73 | **73（未降）** |
+
+即 **18 行的 ALT 形状恢复成 GATK 的 `*`** ✓，但它们的 INFO/样本列仍与 GATK 不同：
+
+```
+POS=10097450  GATK  ALT=* QUAL=0 LowQual  INFO=AC=1;AF=0.500;AN=2;DP=153;…  sample ./.:63,0:63:0:.:.:0,0,557
+              NATIV ALT=* QUAL=0 LowQual  INFO=…;DP=90;…                      sample 0|1:57,32:89:99:0|1:10097436_…:1089,0,2243:10097436
+```
+
+### 下一个靶子：块 + 跨接变异在同一坐标的**合并语义**
+GATK 在这些坐标上把**块也并进来**（`ReferenceConfidenceVariantContextMerger`：跨接变异的等位基因
+变 `*`、块的 REF 变 NO_CALL），于是样本变成 `./.`、PL 是合并后的 `0,0,557`、位点 `DP` 也是合并值
+153；native 现在只发出跨接变异记录自己的样本（`0|1` + PGT/PID/PS）。要收掉这 12+56 行，需要实现
+"同一坐标多条记录（含块）的样本级合并"，而不是只取某一条记录——这与 `star/star (7,9)` 的
+PL 投影问题是同一处的两半。
+
+**回滚说明**：该实验不构成回归（`only-GATK=[]`、`only-native=[]`、differ 不变），但也没有把
+位点级残差从 73 降下来，按纪律**不留未达标的半成品**；源码已 `git checkout` 还原，两后端已重建，
+复测确认仍是 73 / `only-GATK=[]` / `only-native=[]`。
