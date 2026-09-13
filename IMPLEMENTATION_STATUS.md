@@ -92,7 +92,8 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 102 轮，当前树） | **309/309 通过**（1492.3s） | **309/309 通过**（1500.0s） | REF-only 行补 MQ（commit `5a334d7`），两后端均已重建；零陈旧告警；证据 `.diag/regression/20260913-085750/` |
+| 全量回归（第 104 轮，当前树） | **310/310 通过**（1546.4s） | **310/310 通过**（1547.1s） | 物化跨位点行改读来源 GQ（bug 44）+ 新门禁 `...-spanning-source-gq-gatk-oracle`；两后端均已重建；零陈旧告警；证据 `.diag/regression/20260913-094019/` |
+| 全量回归（第 102 轮） | 309/309 通过（1492.3s） | 309/309 通过（1500.0s） | REF-only 行补 MQ（commit `5a334d7`） |
 | 全量回归（第 97 轮） | 309/309 通过（1494.0s） | 309/309 通过（1470.1s） | REF-only 行相位清除 |
 | 全量回归（第 93 轮） | 309/309 通过（1517.0s） | 309/309 通过（1493.5s） | 两个开关判据按实测拆分 |
 | 全量回归（第 86 轮） | 309/309 通过（1506.5s） | 309/309 通过（1514.9s） | 物化行读级注释的文本层过滤 |
@@ -786,7 +787,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–102 轮增量（累计 **43** 个已证真 bug 已修并上锁）
+## 第 36–104 轮增量（累计 **44** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -813,6 +814,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 41 | REF-only 物化行的读级注释未过滤（第 86 轮，文本层按两类分别过滤） | 见下文「第 86 轮」一节；残差 84 → 81、无误伤 |
 | 42 | REF-only 行多带 `PGT/PID/PS`（第 97 轮，判别式 = 该行 ALT 只有 REF） | 见下文「第 97 轮」一节；字段级修正、位点级零回归 |
 | 43 | REF-only 行缺 `MQ`（第 102 轮，在 `RAW_MQandDP` 被移除前推导） | 三个探针位点的 MQ 与 GATK 逐一相同；位点级仍 81（另差 ExcessHet 渲染） |
+| 44 | 物化跨位点行的样本列读错 GQ 来源（第 104 轮，`source_gq` 在解码时留存） | 见下文「第 104 轮」一节；整段 dense 残差 **81 → 78**，3 行逐字节一致 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -1522,14 +1524,82 @@ GATK 写 `ExcessHet=0.00`，native 写 `ExcessHet=0.0000`（同一位点、同�
 另有 INFO 的 `ExcessHet` 精度差异）；**字段级**：这两行的 FORMAT 现与 GATK 一致。
 五个基因型门禁全部严格通过。
 
+## 第 104 轮：物化跨位点行的样本列（第 44 个已修 bug）
+
+**残留类**：整段 dense 残差里最后一类**样本列**分歧 `refonly/refonly (9,)` 3 行
+（10008964 / 10008965 / 10076991）——INFO 逐字节相同，只差样本列：
+
+```
+GATK    GT:DP:RGQ   0/0:34:99     0/0:34:99     0/0:31:41
+NATIVE  GT:DP:RGQ   ./.:34:0      ./.:34:0      ./.:31:0
+```
+
+**第 103 轮（一次插桩定案）**：在 `materialize_gatk_monomorphic_ref_call()`
+（`genotype_gvcf_tool.cpp:2804`）里按位点打印中间量，实测：
+
+```
+pos1=10008964 ... span=1 allele_count=2 source_has_gq=1 source_gq_count=1
+                 source_gq_val=0 min_dp=-999 rec_dp=34 depth=34 gq=0 would_homref=0
+pos1=10076991 ... source_gq_val=0 rec_dp=31 depth=31 gq=0 would_homref=0
+```
+
+⇒ `./.:DP:0` 的成因**唯一**：`:2838` 的 `continue` 未命中（`depth=34>0`）、
+`rgq` 被写成 `gq`（=0）、但 `:2840` 的 `gq > 0` 为假 ⇒ GT 停在 `bcf_gt_missing`。
+即"读到的 GQ 是 0"，而不是 GQ 缺失。**假设 (A) 成立**：该函数用
+`bcf_get_format_int32(output_header, record.value, "GQ", ...)` 从**已被计算阶段改写的
+输出记录**读 GQ，此时它已被替换为 PL 派生值 0。
+
+**输入侧与 GATK 真值**（GATK 自己的 chr20 gVCF + `-L 20:10000000-10099999` dense）：
+
+| 位点 | 覆盖它的来源记录 | 来源样本 | GATK 输出样本 |
+| --- | --- | --- | --- |
+| 10008964/10008965 | `POS=10008952 REF=CACACACACACACA`（REF 跨 10008952–10008965） | `GT=2/4, DP=34, GQ=99` | `0/0:34:99` |
+| 10076991 | `POS=10076989 REF=CAA`（REF 跨 10076989–10076991） | `GT=2/3, DP=31, GQ=41` | `0/0:31:41` |
+
+⇒ 规则实测为：**物化行继承来源记录的 GQ 与 DP，GT 写 hom-ref**（RGQ=99/41 分别等于两条
+来源记录的 GQ；DP 早已继承正确，只有 GQ 取错）。两个值不同（99≠41），可排除任何常数解。
+（第 103 轮笔记里我把 `31:41` 读成了 GQ=31/DP=41，本轮实测更正为 **DP=31/GQ=41**。）
+
+**修复**（最小面）：
+1. `Record` 增 `std::vector<int32_t> source_gq;`，在解码处
+   `read_scalar_format("GQ", destination.gq)`（`:1507`）之后、`source_has_gq` 赋值处一并留存
+   ——`source_has_gq` 原本只保留了"有无"，没保留"值"；
+2. `materialize_gatk_monomorphic_ref_call()` 中 `gq` 改为可变，并新增一处**仅对物化行**
+   生效的覆盖：`if (record.materialized_spanning_locus && present(record.source_gq, sample))
+   gq = record.source_gq[sample];`
+
+**没有**改 `gq > 0` 判据本身（GQ=99/41 已 >0），因此对非物化行与非 dense 路径行为不变——
+这也是`refonly/refonly (7,)` 那 5 行未被本次改动波及的原因。
+
+**效果（整段 chr20 语料，dense，`measure_dense_residual.py` 实测）**：
+位点级 **81 → 78**，三类残差变为
+
+| 形态（GATK/native） | 差异列 | 行数 |
+| --- | --- | --- |
+| `star/star` | (7, 9) | 38 |
+| `star/refonly` | (4, 5, 6, 7, 8, 9) | 30 |
+| `refonly/refonly` | (7,) | 5 |
+| `refonly/refonly` | (5,) | 3 |
+| `star/star` | (7,) | 2 |
+
+即 `(9,)` 类 3 行消失，且原 `(5,9)` 类 3 行的**第 9 列（样本列）也一并修好**（仍差第 5 列）。
+only-GATK 位点仍是那 7 个（10062936-10062938 / 10087821-10087822 / 10098309-10098310）。
+
+**新门禁**（严格，已注册）：`fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle`
+（`scripts/verify_genotype_gvcf_spanning_source_gq_gatk_oracle.py`）——整段 dense 跑双工具，断言
+① native 在这 3 个位点有行；② 该行与 GATK **逐字节相同**；③ GATK 自身的这 3 行确为
+`GT:DP:RGQ` + `0/0:34:99`/`0/0:34:99`/`0/0:31:41`（对 GATK 断言，防止"两边一起错"）；
+④ 非 no-call 且 RGQ 非 0；另加对照：pin 的两个 RGQ 必须不同（99≠41），常数解必然失败。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
-**最新基线（第 102 轮，主会话亲自运行）：REF-only 行补 `MQ`（两后端均已重建）上
-OpenMP 309/309（1492.3s）、Serial 309/309（1500.0s），零陈旧告警，
+**最新基线（第 104 轮，主会话亲自运行）：物化跨位点行改读来源 GQ（bug 44）+ 新增
+`fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle` 门禁上
+OpenMP **310/310**（1546.4s）、Serial **310/310**（1547.1s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-证据块（可直接复核）：`.diag/regression/20260913-085750/summary.txt`
-（本轮另新增测量工具 `fastgatk-native/scripts/measure_dense_residual.py`：一条命令复算整段残差图）。
+证据块（可直接复核）：`.diag/regression/20260913-094019/summary.txt`
+（整段字段级残差复算仍用 `fastgatk-native/scripts/measure_dense_residual.py`）。
 
 > 流程教训（已在本轮踩到）：改动源码后**必须两个后端都重建**再跑全量。
 > 本轮第一次跑全量时只重建了 omp，serial 用陈旧二进制跑 dense 门禁而失败
@@ -1537,6 +1607,7 @@ OpenMP 309/309（1492.3s）、Serial 309/309（1500.0s），零陈旧告警，
 > 该次运行作废（`.diag/regression/20260913-024535/`），重建 serial 后重跑才是本基线。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
+第 102 轮上 309/309（1492.3s / 1500.0s，REF-only 行补 `MQ`）；
 第 97 轮上 309/309（1494.0s / 1470.1s，REF-only 行相位清除）；
 第 93 轮上 309/309（1517.0s / 1493.5s，两个开关判据拆分）；
 第 86 轮上 309/309（1506.5s / 1514.9s，物化行读级注释的文本层过滤）；

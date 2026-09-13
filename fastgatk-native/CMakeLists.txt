@@ -1611,6 +1611,16 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_dense_materialize_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # STRICT gate for the sample column of a materialized spanning locus: GATK
+    # rewrites the projected call as hom-ref using the SOURCE record's GQ (99 at
+    # 10008964/10008965, 41 at 10076991 -- the values differ on purpose, so a
+    # constant cannot pass), while native re-read its already PL-derived GQ (0)
+    # and, being guarded on gq > 0, emitted "./.:34:0" instead of "0/0:34:99".
+    add_test(NAME fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_spanning_source_gq_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # STRICT gate for the allele-frequency posterior underflow: a confident
     # hom-alt sample's P(hom-ref) fell below the smallest positive double, so the
     # linear normalisation produced log10(0) = -inf, which collided with the

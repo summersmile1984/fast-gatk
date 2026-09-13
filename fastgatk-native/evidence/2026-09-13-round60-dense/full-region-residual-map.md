@@ -1132,3 +1132,151 @@ source_gq_count / source_gq[sample] / min_dp / dp / gq`，整段跑一次并 gre
 
 预期收益：该类 3 行消失（残差 81 → 78）；若同一函数也是 `star/refonly (4,5,6,7,8,9)` 那 30 行的
 成因，收益更大——插桩时把 `-` 这三行之外再 grep 一条 `star/refonly` 的 POS 一起看。
+
+## 第 104 轮：`(9,)` 类已修（bug 44）——物化跨位点行的样本列读错 GQ 来源
+
+**插桩实测**（`FASTGATK_DEBUG_MONOREF`，`materialize_gatk_monomorphic_ref_call()`）：
+
+```
+pos1=10008964 span=1 allele_count=2 source_has_gq=1 source_gq_count=1
+             source_gq_val=0 rec_dp=34 depth=34 gq=0 would_homref=0
+pos1=10008965 （同上，rec_dp=34）
+pos1=10076991 source_gq_val=0 rec_dp=31 depth=31 gq=0 would_homref=0
+```
+
+`./.:DP:0` 的成因唯一：`:2838` 未 continue（depth>0）、`rgq` 写成 `gq`(=0)、`:2840` 的
+`gq > 0` 为假 ⇒ GT 停在 `bcf_gt_missing`。即**读到的 GQ 是 0**（不是缺失）——假设 (A) 成立：
+该函数从**已被计算阶段改写**的 `record.value` 读 GQ，此时它已是 PL 派生值 0。
+
+**GATK 真值逐位点**（整段 dense）：
+
+| 位点 | 来源记录 | 来源样本 | GATK 输出 |
+| --- | --- | --- | --- |
+| 10008964 / 10008965 | `POS=10008952 REF=CACACACACACACA` | `GT=2/4, DP=34, GQ=99` | `0/0:34:99` |
+| 10076991 | `POS=10076989 REF=CAA` | `GT=2/3, DP=31, GQ=41` | `0/0:31:41` |
+
+⇒ 规则：物化行**继承来源 GQ/DP，GT 写 hom-ref**。更正第 103 轮笔记：10076989 的来源是
+**DP=31 / GQ=41**（原笔记把 `31:41` 读反了，GATK 输出 `0/0:31:41` 亦可反证）。
+
+**修复**：`Record` 增 `source_gq`，在解码 `read_scalar_format("GQ", destination.gq)` 之后留存
+（`source_has_gq` 只保留了有无、没保留值）；物化行处 `gq = record.source_gq[sample]`（仅
+`materialized_spanning_locus` 生效）。`gq > 0` 判据**未改**，故非物化路径零影响。
+
+**实测效果**：整段 dense 位点级 **81 → 78**（3 行逐字节一致：`0/0:34:99` / `0/0:34:99` /
+`0/0:31:41`），另把原 `(5,9)` 类的第 9 列一并修好（仍差第 5 列）。新残差分类：
+
+| 形态 | 差异列（0-based） | 行数 | 含义 |
+| --- | --- | --- | --- |
+| `star/star` | (7, 9) | 38 | INFO + 样本列 |
+| `star/refonly` | (4,5,6,7,8,9) | 30 | ALT..样本全列（形态分歧） |
+| `refonly/refonly` | (7,) | 5 | INFO（ExcessHet 精度） |
+| `refonly/refonly` | (5,) | 3 | QUAL |
+| `star/star` | (7,) | 2 | INFO |
+
+注意残差地图的列号是 **0-based**：`(7,)`=INFO、`(5,)`=QUAL、`(9,)`=样本列、`(4,)`=ALT。
+
+**新门禁**：`fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle`（严格；双值对照 99≠41）。
+
+## 第 104 轮的附带收获：7 个 only-GATK 位点已完全刻画（下一轮目标）
+
+用当前树重跑 GATK（`-L 20:10000000-10099999 --include-non-variant-sites`，存
+`.diag/round104/gatk-dense.vcf`）后逐位点读出 GATK 的形状——**7 行全部是同一种**：
+
+```
+POS=10062936 REF=N ALT=. QUAL=Infinity FILTER=. FORMAT=GT:DP:RGQ SAMPLE=0/0:23:16
+   INFO=DP=89;MLEAC=.;MLEAF=.
+POS=10087821 REF=N ALT=. QUAL=Infinity FILTER=. FORMAT=GT:DP:RGQ SAMPLE=0/0:53:99
+   INFO=DP=103;MLEAC=.;MLEAF=.
+POS=10098309 REF=N ALT=. QUAL=Infinity FILTER=. FORMAT=GT:DP:RGQ SAMPLE=0/0:2:6
+   INFO=DP=2;MLEAC=.;MLEAF=.
+```
+
+三条硬事实：
+
+1. **这 7 个坐标的参考碱基都是 `N`**（实测 `GRCh37.chr20.fa` + `.fai` 逐字节读：
+   10062936/37/38、10087821/22、10098309/10 全部 = `N`）。所以 `REF=N` 不是占位符，
+   而是真的 N-masked。
+2. **它们都有跨接来源记录**（第 103 轮我的快速脚本按 `END=` 起 span，漏掉了
+   "无 END 但 REF 很长"的记录，已更正为 `span = max(END, pos+len(REF)-1)`）：
+
+   | 位点 | 来源记录 | 来源样本（GT:AD:DP:GQ:PL:SB） |
+   | --- | --- | --- |
+   | 10062936-38 | `POS=10062935 REF=CAAA ALT=C,CA,CAA,CAAAA,<NON_REF>`（span 10062935-10062938） | `0/4:...,DP=23,GQ=16` |
+   | 10087821-22 | `POS=10087820 REF=CAG ALT=C,CAGAG,<NON_REF>`（span 10087820-10087822） | `0/2:...,DP=53,GQ=99` |
+   | 10098309-10 | `POS=10098308 REF=AAT ALT=A,<NON_REF>`（span 10098308-10098310） | `0/0:...,DP=2,GQ=6` |
+
+3. **样本列再次印证第 104 轮刚落地的继承规则**：GATK 的 `23:16` / `53:99` / `2:6`
+   分别等于三条来源记录的 `DP:GQ`（site 级 `INFO/DP` 是 89/103/2，**不是**样本 DP）。
+   注意这几行是 **monomorphic（`ALT=.`）**，说明"继承来源 DP/GQ"这条规则对 monomorphic
+   物化行同样成立。
+
+**形状解读（下一轮的锚点）**：GATK 在这里给的是 monomorphic REF 行——`ALT=.`（不是 `*`）、
+`FILTER=.`（未设）、`QUAL=Infinity`、`INFO` 只剩 `DP` 且 `MLEAC=.`/`MLEAF=.`（缺值）。
+native 却**整行都没有**。native 已有 `finalized_monomorphic_ref` 这条路径（它正是产出
+`ALT=.`、并抑制读级注释的那条），所以下一步不是新写路径，而是查**为什么这 7 行在
+N-masked 坐标上走不到/被丢掉**，以及 QUAL 的 `Infinity` 语义：
+
+- 第一嫌疑：`:3939` `base = reference_base(...)` 在 N 位置得到 `"N"`，
+  `alleles = "N,*"` ⇒ 合成的是 `*` 行；随后若投影出的基因型不带该删除，`*` 被剪成
+  monomorphic 行——需要在剪枝之后确认行是否仍在 `records` 里；
+- 第二嫌疑：QUAL 非有限值（`Infinity` / `NaN`）的处理。第 95 轮 backlog 已记下
+  3 行 `refonly/refonly (5,)` 是 `163.67` vs `Infinity`（本轮修完样本列后它们**只差 QUAL**，
+  见上表 `(5,)` 3 行），与这 7 行的丢行**同根**：native 侧 QUAL 的有限/非有限判定。
+
+**一次插桩定案的方案**：在 `materialize_spanning_loci()` 里对 `position ∈ {10062936,
+10087821, 10098309}` 打印 `base / alleles / deletion / projected GT / 是否 push_back`，
+再在 compute 出口打印这些坐标的 `allele_count / qual / 是否被 LowQual 丢弃`。
+
+## 第 104 轮附二：78 个残差的**字段级**地图（下一轮的直接靶子）
+
+用当前树跑 dense 双工具并逐字段比对（GATK 100000 位点 / native 99993 位点 / differ 78）：
+
+| 列（0-based） | 含义 | 差异行数 |
+| --- | --- | --- |
+| 4 | ALT | 30 |
+| 5 | QUAL | 33 |
+| 6 | FILTER | 30 |
+| 7 | INFO | **75** |
+| 8 | FORMAT | 30 |
+| 9 | 样本列 | 68 |
+
+INFO 内部按键统计：`QD` 70、`AN`/`AF`/`AC` 各 68、`MLEAC`/`MLEAF` 各 63、
+`FS`/`SOR`/`DP` 各 44、`ExcessHet` 35。
+
+### 最大一类（38+2 行）：`star/star` 的 `*` 行基因型
+
+同一来源记录 `POS=10008952 REF=CACACACACACACA ALT=C,CCACACACACACA`（REF 跨 10008952-10008965，
+输出 GT `1/2`）在它覆盖的 13 个坐标上，GATK/native 的对拍：
+
+| 坐标 | GATK | native |
+| --- | --- | --- |
+| 10008952（记录自身起点） | `1/2:1,14,11:34:99:1717,539,803,595,0,533` | **逐字节相同** ✓ |
+| 10008953-10008963（**11 个**） | `ALT=*`, `QUAL=0`, `LowQual`, `AC=2;AF=1.00;AN=2;MLEAC=2;MLEAF=1.00;QD=-0.00`, 样本 `1/1:1,11:34:62:1184,62,0` | `ALT=*` 但 `AC=0;AF=0.00;AN=0;MLEAC=1;MLEAF=0.500`（**无 QD**），样本 `./.:1,14:34:0:1717,539,803` |
+| 10008964-10008965（2 个） | `ALT=.`, `QUAL=Infinity`, `FILTER=.`, `INFO=DP=63;MLEAC=.;MLEAF=.`, 样本 `0/0:34:99` | **已修（第 104 轮）逐字节相同** ✓ |
+
+⇒ 该类的机制是**跨接位点的等位基因投影 + 重新基因分型**：GATK 的
+`ReferenceConfidenceVariantContextMerger.replaceWithNoCallsAndDels()` 把"比本记录 REF 短的每个
+ALT"都变成 `*`（来源 GT `1/2` 两个等位基因都短于 14bp 的 REF ⇒ 合并后是 `*/*` ⇒ 输出 `1/1`，
+PL 由来源 21 个值投影到 `{REFNO_CALL, *}` 得 `1184,62,0`）；native 只按
+`called_deletion_allele_index(record)` 取**单个**删除等位基因做投影，来源基因型里的
+其它等位基因在投影后的等位基因集合里不存在 ⇒ 退化成 no-call `./.`、
+`AC=0;AF=0.00;AN=0`，并且把来源 PL 的对角项 `1717,539,803` 原样带出（不是投影值），
+QD 也因此整个缺失。
+
+**未解的边界问题（下一轮先测这个）**：同一跨度内为什么前 11 个坐标是 `*` 行、后 2 个是
+monomorphic 行？跨度共 13 个坐标（= len(REF)-1），实测 `*` 只覆盖 11 个
+（`REF` 14 - 最长 ALT 12 = 2 恰好是 monomorphic 的个数；但"每个 ALT 的删除覆盖区间取并集"
+给的是 13，故现有模型不足以解释）。下一轮建议用同一个来源记录把两个计数都算出来
+（`len(REF)`、各 ALT 长度、`called_deletion_allele_index`、以及 GATK 侧 `*` 的实际最大坐标），
+确定 `*` 的终止条件是"最长 ALT 长度"还是"某个被保留等位基因的删除长度"。
+
+**第 30 行 `star/refonly (4,5,6,7,8,9)`** 与上面同源（ALT/QUAL/FILTER/INFO/FORMAT/样本全差），
+预计同一处修复会一起收掉——即"投影等位基因集合"改为"所有短于本记录 REF 的 ALT 都映射到 `*`"。
+
+### 其余小类
+- `refonly/refonly (5,)` 3 行：只差 QUAL（`163.67` vs `Infinity`）——与上文 7 个丢行同根
+  （native 对 monomorphic 行的 QUAL 有限/非有限判定）；
+- `refonly/refonly (7,)` 5 行：只差 INFO（`ExcessHet` 精度）。
+
+**测量教训（本轮又踩一次）**：`/tmp` 在不同 bash 调用之间**不保留**，跨调用复用的产物必须写到
+工作区（本轮改用 `.diag/round104/`）。

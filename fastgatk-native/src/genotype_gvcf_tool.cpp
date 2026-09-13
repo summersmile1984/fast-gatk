@@ -1055,6 +1055,9 @@ struct Record {
     std::vector<std::string> source_alleles;
     std::vector<int32_t> dp;
     std::vector<int32_t> gq;
+    // The source FORMAT GQ, preserved because the compute stage later replaces
+    // gq with a PL-derived value.
+    std::vector<int32_t> source_gq;
     // HaplotypeCaller's physical-phasing annotations are ordinary
     // genotype-level attributes to GenotypeGVCFs.  Preserve them through the
     // Host-side ALT union/sample merge instead of leaving whichever source
@@ -1510,6 +1513,11 @@ void extract_materialized_fields(const bcf_hdr_t* input_header, const bcf1_t* re
     // the merged genotype's hasGQ().  read_scalar_format leaves the vector
     // untouched when the tag is absent, so emptiness records that here.
     destination.source_has_gq = !destination.gq.empty();
+    // GATK carries the SOURCE GQ into RGQ when it converts a call to hom-ref
+    // (measured on the chr20 corpus: the source at 10008952 has GQ=99 and GATK
+    // emits RGQ=99 at 10008964; the source at 10076989 has GQ=41 with RGQ=41 at
+    // 10076991).  Keep the source value, since gq is rewritten downstream.
+    if (destination.source_has_gq) destination.source_gq = destination.gq;
     read_scalar_format("MIN_DP", destination.min_dp);
     read_scalar_format("PS", destination.ps);
 
@@ -2833,8 +2841,14 @@ void materialize_gatk_monomorphic_ref_call(const bcf_hdr_t* output_header,
         int32_t depth = 0;
         if (present(record.min_dp, sample)) depth = record.min_dp[sample];
         else if (present(record.dp, sample)) depth = record.dp[sample];
-        const auto gq = source_gq != nullptr && static_cast<int>(sample) < source_gq_count
+        int32_t gq = source_gq != nullptr && static_cast<int>(sample) < source_gq_count
             ? source_gq[sample] : bcf_int32_missing;
+        // A materialized spanning locus is a duplicate of its single source
+        // record, and GATK inherits that source's GQ for the hom-ref conversion;
+        // the record's own GQ has already been replaced by a PL-derived value
+        // (measured as 0 on the three rows this fixes), so prefer the source.
+        if (record.materialized_spanning_locus && present(record.source_gq, sample))
+            gq = record.source_gq[sample];
         if (depth <= 0 || gq == bcf_int32_missing || gq == bcf_int32_vector_end)
             continue;
         if (gq > 0)
