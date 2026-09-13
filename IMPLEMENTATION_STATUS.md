@@ -1721,6 +1721,19 @@ QUAL 的符号**在 hom-alt `*` 行上是错的，应从数值层（AF 计算器
 本轮**未改生产代码**：实验不构成回归（`only-GATK=[]`、`only-native=[]`、differ 不变）但也没降残差，
 按纪律不留半成品，已还原并两后端重建复测（73 ✓）。第 106 轮的 310/310 基线仍适用。
 
+## 第 108 轮：剩余 73 处的四类机制全部测清（未改生产代码）
+
+| 类 | 行数 | 机制（已按 GATK 源码 + 实测确认） | 实现缺口 |
+| --- | --- | --- | --- |
+| `star/star (7,9)` | 38 | 投影：`{参考碱基,"*"}`；第 i 个等位基因 `len < 来源REF`（或本身是 `*`）→ `*`，否则 → NO_CALL（**只置 missing，不整样本 no-call**）；`AD[*] = AD[最后一个映射的被调用等位基因]`；PL/GT/QUAL 由 AF 模型**重算** | ① 目标集合改为"所有短被调用等位基因→单个 `*`" ② 关掉 `force_no_call_on_dropped_gt` ③ AD 取最后一个 ④ PL 必须重算（现沿用来源 PL） |
+| `star/refonly` | 30 | 块内部坐标所有权（第 107 轮）+ **块与跨接变异同时覆盖时的样本级合并**（块 REF→NO_CALL 参与 ⇒ 样本 `./.`、PL 合并、位点 DP 合并） | 实现样本级合并 |
+| `refonly (5,)` | 3 | `GenotypingEngine.java:158-163`：单态位点用 `log10ProbVariantPresent()`；`AFCalculationResult.java:118` 证明它与 native 公式**完全相同** ⇒ 差异是 `log10PosteriorOfNoVariant` 的 ~1e-16 浮点值（native 精确 0 ⇒ 补后验 `-inf` ⇒ `Infinity`；GATK ≈ -1.7e-17 ⇒ 163.67） | 对齐 AF 状态 log10-sum-exp 的求和实现（同族于第 51 轮符号零） |
+| `star/star (7,)` | 2 | QD 零符号：`-0.00` 115 行（het）vs `0.00` 24 行（hom-alt）⇒ 与是否 hom-alt 相关；`GenotypingEngine` 写进 VC 的 QUAL 是 `log10PError(log10Confidence)`（**没有** `+0.0` 去负零那一步）⇒ QD 看的是未归一的那个 double | native 需把"记录里的 QUAL"与"QD 用的未取整 QUAL"分开并复现符号 |
+
+实测证据（AD 规则三例、QUAL 分支源码、htsjdk 探针）见
+`fastgatk-native/evidence/2026-09-13-round60-dense/full-region-residual-map.md` 第 108 轮节。
+本轮未改生产代码，第 106 轮基线（73 / 双后端 310/310）继续适用。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
 **最新基线（第 106 轮，主会话亲自运行）：REF-only 行的 `ExcessHet` 走 htsjdk 原始 double 路径

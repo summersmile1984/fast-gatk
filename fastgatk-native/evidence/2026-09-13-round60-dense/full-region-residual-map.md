@@ -1478,3 +1478,70 @@ PL 投影问题是同一处的两半。
 **回滚说明**：该实验不构成回归（`only-GATK=[]`、`only-native=[]`、differ 不变），但也没有把
 位点级残差从 73 降下来，按纪律**不留未达标的半成品**；源码已 `git checkout` 还原，两后端已重建，
 复测确认仍是 73 / `only-GATK=[]` / `only-native=[]`。
+
+## 第 108 轮：剩下 73 处的**逐类机制**已按 GATK 源码测清（下一步可直接照做）
+
+### 类 1：`star/star (7,9)` 38 行 —— 跨接位点的等位基因投影
+
+对同一来源记录的多个 `*` 行逐位点对拍后，GATK 的映射规则是**可复现的**：
+
+```
+输出等位基因 = {位点参考碱基, "*"}
+来源基因型第 i 个等位基因 → 若 i == 0 则映射到 REF；若 len(allele_i) < len(来源REF)（或该等位基因本身就是 "*"）
+                           则映射到 "*"；否则 → NO_CALL（只把该等位基因置 missing，不整样本置 no-call）
+AD[*] = AD[最后一个映射到 "*" 的被调用等位基因]
+PL/GT/QUAL = 由 AF 模型**重新基因分型**（不是沿用来源 PL）
+```
+
+实测证据（`AD` 全是"最后一个映射等位基因"）：
+
+| 位点 | 来源 GT / AD | GATK 行 | native 行 | native 取错在哪 |
+| --- | --- | --- | --- | --- |
+| 10008953 | 2/4 / 1,3,14,5,11,0 | `1/1` AD **1,11** PL 1184,62,0 | `./.` AD 1,14 PL 1717,539,803 | 只取**第一个**被调用删除（等位基因 2），等位基因 4 落到目标外 ⇒ `force_no_call_on_dropped_gt` 把整样本置 no-call |
+| 10067050 | 2/3 / 2,4,7,9,0 | `1/1` AD **2,9** PL 544,28,0 | `./.` AD 2,7 | 同上 |
+| 10068171 | 1\|2 / 0,2,4,0 | `1\|1` AD **0,4** | `./.` AD 0,2 | 同上 |
+| 10076990 | 2/3 / 7,4,13,7,0 | `0/1` AD **7,13** PL 211,0,335 | `./.` AD 7,13 PL 252,41,376 | AD 对；但等位基因 3 落到目标外 ⇒ 强制 no-call；GATK 重新基因分型后给 `0/1` |
+
+**缺口清单（实现时缺一不可）**：① 目标等位基因集合改为"所有短于来源 REF 的被调用等位基因 → 单个 `*`"；
+② `force_no_call_on_dropped_gt` 在这种"部分等位基因落到 NO_CALL"的情形必须**关掉**；
+③ AD 取**最后一个**映射等位基因（现在是第一个）；④ PL 必须由 AF 模型重算（native 现在沿用了来源 PL：
+`1717,539,803` = 来源 PL 的 (0,0),(0,2),(2,2) 三个对角项）。
+
+### 类 2：`star/refonly` 30 行 —— 块记录内部坐标的所有权 + **块与跨接变异的样本级合并**
+第 107 轮已定位：块在解码阶段被展开成"每坐标一条记录"，其内部坐标被误当作记录起点。
+把这一点修好后（实验已回滚）18 行的 ALT 变对，但样本列仍差：GATK **把块也并进同一坐标**
+（跨接变异贡献 `*`、块的 REF 变 NO_CALL），于是样本是 `./.`、PL 是合并后的 `0,0,557`、位点 `DP` 是合并值 153；
+native 只发跨接变异记录自己的样本（`0|1` + PGT/PID/PS）。
+⇒ 需要实现"同一坐标多条记录（含块）的样本级合并"，与类 1 的投影是同一处的两半。
+
+### 类 3：`refonly/refonly (5,)` 3 行 —— QUAL 有限 vs `Infinity`
+GATK 源码 `GenotypingEngine.java:158-163` 实测：
+
+```java
+final double log10Confidence =
+    !outputAlternativeAlleles.siteIsMonomorphic || annotateAllSitesWithPLs
+        ? AFresult.log10ProbOnlyRefAlleleExists() + 0.0     // 非单态：补后验
+        : AFresult.log10ProbVariantPresent() + 0.0;         // 单态：AF 模型自己的 P(变异存在)
+final double phredScaledConfidence = (-10.0 * log10Confidence) + 0.0;   // +0.0 去掉 -0.0
+```
+
+而 `AFCalculationResult.java:118-119`：
+`log10ProbVariantPresent() == MathUtils.log10OneMinusPow10(log10PosteriorOfNoVariant)`
+——**与 native 的公式完全相同** ⇒ 差异不在公式，而在 **`log10PosteriorOfNoVariant` 的数值本身**：
+native 得 `0.0`（精确 1）⇒ 补后验 `-inf` ⇒ QUAL=Infinity；GATK 得 `≈ -1.7e-17`
+⇒ QUAL = 163.67。这是 AF 计算器 log10-sum-exp 的 ~1e-16 级浮点差（与第 51 轮记下的符号零同族），
+**不可能靠改公式修掉**，需要对齐 AF 状态的求和实现。
+
+### 类 4：`star/star (7,)` 2 行 —— QD 的零符号
+GATK 侧统计：`QD=-0.00` 115 行（几乎都是 `GT 0/1`、`MLEAC=1`），`QD=0.00` 24 行（几乎都是
+`GT 1|1`/`1\|1`、`MLEAC=2/3`）⇒ 判别式是**位点是否 hom-alt**。htsjdk 探针显示
+`formatVCFDouble(-0.0) == "0.00"`（丢符号）而 GATK 大量输出 `-0.00`，说明 QD 走的是**保留符号**的
+浮点路径（`%.2f`）⇒ 差异在**数值**：native 在两类行上都得到 ≈ -0.0。
+注意 `GenotypingEngine` 里 `phredScaledConfidence` 加了 `+0.0` 去负零，而写进 VC 的是
+`builder.log10PError(log10Confidence)`（没有那次 `+0.0`）——**QD 看的是后者**，这就是"QUAL 打印 `0`
+但 QD 打印 `-0.00`"的来源。要修需要在 native 侧把"写进记录的 QUAL"与"QD 用的未取整 QUAL"分开，
+并按 hom-alt/het 复现符号。
+
+**本轮结论**：四类都测清了机制与缺口，但每一类都需要成体系的实现（投影重写 / 样本级合并 /
+AF 求和实现 / QUAL 双值拆分），不适合在一轮里半成品落地。本轮**未改生产代码**，树保持
+第 106 轮基线（位点级 73、双后端 310/310）。
