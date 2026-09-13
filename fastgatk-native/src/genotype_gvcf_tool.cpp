@@ -6729,6 +6729,18 @@ int run_streaming_genotype_gvcf(Options& options,
             },
             [&](GenotypeComputed computed) -> std::optional<GenotypeEncoded> {
                 GenotypeEncoded encoded;
+                // A REF-only row carries no phasing of its own: GATK publishes
+                // FORMAT GT:DP:RGQ there while the symbolically-shaped ('*') rows
+                // keep the source triple (measured: clearing it on every
+                // materialized row broke 9 '*'-shaped positions, round 96;
+                // span&&mono clears nothing at 20:10077008 which IS a REF-only row).
+                if (computed.record.value != nullptr && computed.record.allele_count == 1) {
+                    for (const char* tag : {"PGT", "PID", "PS"}) {
+                        if (bcf_hdr_id2int(output_header, BCF_DT_ID, tag) < 0) continue;
+                        (void)bcf_update_format_int32(output_header, computed.record.value,
+                                                      tag, nullptr, 0);
+                    }
+                }
                 // Both switches follow measured GATK behaviour at three loci: a
                 // SPANNING materialization drops the read-level annotations
                 // (20:10008964, span=1 mono=1 -> `DP=63;MLEAC=.;MLEAF=.`), a real
@@ -7503,6 +7515,18 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
             },
             [&](GenotypeComputed computed) -> std::optional<GenotypeEncoded> {
                 GenotypeEncoded encoded;
+                // A REF-only row carries no phasing of its own: GATK publishes
+                // FORMAT GT:DP:RGQ there while the symbolically-shaped ('*') rows
+                // keep the source triple (measured: clearing it on every
+                // materialized row broke 9 '*'-shaped positions, round 96;
+                // span&&mono clears nothing at 20:10077008 which IS a REF-only row).
+                if (computed.record.value != nullptr && computed.record.allele_count == 1) {
+                    for (const char* tag : {"PGT", "PID", "PS"}) {
+                        if (bcf_hdr_id2int(output_header, BCF_DT_ID, tag) < 0) continue;
+                        (void)bcf_update_format_int32(output_header, computed.record.value,
+                                                      tag, nullptr, 0);
+                    }
+                }
                 // Both switches follow measured GATK behaviour at three loci: a
                 // SPANNING materialization drops the read-level annotations
                 // (20:10008964, span=1 mono=1 -> `DP=63;MLEAC=.;MLEAF=.`), a real
