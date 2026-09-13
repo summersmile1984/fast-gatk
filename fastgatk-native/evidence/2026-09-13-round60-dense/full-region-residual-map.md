@@ -933,3 +933,38 @@ star         star         (7,)                     2
 
 顺带把分类细化了一档：此前文档里把 `*`/`*` 记成"40 行"，现在看清是
 **38 行同时差 INFO 与样本列、2 行只差 INFO**；REF-only 类也从"11 行"细化为 5+3+3。
+
+## 第 99 轮：用新工具把两个最小类**逐列看清**（各自只差一两处，且发现 native 缺 MQ）
+
+用 `measure_dense_residual.py` 的分类 + 逐列 dump 定位到两个最小类：
+
+### 类 `refonly/refonly (9,)`——3 行（10008964 / 10008965 / 10076991）
+
+```
+GATK   N  .  Infinity  .  DP=63;MLEAC=.;MLEAF=.  GT:DP:RGQ  0/0:34:99
+NATIVE N  .  Infinity  .  DP=63;MLEAC=.;MLEAF=.  GT:DP:RGQ  ./.:34:0
+```
+
+⇒ INFO 完全相同，只有**样本列**不同：GATK 是**纯合参考调用**（`0/0`、RGQ 99），native 是 no-call
+（`./.`、RGQ 0）。修法候选：REF-only 物化路径在「参考块/未覆盖」分支里把 GT 赋成 missing、
+GQ/RGQ 清零；GATK 在这些位点保留 hom-ref 调用与参考置信度质量。需要先插桩确认走的是哪个分支
+（`materialize_gatk_monomorphic_ref_call` 的 `uncovered` 分支会清 GT/GQ，但它同时会清 INFO 的
+`DP`，而这里 `DP=63` 仍在 ⇒ 疑点：不是那条分支）。
+
+### 类 `refonly/refonly (7,)`——3 行（10041698 / 10098308 / 10099270）
+
+```
+GATK   ... ExcessHet=0.00   ... ;MQ=58.63; ...
+NATIVE ... ExcessHet=0.0000 ... (无 MQ)
+```
+
+⇒ 两处差异：
+1. `ExcessHet` 的零值渲染（`0.00` vs `0.0000`）——第 94 轮已证**不能单独落地**（前置：数值对齐）；
+2. **native 根本没有写 `MQ`**（GATK 从 `RAW_MQandDP` 推导出 `MQ=58.63`/`MQ=60.00`）——
+   这是本轮**新发现**的缺口：这些 REF-only 行上 native 缺 `MQ` 注解（不是被误删，
+   因为 compute 阶段的抑制器只对 `span=1` 的行生效，而这些行 `span=0`）。
+
+**下一步（两个最小靶子，各自只差一处）**：
+- 3 行的 `(9,)`：先插桩确认 REF-only 物化的分支，再把「纯合参考 + RGQ」补齐；
+- 3 行的 `(7,)`：补 `MQ`（从 `RAW_MQandDP` 推导，与具体变异行的算法一致）——这一项与
+  `ExcessHet` 渲染无关，可独立修好并立即减少 3 行残差。
