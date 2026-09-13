@@ -968,3 +968,22 @@ NATIVE ... ExcessHet=0.0000 ... (无 MQ)
 - 3 行的 `(9,)`：先插桩确认 REF-only 物化的分支，再把「纯合参考 + RGQ」补齐；
 - 3 行的 `(7,)`：补 `MQ`（从 `RAW_MQandDP` 推导，与具体变异行的算法一致）——这一项与
   `ExcessHet` 渲染无关，可独立修好并立即减少 3 行残差。
+
+## 第 100 轮：`MQ` 缺失的**真正原因**（不是被删，而是早退路径不计算它）
+
+按第 99 轮的"最小靶子"补 MQ：在编码阶段对 `allele_count == 1` 的行，从 **bcf 的
+`RAW_MQandDP`** 推导 `MQ = sqrt(sumMQ2/DP)`（公式已由两点验证：`275031,80 → 58.63`、
+`7200,2 → 60.00`）。整段复验：**残差仍 81、类别不变**；单点核对 `20:10041698` 显示
+**native 仍无 `MQ`** ⇒ 该推导没有生效。
+
+**原因**：`RAW_MQandDP` 是**输入侧**的 INFO，native 的**输出 header 并不声明它**，
+故 `bcf_get_info_int32(..., "RAW_MQandDP")` 必然取不到 → 我的推导无从下笔（逻辑本身没错，取数取错了层）。
+
+**因此 MQ 缺失的真正机制是**：GATK 的 REF-only 行仍带 `MQ`（`58.63`/`60.00`），而 native 的这些行
+走的是 `finalized_monomorphic_ref` **早退分支**——该分支只调用 `apply_gatk_annotation_compatibility()`，
+**跳过了 `update_gatk_standard_annotations()`**（具体变异行的 MQ 就是在那里算出来的）。
+
+**修法（下一轮，明确）**：在 `finalized_monomorphic_ref` 早退分支里补上 MQ 的计算——
+取值应来自 **Host 侧的原始 MQ 累加量**（与具体变异行同源，参照 `update_gatk_standard_annotations()`
+里 MQ 的算法），而不是从输出 bcf 的 INFO 里找 `RAW_MQandDP`。
+本轮改动已回退。
