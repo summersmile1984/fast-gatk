@@ -1280,3 +1280,91 @@ monomorphic 行？跨度共 13 个坐标（= len(REF)-1），实测 `*` 只覆�
 
 **测量教训（本轮又踩一次）**：`/tmp` 在不同 bash 调用之间**不保留**，跨调用复用的产物必须写到
 工作区（本轮改用 `.diag/round104/`）。
+
+## 第 105 轮：跨接位点的 `*` 存活规则已被测出，7 个丢失行补齐（bug 45）
+
+### 先证伪一个假说
+第 104 轮末我曾猜"参考碱基 = N 的坐标不给 `*`"。实测证伪：跨接记录覆盖的 **165 个坐标里
+162 个参考碱基就是 `N`，其中 145 个 GATK 照样给 `*`**，只有 17 个是 monomorphic。
+
+### 实测规则（19 条跨接记录，17 条完全吻合，另 2 条由"该坐标另有记录起点"解释）
+对一条非块记录，设来源样本基因型的等位基因长度为 `L_i`（含 REF 本身），记录 REF 长 `R`：
+
+```
+star 覆盖区间 = 该跨度最前面的 max_i(R - L_i) 个碱基
+其余被覆盖坐标 = monomorphic 行（ALT=.，QUAL=Infinity，FILTER=.，INFO=DP;MLEAC=.;MLEAF=.）
+```
+
+| 来源 POS | R | 来源 GT | 基因型等位基因长度 | 预测 star | 实测 star | 实测 mono |
+| --- | --- | --- | --- | --- | --- | --- |
+| 10004769 | 11 | 0/1 | 11, 1 | 10 | 10 | 0 |
+| 10006819 | 5 | 1/1 | 1, 1 | 4 | 4 | 0 |
+| 10008952 | 14 | 2/4 | 3, 13 | **11** | **11** | 2 |
+| 10011517 | 3 | 0/2 | 3, 2 | 1 | 1 | 1 |
+| 10067049 | 10 | 2/3 | 2, 3 | 8 | 8 | 1 |
+| 10076989 | 3 | 2/3 | 2, 4 | 1 | 1 | 1 |
+| 10090289 | 3 | 0/2 | 3, 2 | 1 | 1 | 1 |
+| 10097436 | 37 | 0/1 | 37, 1 | 36 | 34 | 1 |
+| 10098308 | 3 | 0/0 | 3, 3 | 0 | 0 | 2 |
+
+**只有"被调用"的等位基因决定存活范围**：10062935 的 ALTs 里有长度为 1/2/3 的删除等位基因，
+但它的 GT 是 `0/4`（被调用的是长度为 5 的插入），实测 star = 0、3 个坐标全是 monomorphic ✓。
+
+两条不完全吻合的记录都另有原因：10068158 与 10097436 的跨度内**另有记录起点**
+（10068160、10097437），那些坐标由各自的记录支配（star+mono+被占 = 预测值 ✓）。
+
+### 7 个丢失行的成因与修复
+只有 3 条跨接记录的**被调用等位基因全都 ≥ REF 长度**（无 called deletion）：
+10062935（GT 0/4）、10087820（GT 0/2）、10098308（GT 0/0）——它们覆盖 3+2+2 = **7 个坐标**，
+正是 only-GATK 的那 7 行。native 的 `materialize_spanning_loci()` 原来要求
+`called_deletion_allele_index >= 1` 才建立覆盖，于是这 7 个坐标**从未被访问**。
+
+修复：
+1. 覆盖遍不再丢弃 `deletion < 0` 的记录（保留 `deletion = -1`）；
+2. 合成时投影目标改为"有 called deletion 时用该等位基因，否则用**本记录的 REF/<NON_REF>**"
+   ——后者让所有具体 ALT 都成为 NO_CALL，重算出的基因型不携带 `*`，于是计算阶段像 GATK 的
+   `filterAllelesForFinalSet()` 一样把 `*` 剪掉，落到既有的
+   `materialize_gatk_monomorphic_ref_call()`（QUAL=Infinity、MLEAC/MLEAF 缺失、
+   `FORMAT=GT:DP:RGQ`、样本 `0/0:<来源DP>:<来源GQ>`）。
+
+**走过的死路（记录以免重犯）**：直接合成"1 等位基因"的行会撞上
+`OUTPUT_CONTRACT_FAILURE: invalid reference-only record`——dense 的分组路径
+（`genotype_gvcf_tool.cpp:7388-7391`）对组内每条记录无条件调用
+`materialize_reference_only()`，而它要求 `record.reference_block == true`。**必须让记录带
+`*` 走进计算阶段再被剪枝**，才能复用第 104 轮已验证的 monomorphic 出口。
+
+### 验证（整段 chr20 dense）
+`GATK 100000 位点 / native 100000 位点`（原 99993）、`only-GATK = []`、`only-native = []`、
+`differ = 78`（无回归）；7 行**逐字节一致**。门禁
+`fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle` 扩展为 14 个 pin 位点（7 个 `*` 行 +
+7 个 monomorphic 行），并对 monomorphic 行额外断言 GATK 自身的 `ALT=.` 与 `QUAL=Infinity`。
+
+### 第 105 轮更正：只有"带 GQ"的分支被落地（第一次全量 309/310 的教训）
+
+本轮先把上面那条修复**无条件**落地，结果第一次全量回归
+（`.diag/regression/20260913-101336/`）在两后端都 **309/310 失败**，失败者是既有的
+`fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle`。测出的原因是 GATK 对
+"没有 `*` 贡献的被覆盖坐标"有**两种**形状，判别式是**来源 FORMAT 是否带 GQ**：
+
+| 来源 FORMAT | GATK 实测行 | native（无条件落地时） |
+| --- | --- | --- |
+| 带 GQ（chr20：16/99/6） | `A . Infinity . DP=…;MLEAC=.;MLEAF=. GT:DP:RGQ 0/0:23:16` | ✓ 逐字节一致 |
+| 不带 GQ（dense 夹具 `no-deletion-alt-no-star-rows`） | `A . . . DP=20 GT:AD ./.:0` | ✗ `A . Infinity . DP=20;MLEAC=.;MLEAF=. GT ./.` |
+| 不带 GQ（夹具 `pruned-deletion-no-star-rows`） | `A . 192.21 . DP=20;MLEAC=.;MLEAF=. GT ./.` | ✗ `QUAL=Infinity` |
+
+即：`cleanupGenotypeAnnotations()` 只有在被投影的基因型**仍带 GQ** 时才重新装回 hom-ref 调用
+（`0/0:DP:RGQ` + QUAL=Infinity）；不带 GQ 时走另一支，发布 `./.` 且**去掉 QUAL**（no-deletion 夹具）
+或保留有限 QUAL（剪枝夹具 192.21）。
+
+因此最终落地的是**带 GQ 的分支**：覆盖遍加 `if (deletion < 0 && !record.source_has_gq) continue;`，
+其余坐标**保持不发布**（缺口照旧，而不是发出错形状的行）。补上该条件后：
+chr20 整段仍是 `100000/100000`、`only-GATK=[]`、`only-native=[]`、`differ=78`、10 个 pin 行逐字节一致；
+两个门禁都零违规。
+
+**下一轮的两个明确靶子**（都已定位到分支）：
+1. **不带 GQ 的 no-call 分支**（`./.` + `FORMAT=GT:AD` + 无 QUAL / 有限 QUAL）——补齐它才能把
+   "没有 `*` 贡献的被覆盖坐标"整类收干净，也能让 dense 门禁的两个 `no-star` 对照组从
+   "只断言不含 `*`"升级为逐字节比对；
+2. **`star/star` 38 行**的等位基因投影（把"短于本记录 REF 的每个**被调用**等位基因"都映射到 `*`，
+   并按 GATK 的 `AlleleSubsettingUtils` 规则把 PL 折到新等位基因集合，实测目标值
+   `1184,62,0` vs native 现输出 `1717,539,803`）。

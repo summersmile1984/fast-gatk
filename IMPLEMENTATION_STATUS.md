@@ -92,8 +92,8 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 104 轮，当前树） | **310/310 通过**（1546.4s） | **310/310 通过**（1547.1s） | 物化跨位点行改读来源 GQ（bug 44）+ 新门禁 `...-spanning-source-gq-gatk-oracle`；两后端均已重建；零陈旧告警；证据 `.diag/regression/20260913-094019/` |
-| 全量回归（第 102 轮） | 309/309 通过（1492.3s） | 309/309 通过（1500.0s） | REF-only 行补 MQ（commit `5a334d7`） |
+| 全量回归（第 105 轮，当前树） | **310/310 通过**（1546.7s） | **310/310 通过**（1514.1s） | 跨接位点覆盖补 GQ 分支（bug 45，only-GATK 7 → 0）；两后端均 `FRESH` 后重跑；证据 `.diag/regression/20260913-105353/` |
+| 全量回归（第 104 轮） | 310/310 通过（1546.4s） | 310/310 通过（1547.1s） | 物化跨位点行改读来源 GQ（commit `550b334`） |
 | 全量回归（第 97 轮） | 309/309 通过（1494.0s） | 309/309 通过（1470.1s） | REF-only 行相位清除 |
 | 全量回归（第 93 轮） | 309/309 通过（1517.0s） | 309/309 通过（1493.5s） | 两个开关判据按实测拆分 |
 | 全量回归（第 86 轮） | 309/309 通过（1506.5s） | 309/309 通过（1514.9s） | 物化行读级注释的文本层过滤 |
@@ -787,7 +787,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–104 轮增量（累计 **44** 个已证真 bug 已修并上锁）
+## 第 36–105 轮增量（累计 **45** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -815,6 +815,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 42 | REF-only 行多带 `PGT/PID/PS`（第 97 轮，判别式 = 该行 ALT 只有 REF） | 见下文「第 97 轮」一节；字段级修正、位点级零回归 |
 | 43 | REF-only 行缺 `MQ`（第 102 轮，在 `RAW_MQandDP` 被移除前推导） | 三个探针位点的 MQ 与 GATK 逐一相同；位点级仍 81（另差 ExcessHet 渲染） |
 | 44 | 物化跨位点行的样本列读错 GQ 来源（第 104 轮，`source_gq` 在解码时留存） | 见下文「第 104 轮」一节；整段 dense 残差 **81 → 78**，3 行逐字节一致 |
+| 45 | 跨接位点的覆盖被要求"有 called deletion"，7 行整行丢失（第 105 轮） | 见下文「第 105 轮」一节；**only-GATK 7 → 0**、only-native 0、differ 仍 78 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -1583,7 +1584,8 @@ pos1=10076991 ... source_gq_val=0 rec_dp=31 depth=31 gq=0 would_homref=0
 | `star/star` | (7,) | 2 |
 
 即 `(9,)` 类 3 行消失，且原 `(5,9)` 类 3 行的**第 9 列（样本列）也一并修好**（仍差第 5 列）。
-only-GATK 位点仍是那 7 个（10062936-10062938 / 10087821-10087822 / 10098309-10098310）。
+only-GATK 位点仍是那 7 个（10062936-10062938 / 10087821-10087822 / 10098309-10098310）——
+它们在第 105 轮已补齐，见下节。
 
 **新门禁**（严格，已注册）：`fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle`
 （`scripts/verify_genotype_gvcf_spanning_source_gq_gatk_oracle.py`）——整段 dense 跑双工具，断言
@@ -1591,15 +1593,84 @@ only-GATK 位点仍是那 7 个（10062936-10062938 / 10087821-10087822 / 100983
 `GT:DP:RGQ` + `0/0:34:99`/`0/0:34:99`/`0/0:31:41`（对 GATK 断言，防止"两边一起错"）；
 ④ 非 no-call 且 RGQ 非 0；另加对照：pin 的两个 RGQ 必须不同（99≠41），常数解必然失败。
 
+## 第 105 轮：跨接位点的 `*` 存活规则 + 补齐 7 个丢失行（第 45 个已修 bug）
+
+**先证伪**：第 104 轮末的"参考碱基 = N 就不给 `*`"是错的——跨接记录覆盖的 165 个坐标里
+162 个参考碱基就是 `N`，其中 **145 个 GATK 照样给 `*`**，只有 17 个是 monomorphic。
+
+**实测规则**（19 条非块跨接记录，17 条完全吻合，另 2 条由"该坐标另有记录起点"解释）：
+设来源样本基因型的等位基因长度 `L_i`（含 REF）、记录 REF 长 `R`，则
+
+```
+star 覆盖 = 该跨度最前面的 max_i(R - L_i) 个碱基
+其余被覆盖坐标 = monomorphic 行（ALT=.、QUAL=Infinity、FILTER=.、INFO=DP;MLEAC=.;MLEAF=.）
+```
+
+关键是**只有"被调用"的等位基因算数**：10062935 的 ALT 里有长度 1/2/3 的删除等位基因，
+但它的 GT 是 `0/4`（被调用的是长度 5 的插入），实测 star = 0、3 个坐标全 monomorphic ✓。
+10008952（`GT 2/4`，等位基因长 3 与 13，`R=14`）预测 star = 11、实测 11 ✓（正是第 104 轮
+那 11 个 `*` 行与尾部 2 个 monomorphic 行的来源）。
+
+**7 个丢失行的成因**：只有 3 条跨接记录的**被调用等位基因全部 ≥ REF 长度**
+（10062935 `GT 0/4`、10087820 `GT 0/2`、10098308 `GT 0/0`），它们覆盖 3+2+2 = 7 个坐标，
+正是 only-GATK 的 7 行。native 的 `materialize_spanning_loci()` 原来要
+`called_deletion_allele_index >= 1` 才建立覆盖，这 7 个坐标**从未被访问**。
+
+**修复**（两处，均在 `materialize_spanning_loci()`）：
+1. 覆盖遍不再丢弃 `deletion < 0` 的记录（保留 `deletion = -1`），但**仅当来源 FORMAT 带 GQ**
+   （`record.source_has_gq`）时才物化——见下文"两个分支"；
+2. 投影目标改为"有 called deletion 时用该等位基因，否则用**本记录的 REF/<NON_REF>**"——
+   后者让所有具体 ALT 都成为 NO_CALL，重算基因型不携带 `*`，计算阶段便像 GATK 的
+   `filterAllelesForFinalSet()` 一样把 `*` 剪掉，落到既有的
+   `materialize_gatk_monomorphic_ref_call()`（QUAL=Infinity、MLEAC/MLEAF 缺失、
+   `FORMAT=GT:DP:RGQ`、样本 `0/0:<来源DP>:<来源GQ>`）。
+
+**死路（记录以免重犯）**：直接合成"1 等位基因"的行会撞
+`OUTPUT_CONTRACT_FAILURE: invalid reference-only record`——dense 分组路径
+（`genotype_gvcf_tool.cpp:7388-7391`）对组内每条记录无条件调用
+`materialize_reference_only()`，它要求 `record.reference_block == true`。**必须让记录带 `*`
+进计算阶段再被剪枝**，才能复用第 104 轮已验证的 monomorphic 出口。
+
+**验证（整段 chr20 dense）**：`GATK 100000 位点 / native 100000 位点`（原 99993）、
+`only-GATK = []`、`only-native = []`、`differ = 78`（零回归），7 行**逐字节一致**：
+
+```
+10062936  0/0:23:16      10087821  0/0:53:99      10098309  0/0:2:6
+10062937  0/0:23:16      10087822  0/0:53:99      10098310  0/0:2:6
+10062938  0/0:23:16
+```
+
+门禁 `fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle` 扩展为 **10 个 pin 位点**
+（3 个 `*`/尾部行 + 7 个 monomorphic 行），并对 monomorphic 行额外对 GATK 自身断言
+`ALT=.` 与 `QUAL=Infinity`；样本列的 RGQ 值域（6/16/41/99）仍互为对照。
+
+**两个分支（本轮第一次跑全量时踩到，必须记录）**：GATK 对"没有 `*` 贡献的被覆盖坐标"有**两种**
+输出形状，判别式是**来源 FORMAT 是否带 GQ**：
+
+| 来源 FORMAT | GATK 行（实测） |
+| --- | --- |
+| 带 GQ（chr20 语料 GQ=16/99/6） | `A . Infinity . DP=…;MLEAC=.;MLEAF=. GT:DP:RGQ 0/0:23:16` |
+| 不带 GQ（dense 夹具的两个 `no-star` 对照组） | `A . . . DP=20 GT:AD ./.:0`；剪枝夹具则是 `A . 192.21 . DP=20;MLEAC=.;MLEAF=. GT ./.` |
+
+本轮只落地**带 GQ 的分支**（在 chr20 上逐字节验证）；不带 GQ 的分支尚未实现，因此那些坐标
+**仍不发布**（保持"缺失"而不是"发出错形状的行"），该缺口继续由既有 dense 门禁的 `no-star`
+对照组钉住。第一次全量（`.diag/regression/20260913-101336/`）正是因此 **309/310 失败**
+（`fastgatk-genotype-gvcf-dense-spanning-loci-gatk-oracle`：native 在那两个夹具里发出了
+`QUAL=Infinity` 的错形状行），该次运行作废；补上 `source_has_gq` 条件后该门禁重新零违规。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
-**最新基线（第 104 轮，主会话亲自运行）：物化跨位点行改读来源 GQ（bug 44）+ 新增
-`fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle` 门禁上
-OpenMP **310/310**（1546.4s）、Serial **310/310**（1547.1s），零陈旧告警，
+**最新基线（第 105 轮，主会话亲自运行）：跨接位点覆盖补上"无 called deletion 且来源带 GQ"的分支
+（bug 45，only-GATK 7 → 0；两后端均已重建）上
+OpenMP **310/310**（1546.7s）、Serial **310/310**（1514.1s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-证据块（可直接复核）：`.diag/regression/20260913-094019/summary.txt`
+证据块（可直接复核）：`.diag/regression/20260913-105353/summary.txt`
 （整段字段级残差复算仍用 `fastgatk-native/scripts/measure_dense_residual.py`）。
+
+> 流程教训（本轮第二次踩到同类坑）：改完源码只重建了 omp，serial 后端陈旧，运行器在第一轮
+> 全量里直接告警（`[serial] 源码比最新产物新`），该次运行作废（`.diag/regression/20260913-104...`）。
+> **每次跑全量前必须两个后端都重建**——本轮的最终基线是在 `FRESH/FRESH` 双确认之后重跑的。
 
 > 流程教训（已在本轮踩到）：改动源码后**必须两个后端都重建**再跑全量。
 > 本轮第一次跑全量时只重建了 omp，serial 用陈旧二进制跑 dense 门禁而失败
@@ -1607,6 +1678,7 @@ OpenMP **310/310**（1546.4s）、Serial **310/310**（1547.1s），零陈旧告
 > 该次运行作废（`.diag/regression/20260913-024535/`），重建 serial 后重跑才是本基线。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
+第 104 轮上 310/310（1546.4s / 1547.1s，物化跨位点行改读来源 `GQ` + 新门禁）；
 第 102 轮上 309/309（1492.3s / 1500.0s，REF-only 行补 `MQ`）；
 第 97 轮上 309/309（1494.0s / 1470.1s，REF-only 行相位清除）；
 第 93 轮上 309/309（1517.0s / 1493.5s，两个开关判据拆分）；

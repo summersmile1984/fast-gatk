@@ -3893,8 +3893,22 @@ void materialize_spanning_loci(const bcf_hdr_t* output_header,
         if (record.reference_block || record.rid < 0 || record.pos < 0) continue;
         const auto end = record_span_end(output_header, record);
         if (end <= record.pos + 1) continue;
+        // A record with no CALLED deletion still covers its span: GATK visits
+        // every covered coordinate (VariantLocusWalker) and publishes a
+        // monomorphic reference row wherever the record contributes no '*'
+        // (measured: 10062936-10062938, 10087821-10087822, 10098309-10098310).
+        // Keep such a record with deletion = -1 instead of dropping it.
+        //
+        // Only the branch where the SOURCE FORMAT carried GQ is materialized
+        // here: GATK's cleanupGenotypeAnnotations() then reinstalls the hom-ref
+        // call (measured `0/0:<sourceDP>:<sourceGQ>` with QUAL=Infinity).  A
+        // source without GQ takes GATK's other branch -- a './.' no-call row
+        // with FORMAT GT:AD and NO QUAL -- which is not implemented yet, so
+        // those coordinates are still not published rather than published wrong
+        // (that remaining gap is pinned by the no-star controls of
+        // verify_genotype_gvcf_dense_materialize_gatk_oracle.py).
         const auto deletion = called_deletion_allele_index(record);
-        if (deletion < 0) continue;
+        if (deletion < 0 && !record.source_has_gq) continue;
         // A source locus outside the requested intervals is never emitted, so
         // GATK never records its deletion and the covered coordinate would be an
         // ORPHAN '*' there.  Restricting the pass to in-interval sources keeps
@@ -3917,9 +3931,17 @@ void materialize_spanning_loci(const bcf_hdr_t* output_header,
     std::vector<Record> synthesized;
     for (const auto& span : coverage) {
         const auto& source = records[span.source];
-        if (source.alleles.size() < 2 || span.deletion < 1 ||
-            static_cast<std::size_t>(span.deletion) >= source.alleles.size())
-            continue;
+        if (source.alleles.size() < 2) continue;
+        // GATK's spanning merge turns every ALT shorter than the record's own
+        // reference into '*', so '*' survives only where a CALLED allele deletes
+        // the coordinate -- measured as the first
+        // max(referenceLength - calledAlleleLength) bases of the span, with the
+        // remainder of the span published as monomorphic reference rows (the
+        // tail rows native already matches, e.g. 10008964-10008965).  Without a
+        // called deletion the whole span is monomorphic.
+        const bool has_called_deletion =
+            span.deletion >= 1 &&
+            static_cast<std::size_t>(span.deletion) < source.alleles.size();
         for (int position = span.begin; position < span.end; ++position) {
             if (!occupied.emplace(span.rid, position).second) continue;
             auto* copy = bcf_dup(source.value);
@@ -3927,13 +3949,27 @@ void materialize_spanning_loci(const bcf_hdr_t* output_header,
                 throw std::runtime_error("RESOURCE_EXHAUSTED: cannot materialize a spanning locus");
             Record synthetic = source;
             synthetic.value = copy;
-            // Project the sample data onto [source REF, the called deletion],
-            // which is the identity map on allele indices whenever the source's
-            // only surviving ALT is that deletion.
-            const std::vector<std::string> projected{
-                source.alleles.front(), source.alleles[static_cast<std::size_t>(span.deletion)]};
-            remap_record_to_allele_union(output_header, synthetic, projected);
             const auto base = reference_base(reference_index, output_header, span.rid, position);
+            {
+                // The projection target is the called deletion when there is one
+                // (the identity map on allele indices whenever the source's only
+                // surviving ALT is that deletion).  Without a called deletion the
+                // target is the source's own REF/<NON_REF>, which leaves every
+                // concrete ALT a NO_CALL: the recomputed genotype then never
+                // carries the '*' and the compute stage prunes it exactly as
+                // GATK's filterAllelesForFinalSet does, leaving the monomorphic
+                // row measured at 10062936-10062938 / 10087821-10087822 /
+                // 10098309-10098310.
+                std::vector<std::string> projected{source.alleles.front()};
+                if (has_called_deletion)
+                    projected.push_back(source.alleles[static_cast<std::size_t>(span.deletion)]);
+                else if (std::find(source.alleles.begin(), source.alleles.end(), "<NON_REF>")
+                         != source.alleles.end())
+                    projected.push_back("<NON_REF>");
+                else
+                    projected.push_back(source.alleles.back());
+                remap_record_to_allele_union(output_header, synthetic, projected);
+            }
             const auto alleles = base + ",*";
             if (bcf_update_alleles_str(output_header, synthetic.value, alleles.c_str()) != 0) {
                 bcf_destroy(synthetic.value);

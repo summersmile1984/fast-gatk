@@ -18,6 +18,17 @@ values are pinned below:
 * coordinate 10076991 -- covered by the record starting at 10076989
   (``REF=CAA``, sample ``GT=2/3, DP=31, GQ=41``); GATK emits ``0/0:31:41``.
 
+A covered coordinate whose spanning record has **no called deletion** is still
+visited and published, as a *monomorphic* reference row (``ALT=.``,
+``QUAL=Infinity``, ``FILTER`` unset, ``INFO=DP;MLEAC=.;MLEAF=.``) -- measured at
+10062936-10062938 (source 10062935, ``GT=0/4`` with ``DP=23, GQ=16``, its called
+ALT being longer than its REF), 10087821-10087822 (source 10087820, ``GT=0/2``,
+``DP=53, GQ=99``) and 10098309-10098310 (source 10098308, hom-ref ``GT=0/0``,
+``DP=2, GQ=6``).  Native used to drop those seven rows entirely because its
+materialization required a *called* deletion; the sample column again inherits
+the source DP/GQ (23:16, 53:99, 2:6) and the QUAL is the ``+Infinity`` that
+``GenotypingEngine`` assigns when the whole posterior mass is on "no variant".
+
 Native used to re-read GQ from its own output record, where the compute stage
 had already replaced it with the PL-derived value ``0``: because the hom-ref
 conversion was additionally guarded on ``gq > 0``, the sample column came out
@@ -62,6 +73,17 @@ PINNED = {
     10008964: "0/0:34:99",   # source is the record at 10008952 (GQ=99, DP=34)
     10008965: "0/0:34:99",   # same source, same span
     10076991: "0/0:31:41",   # source is the record at 10076989 (GQ=41, DP=31)
+}
+# Coordinates whose spanning source record has NO called deletion: GATK still
+# visits them and publishes a monomorphic reference row (ALT='.', QUAL=Infinity).
+PINNED_MONOMORPHIC = {
+    10062936: "0/0:23:16",   # source 10062935 (GT 0/4, DP=23, GQ=16)
+    10062937: "0/0:23:16",
+    10062938: "0/0:23:16",
+    10087821: "0/0:53:99",   # source 10087820 (GT 0/2, DP=53, GQ=99)
+    10087822: "0/0:53:99",
+    10098309: "0/0:2:6",     # source 10098308 (GT 0/0, DP=2, GQ=6)
+    10098310: "0/0:2:6",
 }
 DENSE = "--include-non-variant-sites"
 
@@ -125,14 +147,15 @@ def main() -> int:
         gatk_rows = read_rows(gatk_vcf)
         native_rows = read_rows(native_vcf)
 
+        pinned = {**PINNED, **PINNED_MONOMORPHIC}
         # Control: the pinned rows must come from sources with different GQ, so
         # that a constant cannot satisfy every case below.
-        distinct_rgq = {sample.split(":")[2] for sample in PINNED.values()}
+        distinct_rgq = {sample.split(":")[2] for sample in pinned.values()}
         if len(distinct_rgq) < 2:
             violations.append("control: the pinned RGQ values are not distinct")
 
-        for position in sorted(PINNED):
-            expected = PINNED[position]
+        for position in sorted(pinned):
+            expected = pinned[position]
             truth = gatk_rows.get(position)
             row = native_rows.get(position)
             if truth is None:
@@ -149,6 +172,15 @@ def main() -> int:
                 violations.append(f"POS {position}: GATK call is not hom-ref")
             if gatk_sample.split(":")[2] == "0":
                 violations.append(f"POS {position}: GATK RGQ is zero")
+            if position in PINNED_MONOMORPHIC:
+                # The shape of a covered coordinate with no called deletion: a
+                # monomorphic row with an infinite QUAL, asserted against GATK
+                # itself rather than inferred from native.
+                fields = truth.split("\t")
+                if fields[4] != "." or fields[5] != "Infinity":
+                    violations.append(
+                        f"POS {position}: GATK row is not the measured monomorphic "
+                        f"shape (ALT={fields[4]!r}, QUAL={fields[5]!r})")
             # 1. native must publish the row.
             if row is None:
                 violations.append(f"POS {position}: native published no row")
@@ -163,7 +195,8 @@ def main() -> int:
         "gate": "genotype-gvcf-spanning-source-gq",
         "gatk_version": "4.6.2.0",
         "intervals": WINDOW,
-        "pinned": {str(position): sample for position, sample in sorted(PINNED.items())},
+        "pinned": {str(position): sample
+                   for position, sample in sorted({**PINNED, **PINNED_MONOMORPHIC}.items())},
         "violations": violations,
         "status": "pass" if not violations else "divergence",
         "mode": "strict" if strict else "expect-divergence",
