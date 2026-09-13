@@ -1043,3 +1043,33 @@ if (bcf_hdr_id2int(output_header, BCF_DT_ID, "MQ") >= 0) {
 > 记账方式的教训：本轮我先用"与上一次输出文件比较"的临时脚本得出 `FIXED 9`，
 > 但那个基线文件其实是更早（differ=90）的中间构建 ⇒ 数字虚高。**权威口径要以 GATK 为参照、
 > 用 `measure_dense_residual.py` 复算**（本轮复算为 81），临时脚本的比较对象必须确认清楚。
+
+## 第 103 轮：`(9,)` 类（REF-only 行的 GT/GQ）候选位置已收窄，下一步一次插桩即可定
+
+该类 3 行（10008964 / 10008965 / 10076991）只差样本列：
+
+```
+GATK   ... GT:DP:RGQ  0/0:34:99
+NATIVE ... GT:DP:RGQ  ./.:34:0
+```
+
+**判据（用来筛选候选代码位置）**：正确位置必须同时满足
+① 把 GT 置为 missing（`./.`）、② 把 RGQ 归零、③ **不清除 INFO 的 `DP`**（这里 `DP=63` 仍在，
+所以不是第 53 轮读到的 `uncovered` 分支——那条会 `bcf_update_info_int32(..., "DP", nullptr, 0)`）。
+
+在 `src/genotype_gvcf_tool.cpp` 里与 GT/RGQ 相关的位置共约十处（`bcf_gt_missing` 的 10 处赋值、
+`"RGQ"` 的 5 处写入）。**主要嫌疑**是 `:2861` 附近的
+
+```cpp
+for (const auto* tag : {"DP", "RGQ"}) { ... }
+...
+if (bcf_update_format_int32(output_header, record.value, "RGQ", rgq.data(), ...) != 0)
+```
+
+即 REF-only 物化路径里同时处理 `DP`/`RGQ` 的那段（它符合判据①③，且 `RGQ` 被写成 0 与观测一致）。
+
+**下一步（一次插桩定案）**：在 `:2861` 所在函数入口打印
+`pos / allele_count / finalized_monomorphic_ref / materialized_spanning_locus`，
+整段跑一次、grep 这 3 个 POS：命中即确认；未命中再用同样方式把其余候选（`:1386`/`:1457`/`:1753-1801`/
+`:1860-1927`）逐个二分（每处一个标记，一次运行可见全部）。确认后按 GATK 的
+`0/0` + RGQ=99 补齐，预期该类 3 行消失（残差 81 → 78）。
