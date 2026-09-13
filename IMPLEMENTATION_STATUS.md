@@ -92,7 +92,8 @@ python3 fastgatk-native/scripts/verify_hc_chr20_max_mnp_gvcf_gatk_oracle.py \
 
 | 范围 | OpenMP | Serial | 备注 |
 | --- | --- | --- | --- |
-| 全量回归（第 106 轮，当前树） | **310/310 通过**（1541.8s） | **310/310 通过**（1474.3s） | REF-only 行 `ExcessHet` 走 htsjdk 原始 double 路径（bug 46，differ 78 → 73）；两后端 `FRESH` 后重跑；证据 `.diag/regression/20260913-112838/` |
+| 全量回归（第 109 轮，当前树） | **310/310 通过**（1502.4s，测试表未含新门禁；新门禁另跑 64.9s 通过） | **311/311 通过**（1567.0s） | 独立语料 `ClippingRankSum`（bug 47）+ REF-only `ExcessHet` 非零（bug 48）；**独立语料 default 模式 132/300 → 0/300 逐字节一致**；证据 `.diag/regression/20260913-121909/` |
+| 全量回归（第 106 轮） | 310/310 通过（1541.8s） | 310/310 通过（1474.3s） | REF-only 行 `ExcessHet` 走 htsjdk 原始 double 路径（bug 46） |
 | 全量回归（第 105 轮） | 310/310 通过（1546.7s） | 310/310 通过（1514.1s） | 跨接位点覆盖补 GQ 分支（only-GATK 7 → 0） |
 | 全量回归（第 104 轮） | 310/310 通过（1546.4s） | 310/310 通过（1547.1s） | 物化跨位点行改读来源 GQ（commit `550b334`） |
 | 全量回归（第 97 轮） | 309/309 通过（1494.0s） | 309/309 通过（1470.1s） | REF-only 行相位清除 |
@@ -788,7 +789,7 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 
 > 意义：**「数据行一致 ≠ 文件一致」**。若要声称 1:1，header 层是必须单列的一条战线。
 
-## 第 36–106 轮增量（累计 **46** 个已证真 bug 已修并上锁）
+## 第 36–109 轮增量（累计 **48** 个已证真 bug 已修并上锁）
 
 第 27–35 轮的 16–23 号见上一节。以下 24–31 号在此前各轮已修复并上锁，
 但**只有提交信息与证据文件、没有进这份交接文档**——本节补上（交接债）。
@@ -818,6 +819,8 @@ native 该候选的 QUAL 已经是 **0**，即 GATK 的值——缺的只是发�
 | 44 | 物化跨位点行的样本列读错 GQ 来源（第 104 轮，`source_gq` 在解码时留存） | 见下文「第 104 轮」一节；整段 dense 残差 **81 → 78**，3 行逐字节一致 |
 | 45 | 跨接位点的覆盖被要求"有 called deletion"，7 行整行丢失（第 105 轮） | 见下文「第 105 轮」一节；**only-GATK 7 → 0**、only-native 0、differ 仍 78 |
 | 46 | REF-only 行的 `ExcessHet` 渲染路径（第 106 轮） | 见下文「第 106 轮」一节；整段 dense **78 → 73**、5 行逐字节一致 |
+| 47 | `ClippingRankSum` 未被认作秩和族（第 109 轮：键序 + 数值格式 + 物化行抑制三处） | 见下文「第 109 轮」一节；**独立语料 default 模式 132/300 → 0/300 逐字节一致** |
+| 48 | REF-only 行 `ExcessHet` 非零渲染（第 109 轮，补全第 106 轮规则） | `3.0103 → 3.01`（独立语料实测）；独立语料 dense 285 → 81 |
 
 ## 第 49 轮：GenotypeGVCFs 反向 trim（第 31 个已修 bug）与三方独立复核
 
@@ -1734,14 +1737,50 @@ QUAL 的符号**在 hom-alt `*` 行上是错的，应从数值层（AF 计算器
 `fastgatk-native/evidence/2026-09-13-round60-dense/full-region-residual-map.md` 第 108 轮节。
 本轮未改生产代码，第 106 轮基线（73 / 双后端 310/310）继续适用。
 
+## 第 109 轮：换独立语料立刻暴露两个文本层缺陷（第 47/48 个已修 bug）
+
+已调优的 chr20 语料（NA12878）门禁全绿后，本轮换了一份 **native 从未针对过的真实 gVCF**：
+`CombineGVCFs/YRIoffspring.chr20snippet.g.vcf`（GIAB 风格、同一条 chr20、另一个样本，
+INFO 里带 **`ClippingRankSum`** 而调优语料没有），同参考、同参数、两种模式逐字节比对：
+
+| 模式 | 修复前 | 修复后 |
+| --- | --- | --- |
+| **default** | **132 / 300 行差异** | **0 / 300 逐字节一致** ✓ |
+| dense | 285 / 100001 | **81 / 100001** |
+
+**bug 47（`ClippingRankSum` 未被认作秩和族，三处同根）**：
+① INFO 键序表（`standard_order` 与头部 `info_order`）缺它 ⇒ native 追加到末尾，
+GATK 放在 `BaseQRankSum` 之后；② `rank_sum` 数值格式判定缺它 ⇒ 输出 `0` 而非 `0.00`
+（也不做科学计数）；③ `suppress_materialized_spanning_annotations()` 名单缺它
+⇒ dense 下物化行多写一个 `ClippingRankSum`（138 → 81）。
+
+**bug 48（REF-only 行 `ExcessHet` 非零渲染）**：第 106 轮只落地了零值那一半
+（当时无非零样本）；本语料给出 `ExcessHet=3.0103` vs GATK `3.01`，据此把 REF-only 分支补成完整的
+htsjdk `formatVCFDouble` 规则（`|v|<1e-20→"0.00"`、`|v|<0.01 或负数→%.3e`、
+`0.01≤|v|<1→三位`、`|v|≥1→两位`；0.0/3.0103/0.5/0.005/1e-16/-3.891 均有实测或探针验证）。
+
+**独立语料还同时证实了第 108 轮的 QD 符号判别式**：dense 剩余 81 行里 `star/star (7,)` 51 +
+`star/star (7,9)` 30，**列只用到 INFO 与样本**（无形状列差异），其中 `QD` 差异全部出现在
+**hom-alt** 行（GATK `0.00`、native `-0.00`），与 chr20 上的结论一致（两语料合计 ~97 行）。
+⇒ 类 3（`QUAL=163.67 vs Infinity`）与类 4（QD 符号）**同根**：native 的 AF 后验在 ~1e-17 量级上
+饱和成精确 0/1，而 GATK 保留了符号极小的值。**下一轮只需攻 AF 状态 log10-sum-exp 的求和实现这一处**。
+
+**新门禁**：`fastgatk-genotype-gvcf-independent-corpus-gatk-oracle`
+（default 模式整行逐字节一致 + 行数对照 300；dense 模式断言行集合一致、
+**形状列 REF..FILTER 必须一致**、INFO 差异键必须落在已知集合内）。
+
 ## 收尾基线（第 42 轮起持续更新，主会话亲自运行）
 
-**最新基线（第 106 轮，主会话亲自运行）：REF-only 行的 `ExcessHet` 走 htsjdk 原始 double 路径
-（bug 46，differ 78 → 73；两后端均已重建并确认 `FRESH`）上
-OpenMP **310/310**（1541.8s）、Serial **310/310**（1474.3s），零陈旧告警，
+**最新基线（第 109 轮，主会话亲自运行）：独立语料 `ClippingRankSum`（bug 47）+ REF-only
+`ExcessHet` 非零渲染（bug 48）+ 新门禁 `fastgatk-genotype-gvcf-independent-corpus-gatk-oracle` 上
+Serial **311/311**（1567.0s）、OpenMP **310/310**（1502.4s），零陈旧告警，
 运行器默认强制 `FASTGATK_REQUIRE_GATK_ORACLE=1`。**
 
-证据块（可直接复核）：`.diag/regression/20260913-112838/summary.txt`
+> 两点说明：① 本次 omp 全量开跑时其测试表尚未包含新门禁（该次 310/310），
+> 事后 `cmake -S/-B` 重建测试表后两后端均为 **311** 个测试，新门禁在 omp 上**单独跑过并通过**
+> （64.9s，`ctest -R independent-corpus`）；② 两后端二进制在开跑前均确认 `FRESH`。
+
+证据块（可直接复核）：`.diag/regression/20260913-121909/summary.txt`
 （整段字段级残差复算仍用 `fastgatk-native/scripts/measure_dense_residual.py`）。
 
 > 流程教训（本轮第二次踩到同类坑）：改完源码只重建了 omp，serial 后端陈旧，运行器在第一轮
@@ -1754,6 +1793,7 @@ OpenMP **310/310**（1541.8s）、Serial **310/310**（1474.3s），零陈旧告
 > 该次运行作废（`.diag/regression/20260913-024535/`），重建 serial 后重跑才是本基线。
 
 （更早的基线，均由主会话亲自测得，非委派方代跑：
+第 106 轮上 310/310（1541.8s / 1474.3s，REF-only 行 `ExcessHet` 原始 double 路径）；
 第 105 轮上 310/310（1546.7s / 1514.1s，跨接位点覆盖补 GQ 分支 + only-GATK 7 → 0）；
 第 104 轮上 310/310（1546.4s / 1547.1s，物化跨位点行改读来源 `GQ` + 新门禁）；
 第 102 轮上 309/309（1492.3s / 1500.0s，REF-only 行补 `MQ`）；

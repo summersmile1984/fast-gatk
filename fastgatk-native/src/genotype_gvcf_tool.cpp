@@ -3206,7 +3206,8 @@ void normalize_sample_pl(Record& record) {
 void suppress_materialized_spanning_annotations(const bcf_hdr_t* output_header,
                                                Record& record) {
     if (!record.materialized_spanning_locus || record.value == nullptr) return;
-    for (const char* tag : {"MQ", "BaseQRankSum", "MQRankSum", "ReadPosRankSum"}) {
+    for (const char* tag : {"MQ", "BaseQRankSum", "MQRankSum", "ReadPosRankSum",
+                            "ClippingRankSum"}) {
         if (bcf_hdr_id2int(output_header, BCF_DT_ID, tag) < 0) continue;
         (void)bcf_update_info_float(output_header, record.value, tag, nullptr, 0);
     }
@@ -4895,26 +4896,33 @@ std::string format_gatk_float_value(const std::string& key,
     // blindly forcing the three-decimal annotation format used by the
     // standalone RankSumTest producer.
     const bool rank_sum = key == "BaseQRankSum" || key == "MQRankSum" ||
-                          key == "ReadPosRankSum";
+                          key == "ReadPosRankSum" || key == "ClippingRankSum";
     if (key == "AF" || key == "MLEAF") precision = 3;
     else if (key == "FS") precision = 3;
-    else if (key == "ExcessHet" || key == "InbreedingCoeff") {
-        // Measured: on a REF-only row GATK's ExcessHet is a raw numeric
-        // attribute rendered by htsjdk's VCFEncoder.formatVCFDouble(), whose
-        // exact zero is the literal "0.00" (probed on the pinned jar:
-        // formatVCFDouble(0.0) == "0.00"), whereas every other row carries the
-        // String that ExcessHet.java itself built with String.format("%.4f", eh)
-        // (ExcessHet.java:91,272) -- hence the four decimals native already
-        // matches on all 361 annotated chr20 rows.  Only the zero case is
-        // measured; no REF-only row in the corpus carries a non-zero ExcessHet.
-        if (ref_only) {
-            try {
-                if (std::abs(std::stod(value)) < 1.0e-20) return std::string("0.00");
-            } catch (...) {
+    else if ((key == "ExcessHet" || key == "InbreedingCoeff") && ref_only) {
+        // Measured on two corpora plus a probe of htsjdk in the pinned jar: on a
+        // REF-only row these annotations are raw numeric attributes rendered by
+        // htsjdk's VCFEncoder.formatVCFDouble(), not by the String that
+        // ExcessHet.java builds with "%.4f" for every other row
+        // (ExcessHet.java:91,272).  Measured tokens: 0.0 -> "0.00"
+        // (chr20 10041698), 3.0103 -> "3.01" (YRIoffspring 10002166),
+        // 0.5 -> "0.500", 0.005 -> "5.000e-03", 1e-16 -> "1.000e-16",
+        // -3.891 -> "-3.891e+00" (probe).
+        try {
+            const auto number = std::stod(value);
+            if (std::abs(number) < 1.0e-20) return std::string("0.00");
+            std::ostringstream rendered;
+            if (number < 0.0 || std::abs(number) < 0.01) {
+                rendered << std::scientific << std::setprecision(3) << number;
+                return rendered.str();
             }
+            rendered << std::fixed << std::setprecision(number < 1.0 ? 3 : 2) << number;
+            return rendered.str();
+        } catch (...) {
+            precision = 4;
         }
-        precision = 4;
     }
+    else if (key == "ExcessHet" || key == "InbreedingCoeff") precision = 4;
     else if (key == "MQ" || key == "QD") precision = 2;
     else if (key == "SOR") precision = 3;
     if (precision < 0 && !rank_sum) return value;
@@ -5047,7 +5055,7 @@ std::string gatk_compatible_record_text(const std::string& formatted,
         // Match the standard GenotypeGVCFs annotation order.  Rank-sum fields
         // are carried through when present; their full read-level recalculation
         // remains a separate GenotypeGVCFs annotation-engine task.
-        "AC", "AF", "AN", "BaseQRankSum", "DP", "ExcessHet", "FS",
+        "AC", "AF", "AN", "BaseQRankSum", "ClippingRankSum", "DP", "ExcessHet", "FS",
         "InbreedingCoeff", "MLEAC", "MLEAF", "MQ", "MQRankSum", "NDA", "QD",
         "ReadPosRankSum", "SOR"};
     std::vector<InfoValue> ordered;
@@ -5490,7 +5498,7 @@ std::string gatk_compatible_header_text(const std::string& formatted,
         retained.push_back(line);
     }
     const std::vector<std::string> info_order{
-        "AC", "AF", "AN", "BaseQRankSum", "DP", "END", "ExcessHet", "FS",
+        "AC", "AF", "AN", "BaseQRankSum", "ClippingRankSum", "DP", "END", "ExcessHet", "FS",
         "InbreedingCoeff", "MLEAC", "MLEAF", "MQ", "MQRankSum", "QD",
         "RAW_MQandDP", "ReadPosRankSum", "SOR"};
     // GATK's own declarations join the group the input's lines are already in;

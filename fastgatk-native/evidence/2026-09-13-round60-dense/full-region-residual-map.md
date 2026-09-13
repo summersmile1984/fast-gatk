@@ -1545,3 +1545,67 @@ GATK 侧统计：`QD=-0.00` 115 行（几乎都是 `GT 0/1`、`MLEAC=1`），`QD
 **本轮结论**：四类都测清了机制与缺口，但每一类都需要成体系的实现（投影重写 / 样本级合并 /
 AF 求和实现 / QUAL 双值拆分），不适合在一轮里半成品落地。本轮**未改生产代码**，树保持
 第 106 轮基线（位点级 73、双后端 310/310）。
+
+## 第 109 轮：换一个**独立语料**跑，立刻暴露两个新的文本层缺陷（bug 47 / 48）
+
+已调优的那份 chr20 语料（`expected.testGVCFMode.gatk4.g.vcf`，NA12878）已经把门禁跑绿，
+于是换一份**native 从未针对过的真实 gVCF**：`CombineGVCFs/YRIoffspring.chr20snippet.g.vcf`
+（GIAB 风格、同一条 chr20、另一个样本；它的 INFO 集合里有 **`ClippingRankSum`**，而调优语料没有）。
+同一份 `-R testdata/chr20/reference/GRCh37.chr20.fa`，两种模式各跑 GATK / native 逐字节比对：
+
+| 模式 | 修复前 differ | 修复后 differ |
+| --- | --- | --- |
+| **default（无 dense 标志）** | **132 / 300** | **0 / 300 逐字节一致** ✓ |
+| dense（`--include-non-variant-sites`） | **285 / 100001** | **81 / 100001** |
+
+### bug 47：`ClippingRankSum` 没有被当作"秩和族"注释
+两份 GATK 行的差别只有两处，都指向同一个遗漏：
+
+```
+GATK  …;BaseQRankSum=-2.640e+00;ClippingRankSum=0.00;DP=35;…;SOR=0.446
+NATIV …;BaseQRankSum=-2.640e+00;DP=35;…;SOR=0.446;ClippingRankSum=0
+```
+
+1. **键序**：native 把未知键追加到 INFO 末尾，而 GATK/hstsjdk 把它放在 `BaseQRankSum` 之后
+   （`standard_order` 与头部 `info_order` 两张表都缺这一项）；
+2. **数值格式**：`rank_sum` 判定只列了 BaseQRankSum/MQRankSum/ReadPosRankSum ⇒ `ClippingRankSum`
+   落到"原样输出"分支，于是 `0` 而不是 `0.00`（也不做科学计数）；
+3. **物化行抑制**：dense 下 materialized spanning 行必须丢掉读级秩和注释，
+   `suppress_materialized_spanning_annotations()` 的名单同样缺 `ClippingRankSum`
+   ⇒ native 在 GATK 不写该键的行上多写了一个 `ClippingRankSum=0.00`（修复后 dense 138 → 81）。
+
+三处都是"这个键没被认成秩和族"的同一个根，本轮一起修掉。
+
+### bug 48：REF-only 行的 `ExcessHet` 非零渲染（第 106 轮规则的补全）
+第 106 轮只落地了"REF-only 且值为 0 ⇒ `0.00`"这一半（当时没有非零样本）。这份语料给出了非零证据：
+
+```
+POS=10002166  GATK …;ExcessHet=3.01;…        NATIVE …;ExcessHet=3.0103;…
+```
+
+`3.0103 → "3.01"` 正是 htsjdk `formatVCFDouble` 对 ≥1 值的两位小数规则（探针已验），
+于是把 REF-only 分支补成完整的 `formatVCFDouble` 规则：`|v|<1e-20 → "0.00"`、
+`|v|<0.01 或负数 → %.3e`、`0.01≤|v|<1 → 三位`、`|v|≥1 → 两位`
+（0.0→0.00 ✓ chr20、3.0103→3.01 ✓ 本语料、0.5→0.500、0.005→5.000e-03、-3.891→-3.891e+00 均由探针验证）。
+
+### 独立语料同时**证实**了第 108 轮的 QD 符号规则
+dense 剩下的 81 行：`star/star (7,)` 51 行 + `star/star (7,9)` 30 行，
+**列只用到 7(INFO) 与 9(样本)**，没有任何形状列差异；INFO 键差异里 `QD` 出现在 75 行。
+其中 QD 差异全部是**同一位点是否 hom-alt**：
+
+```
+POS=10006820  GATK QD=0.00    NATIVE QD=-0.00     （行：AC=2;AF=1.00;AN=2 → hom-alt）
+```
+
+⇒ 与第 108 轮在 chr20 上得到的判别式一致（hom-alt → `0.00`，het → `-0.00`），
+两个语料合计 ~97 行。结合 `GenotypingEngine.java:158-163` 的 `+ 0.0` 归一与
+`builder.log10PError(log10Confidence)` 写值路径，可以判定：**QD 符号与 `QUAL=163.67 vs Infinity`
+（类 3）同根**——都是 native 的 AF 后验在 ~1e-17 量级上"饱和成精确 0/1"，而 GATK 保留了那个极小的
+符号。⇒ 下一轮只需攻**一处**（AF 状态 log10-sum-exp 的求和实现），即可同时收掉类 3 与类 4。
+
+### 新门禁
+`fastgatk-genotype-gvcf-independent-corpus-gatk-oracle`
+（`scripts/verify_genotype_gvcf_independent_corpus_gatk_oracle.py`）：
+default 模式断言**整行逐字节一致**（含行数对照 300）；dense 模式断言
+①行集合一致（不缺失/不多出）、②**形状列 REF..FILTER 必须一致**、③INFO 差异键必须落在已知集合内
+——即把当前残差"钉形状"，任何新形状类或新注释键都会立刻报警。

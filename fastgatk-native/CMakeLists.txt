@@ -1621,6 +1621,16 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_spanning_source_gq_gatk_oracle.py")
     set_tests_properties(fastgatk-genotype-gvcf-spanning-source-gq-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # STRICT gate on an INDEPENDENT real corpus (not the tuned chr20 gVCF):
+    # CombineGVCFs/YRIoffspring.chr20snippet.g.vcf carries ClippingRankSum, which
+    # the tuned corpus does not.  Default mode is byte-identical (verified after
+    # adding ClippingRankSum to the rank-sum formatting and INFO order); dense
+    # mode asserts the residual stays confined to the known QD-sign class.
+    add_test(NAME fastgatk-genotype-gvcf-independent-corpus-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_genotype_gvcf_independent_corpus_gatk_oracle.py")
+    set_tests_properties(fastgatk-genotype-gvcf-independent-corpus-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_REQUIRE_GATK_ORACLE=1")
     # STRICT gate for the allele-frequency posterior underflow: a confident
     # hom-alt sample's P(hom-ref) fell below the smallest positive double, so the
     # linear normalisation produced log10(0) = -inf, which collided with the
