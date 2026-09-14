@@ -45,6 +45,7 @@ def main() -> None:
         begin = time.perf_counter()
         result = subprocess.run(
             [str(BINARY), *sum((["-I", str(path)] for path in inputs), []),
+             "--mode", "SNP",
              "--truth-sensitivity-tranche", "99", "-O", str(output),
              "--output-manifest", str(manifest)],
             text=True, capture_output=True, check=True,

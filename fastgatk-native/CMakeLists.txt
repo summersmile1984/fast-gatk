@@ -1443,6 +1443,34 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_alleles_overlap_gate_oracle.py")
     set_tests_properties(fastgatk-hc-alleles-overlap-gate-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # The forced --alleles emission bypass (symbolic '*' + LowQual row) now
+    # matches GATK, so it is a strict gate.
+    add_test(NAME fastgatk-hc-forced-alleles-emission-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_forced_alleles_emission_gate_oracle.py")
+    set_tests_properties(fastgatk-hc-forced-alleles-emission-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # The gVCF reference-block PL/GQ now matches GATK (realigned RCM evidence
+    # is fed to the reference-confidence model), so it is a strict gate.
+    add_test(NAME fastgatk-hc-gvcf-forced-allele-refblock-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_gvcf_forced_allele_refblock_gatk_oracle.py")
+    set_tests_properties(fastgatk-hc-gvcf-forced-allele-refblock-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # The deep --alleles boundary now matches GATK on every case (including
+    # the degenerate "Null alleles" abort), so it is a strict gate.
+    add_test(NAME fastgatk-hc-alleles-deep-boundary-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_alleles_deep_boundary.py")
+    set_tests_properties(fastgatk-hc-alleles-deep-boundary-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # The deep --alleles limits (max-genotype-count crash + gVCF ref-block
+    # PL/GQ) now match GATK, so this is a strict gate.
+    add_test(NAME fastgatk-hc-alleles-deep-limits-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_hc_alleles_deep_limits.py")
+    set_tests_properties(fastgatk-hc-alleles-deep-limits-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_HC_BINARY=$<TARGET_FILE:fastgatk-hc-call>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # Gate for the spanning-deletion allele-frequency PRIOR: GATK's
     # AlleleFrequencyCalculator picks each allele's Dirichlet pseudocount from
     # its length, so the symbolic '*' deletion (1 bp) takes the SNP prior on a
@@ -3023,6 +3051,95 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
         set_tests_properties(${_fastgatk_test} PROPERTIES
             ENVIRONMENT "${_fastgatk_test_environment}FASTGATK_NATIVE_BUILD=${CMAKE_BINARY_DIR};FASTGATK_EXPECTED_EXECUTION_SPACE=${_fastgatk_expected_execution_space}")
     endforeach()
+endif()
+
+# ---------------------------------------------------------------------------
+# Benchmark suite: one fastgatk-<stem>-benchmark test per benchmark_*.py so the
+# efficiency layer is exercised by CTest, not just by aggregate_report.py.
+# These measure wall time + output bytes (not GATK parity); they exit non-zero
+# only when the tool's telemetry/contract is broken, never on timing.
+# ---------------------------------------------------------------------------
+if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
+    set(_fastgatk_benchmark_scripts
+        benchmark_analyze_covariates.py
+        benchmark_annotate_intervals.py
+        benchmark_apply_vqsr.py
+        benchmark_bqsr.py
+        benchmark_calculate_contamination.py
+        benchmark_call_copy_ratio_segments.py
+        benchmark_check_reference_compatibility.py
+        benchmark_collect_allelic_counts.py
+        benchmark_collect_f1r2_counts.py
+        benchmark_collect_read_counts.py
+        benchmark_combine_gvcfs.py
+        benchmark_compare_references.py
+        benchmark_count_bases_in_reference.py
+        benchmark_create_read_count_panel_of_normals.py
+        benchmark_denoise_read_counts.py
+        benchmark_depth_of_coverage.py
+        benchmark_fasta_reference_tools.py
+        benchmark_filter_intervals.py
+        benchmark_filter_mutect_calls.py
+        benchmark_gather_bqsr_reports.py
+        benchmark_gather_pileup_summaries.py
+        benchmark_gather_tranches.py
+        benchmark_gather_vcfs.py
+        benchmark_genotype_gvcf.py
+        benchmark_get_pileup_summaries.py
+        benchmark_hc_broad.py
+        benchmark_hc_likelihood_filter.py
+        benchmark_hc_ploidy.py
+        benchmark_index_feature_file.py
+        benchmark_learn_read_orientation_model.py
+        benchmark_left_align.py
+        benchmark_mark_duplicates.py
+        benchmark_model_segments.py
+        benchmark_mutect2.py
+        benchmark_pileup_validation.py
+        benchmark_preprocess_intervals.py
+        benchmark_read_metrics.py
+        benchmark_reblock_gvcf.py
+        benchmark_select_variants.py
+        benchmark_shift_fasta.py
+        benchmark_sort_sam.py
+        benchmark_split_intervals.py
+        benchmark_validate_variants.py
+        benchmark_variant_eval.py
+        benchmark_variant_filtration.py
+        benchmark_variant_recalibrator.py
+        benchmark_variants_to_table.py
+    )
+    foreach (_fastgatk_bench IN LISTS _fastgatk_benchmark_scripts)
+        string(REPLACE "benchmark_" "" _fastgatk_stem "${_fastgatk_bench}")
+        string(REPLACE ".py" "" _fastgatk_stem "${_fastgatk_stem}")
+        add_test(NAME "fastgatk-${_fastgatk_stem}-benchmark"
+            COMMAND ${Python3_EXECUTABLE}
+                    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/${_fastgatk_bench}")
+        set_tests_properties("fastgatk-${_fastgatk_stem}-benchmark" PROPERTIES
+            ENVIRONMENT "FASTGATK_NATIVE_BUILD=${CMAKE_BINARY_DIR}")
+    endforeach()
+
+    # Native-only smoke/contract/backend gates that were never registered in
+    # CTest.  They are not GATK oracles but pin native behavior and Kokkos
+    # backend health, so they belong in the suite.
+    add_test(NAME fastgatk-bam-intervals-contract
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_bam_intervals.py")
+    add_test(NAME fastgatk-native-smoke
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_native.py")
+    add_test(NAME fastgatk-kernel-benchmark-contract
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_kernel_benchmark.py")
+    add_test(NAME fastgatk-kokkos-backend-matrix
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_kokkos_backend_matrix.py")
+    # Fail-loud check that every gitignored corpus the scripts reference is
+    # actually present on this machine (complements the tracked
+    # pinned_fixture_digests.sha256 gate).
+    add_test(NAME fastgatk-fixture-presence-check
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_fixtures.py")
 endif()
 
 if (FASTGATK_INSTALL_NATIVE_TOOLS)

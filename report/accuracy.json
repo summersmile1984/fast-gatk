@@ -1,0 +1,293 @@
+{
+  "regression_dir": "/home/turing-agents/Documents/fast-gatk/.diag/regression/20260914-115810",
+  "tools": {
+    "AnalyzeCovariates": {
+      "fail": 0,
+      "pass": 6,
+      "skip": 0,
+      "total": 6
+    },
+    "AnnotateIntervals": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "ApplyBQSR": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "ApplyVQSR": {
+      "fail": 0,
+      "pass": 12,
+      "skip": 0,
+      "total": 12
+    },
+    "BaseRecalibrator": {
+      "fail": 0,
+      "pass": 18,
+      "skip": 0,
+      "total": 18
+    },
+    "CalculateContamination": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    },
+    "CallCopyRatioSegments": {
+      "fail": 0,
+      "pass": 10,
+      "skip": 0,
+      "total": 10
+    },
+    "CheckReferenceCompatibility": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "CollectAllelicCounts": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    },
+    "CollectF1R2Counts": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "CollectReadCounts": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    },
+    "CombineGVCFs": {
+      "fail": 0,
+      "pass": 8,
+      "skip": 0,
+      "total": 8
+    },
+    "CompareReferences": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "CountBasesInReference": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "CountReads": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "CreateReadCountPanelOfNormals": {
+      "fail": 0,
+      "pass": 6,
+      "skip": 0,
+      "total": 6
+    },
+    "DenoiseReadCounts": {
+      "fail": 0,
+      "pass": 8,
+      "skip": 0,
+      "total": 8
+    },
+    "DepthOfCoverage": {
+      "fail": 0,
+      "pass": 8,
+      "skip": 0,
+      "total": 8
+    },
+    "FastaAlternateReferenceMaker": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "FastaReferenceMaker": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "FilterIntervals": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "FilterMutectCalls": {
+      "fail": 0,
+      "pass": 34,
+      "skip": 0,
+      "total": 34
+    },
+    "FlagStat": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "GatherBQSRReports": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "GatherPileupSummaries": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    },
+    "GatherTranches": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "GatherVcfs": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    },
+    "GenomicsDBImport": {
+      "fail": 0,
+      "pass": 16,
+      "skip": 0,
+      "total": 16
+    },
+    "GenotypeGVCFs": {
+      "fail": 0,
+      "pass": 50,
+      "skip": 0,
+      "total": 50
+    },
+    "GetPileupSummaries": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    },
+    "HaplotypeCaller": {
+      "fail": 0,
+      "pass": 116,
+      "skip": 0,
+      "total": 116
+    },
+    "IndexFeatureFile": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "LearnReadOrientationModel": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    },
+    "LeftAlignAndTrimVariants": {
+      "fail": 0,
+      "pass": 8,
+      "skip": 0,
+      "total": 8
+    },
+    "MarkDuplicates": {
+      "fail": 0,
+      "pass": 8,
+      "skip": 0,
+      "total": 8
+    },
+    "ModelSegments": {
+      "fail": 0,
+      "pass": 22,
+      "skip": 0,
+      "total": 22
+    },
+    "Mutect2": {
+      "fail": 0,
+      "pass": 64,
+      "skip": 0,
+      "total": 64
+    },
+    "PreprocessIntervals": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "ReblockGVCF": {
+      "fail": 0,
+      "pass": 12,
+      "skip": 0,
+      "total": 12
+    },
+    "SelectVariants": {
+      "fail": 0,
+      "pass": 12,
+      "skip": 0,
+      "total": 12
+    },
+    "ShiftFasta": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "SortSam": {
+      "fail": 0,
+      "pass": 8,
+      "skip": 0,
+      "total": 8
+    },
+    "SplitIntervals": {
+      "fail": 0,
+      "pass": 2,
+      "skip": 0,
+      "total": 2
+    },
+    "ValidateVariants": {
+      "fail": 0,
+      "pass": 6,
+      "skip": 0,
+      "total": 6
+    },
+    "VariantEval": {
+      "fail": 0,
+      "pass": 8,
+      "skip": 0,
+      "total": 8
+    },
+    "VariantFiltration": {
+      "fail": 0,
+      "pass": 12,
+      "skip": 0,
+      "total": 12
+    },
+    "VariantRecalibrator": {
+      "fail": 0,
+      "pass": 16,
+      "skip": 0,
+      "total": 16
+    },
+    "VariantsToTable": {
+      "fail": 0,
+      "pass": 4,
+      "skip": 0,
+      "total": 4
+    }
+  }
+}

@@ -23,7 +23,7 @@ TOOL_EVIDENCE: dict[str, tuple[str, ...]] = {
         "verify_hc_broad_gatk_oracle.py", "verify_hc_streaming.py", "verify_hc_region_streaming.py",
         "verify_hc_assembly_region_boundary_gatk_oracle.py", "verify_hc_cigar_indel_activity_gatk_oracle.py",
         "verify_hc_complex_multiallelic_oracle.py",
-        "verify_hc_multiallelic_gatk_oracle.py", "verify_hc_polyploid_gatk_oracle.py",
+        "verify_hc_multialt_owner_annotation_fixture_oracle.py", "verify_hc_polyploid_gatk_oracle.py",
         "verify_hc_gq_bands_gatk_oracle.py", "verify_hc_kmer_list_gatk_oracle.py",
         "verify_hc_min_pruning_gatk_oracle.py", "verify_hc_softclip_gatk_oracle.py",
         "verify_hc_bp_resolution_gatk_oracle.py", "verify_hc_rcm_pl_range_gatk_oracle.py",

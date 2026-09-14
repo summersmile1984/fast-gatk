@@ -2492,7 +2492,18 @@ bool aligned_view_is_indel_informative(const AlignedReadView& view,
         for (std::size_t index = 0; index < limit; ++index)
             informative_bits[index] = !informative_bits[index];
     }
-    return read_start < informative_bits.size() && informative_bits[read_start];
+    const auto informative_result =
+        read_start < informative_bits.size() && informative_bits[read_start];
+    if (std::getenv("FASTGATK_DEBUG_RCM_INDEL") != nullptr) {
+        std::cerr << "[RCM_INDEL] read_start=" << read_start
+                  << " raw_len=" << raw_read_length
+                  << " view_len=" << view.bases.size()
+                  << " ref_len=" << reference.size()
+                  << " ref_start=" << reference_start
+                  << " max_indel=" << max_indel
+                  << " informative=" << informative_result << '\n';
+    }
+    return informative_result;
 }
 
 bool read_is_indel_informative(const io::ReadBatch& reads,
@@ -3708,6 +3719,16 @@ std::vector<AssemblyCandidate> subset_hc_alleles_by_haplotype_scores(
             return left.alternate < right.alternate;
         });
         const auto retained_alt_count = maximum_alleles - 1U;
+        // GATK's removeAltAllelesIfTooManyGenotypes trims every concrete ALT
+        // for this site (e.g. --max-genotype-count 2 on a biallelic site); the
+        // REF-only VariantContext then crashes AlleleFrequencyCalculator
+        // ("getLog10PNonRef requires at least alternate allele", exit 3).
+        // Reproduce that abort instead of silently emitting a REF-only call.
+        if (retained_alt_count == 0)
+            throw std::invalid_argument(
+                "java.lang.IllegalArgumentException: VariantContext has only a "
+                "single reference allele, but getLog10PNonRef requires at "
+                "least alternate allele");
         for (std::size_t index = retained_alt_count; index < ranked.size(); ++index)
             keep[ranked[index].candidate] = 0U;
     }
@@ -12869,6 +12890,39 @@ bool inject_hc_given_alleles_into_haplotype_paths(
         known_paths.emplace(graph.haplotype_path_tids[path], graph.haplotype_path_starts[path],
                             graph.haplotype_path_ends[path], graph.haplotype_path_sequences[path]);
 
+    // GATK's Event.makeMinimalRepresentation() trims the common suffix and
+    // throws "Null alleles are not supported" (exit 3) when one allele is
+    // entirely a suffix of the other (e.g. "CAGCAG" -> "CAG" in a tandem
+    // repeat).  Reproduce that abort, but only for a degenerate forced allele
+    // that overlaps this assembly region: a degenerate record outside -L must
+    // not abort a run that never visits it.
+    const auto given_allele_is_degenerate = [](const std::string& ref, const std::string& alt) {
+        if (ref.size() < 2 || alt.size() < 2 || ref == alt) return false;
+        const auto ends_with = [](const std::string& text, const std::string& suffix) {
+            return text.size() >= suffix.size() &&
+                text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
+        };
+        return ends_with(ref, alt) || ends_with(alt, ref);
+    };
+    for (const auto& forced : options.forced_alleles) {
+        if (forced.tid < 0 || forced.position < 0 || forced.reference.empty() ||
+            forced.alternate.empty() ||
+            !given_allele_is_degenerate(forced.reference, forced.alternate))
+            continue;
+        for (const auto path : base_paths) {
+            if (graph.haplotype_path_tids[path] != forced.tid) continue;
+            const auto path_start = graph.haplotype_path_starts[path];
+            const auto path_end = graph.haplotype_path_ends[path];
+            const auto forced_end = static_cast<std::int64_t>(forced.position) +
+                static_cast<std::int64_t>(forced.reference.size());
+            if (static_cast<std::int64_t>(forced.position) < path_end &&
+                forced_end > static_cast<std::int64_t>(path_start)) {
+                throw std::invalid_argument(
+                    "java.lang.IllegalArgumentException: Null alleles are not supported");
+            }
+        }
+    }
+
     bool injected = false;
     for (const auto& forced : options.forced_alleles) {
         if (forced.tid < 0 || forced.position < 0 || forced.reference.empty() ||
@@ -13121,11 +13175,19 @@ void build_profile_local_reference_blocks(
     const std::vector<fastgatk::kernels::ActivityRegion>*
         event_trimmed_regions = nullptr,
     const std::vector<std::shared_ptr<Result>>* event_region_results = nullptr,
+    const Result* direct_result = nullptr,
     std::vector<SomaticReferenceConfidenceLocus>*
         somatic_reference_confidence_loci = nullptr) {
     blocks.clear();
     if (somatic_reference_confidence_loci != nullptr)
         somatic_reference_confidence_loci->clear();
+    if (std::getenv("FASTGATK_DEBUG_RCM") != nullptr) {
+        std::cerr << "[FASTGATK_RCM_BUILD_INPUT] event_regions="
+                  << (event_trimmed_regions == nullptr ? 0 : event_trimmed_regions->size())
+                  << " event_results="
+                  << (event_region_results == nullptr ? 0 : event_region_results->size())
+                  << " profiles=" << profile_regions.size() << '\n';
+    }
     if (kernel_prepare_seconds != nullptr) *kernel_prepare_seconds = 0.0;
     if (kernel_seconds != nullptr) *kernel_seconds = 0.0;
     if (kernel_execution_space != nullptr) kernel_execution_space->clear();
@@ -13170,21 +13232,43 @@ void build_profile_local_reference_blocks(
             // and retain their ordinary finalized read population.  Keep that
             // distinction at the Host ownership boundary; Ref-vs-Any and
             // genotype arithmetic remains in the Kokkos kernels below.
-            if (event_owner != nullptr && event_region_results != nullptr) {
-                for (const auto& owner : *event_region_results) {
-                    if (owner == nullptr) continue;
-                    const auto matches = std::any_of(owner->reference_confidence_regions.begin(),
-                        owner->reference_confidence_regions.end(), [&](const auto& region) {
-                            return region.tid == event_owner->tid &&
-                                   region.start == event_owner->start &&
-                                   region.end == event_owner->end &&
-                                   region.active_start == event_owner->active_start &&
-                                   region.active_end == event_owner->active_end;
-                        });
-                    if (matches) {
-                        owner_result = owner.get();
-                        break;
+            if (event_owner != nullptr && (event_region_results != nullptr ||
+                                           direct_result != nullptr)) {
+                if (debug_rcm) {
+                    std::cerr << "[FASTGATK_RCM_OWNER_LOOKUP] event=" << event_owner->tid
+                              << ':' << event_owner->start << '-' << event_owner->end
+                              << " active=" << event_owner->active_start << '-'
+                              << event_owner->active_end
+                              << " candidates="
+                              << (event_region_results == nullptr ? 0 : event_region_results->size())
+                              << " direct=" << (direct_result != nullptr) << '\n';
+                }
+                const auto region_matches_event = [&](const auto& region) {
+                    return region.tid == event_owner->tid &&
+                           region.start == event_owner->start &&
+                           region.end == event_owner->end &&
+                           region.active_start == event_owner->active_start &&
+                           region.active_end == event_owner->active_end;
+                };
+                if (event_region_results != nullptr) {
+                    for (const auto& owner : *event_region_results) {
+                        if (owner == nullptr) continue;
+                        const auto matches = std::any_of(
+                            owner->reference_confidence_regions.begin(),
+                            owner->reference_confidence_regions.end(),
+                            region_matches_event);
+                        if (matches) {
+                            owner_result = owner.get();
+                            break;
+                        }
                     }
+                }
+                if (owner_result == nullptr && direct_result != nullptr) {
+                    const auto matches = std::any_of(
+                        direct_result->reference_confidence_regions.begin(),
+                        direct_result->reference_confidence_regions.end(),
+                        region_matches_event);
+                    if (matches) owner_result = direct_result;
                 }
                 if (owner_result != nullptr &&
                     owner_result->annotation_read_qualified.size() ==
@@ -13327,6 +13411,20 @@ void build_profile_local_reference_blocks(
             // C++ Host; the Kokkos RCM likelihood/genotype reductions receive
             // the same primitive ObservationArrays as before.
             RealignedReadProjectionByRecord realigned_projections;
+            if (debug_rcm) {
+                std::cerr << "[FASTGATK_RCM_REALIGN_GATE] owner=" << (owner_result != nullptr)
+                          << " used=" << (owner_result != nullptr &&
+                                          owner_result->rcm_haplotype_realignment_used)
+                          << " bases=" << (owner_result != nullptr
+                                          ? owner_result->likelihood_read_realigned_base_records.size()
+                                          : 0U)
+                          << " offsets=" << (owner_result != nullptr
+                                          ? owner_result->likelihood_read_realigned_base_offsets.size()
+                                          : 0U)
+                          << " positions=" << (owner_result != nullptr
+                                          ? owner_result->likelihood_read_realigned_base_positions.size()
+                                          : 0U) << '\n';
+            }
             if (owner_result != nullptr && owner_result->rcm_haplotype_realignment_used &&
                 owner_result->likelihood_read_realigned_base_records.size() ==
                     owner_result->likelihood_read_realigned_base_offsets.size() &&
@@ -15225,7 +15323,7 @@ Result run(const io::ReadBatch& reads,
                 result.reference_blocks, &result.reference_confidence_prepare_seconds,
                 &result.reference_confidence_seconds,
                 &result.reference_confidence_execution_space,
-                nullptr, nullptr,
+                nullptr, nullptr, nullptr,
                 options.somatic_mode ? &result.somatic_reference_confidence_loci : nullptr);
         } else {
             build_reference_blocks(rcm_loci, reference_confidence_observations, corrected_reads,
@@ -15693,7 +15791,7 @@ Result run(const io::ReadBatch& reads,
                     &merged.reference_confidence_seconds,
                     &merged.reference_confidence_execution_space,
                     &merged.reference_confidence_regions,
-                    &merged.assembly_region_likelihood_results,
+                    &merged.assembly_region_likelihood_results, nullptr,
                     options.somatic_mode ? &merged.somatic_reference_confidence_loci : nullptr);
                 merged.reference_block_count = merged.reference_blocks.size();
             }
@@ -16518,7 +16616,7 @@ Result run(const io::ReadBatch& reads,
                 result.reference_blocks, &result.reference_confidence_prepare_seconds,
                 &result.reference_confidence_seconds,
                 &result.reference_confidence_execution_space,
-                nullptr, nullptr,
+                nullptr, nullptr, nullptr,
                 options.somatic_mode ? &result.somatic_reference_confidence_loci : nullptr);
         } else {
             build_reference_blocks(rcm_loci, reference_confidence_observations, corrected_reads,
@@ -17530,7 +17628,13 @@ Result run(const io::ReadBatch& reads,
             }
             continue;
         }
-        if (qual + 1.0e-10 < options.standard_confidence_for_calling) {
+        const bool implausible =
+            qual + 1.0e-10 < options.standard_confidence_for_calling;
+        // GenotypingEngine.java:167-170 keeps an implausible allele when it is
+        // forced (--alleles): the emit-threshold null return is guarded by
+        // `&& forcedAlleles.isEmpty()`.  A forced allele instead degrades to
+        // QUAL=0 + LowQual (GenotypingEngine.java:183-186).
+        if (implausible && !result.candidates[i].forced_by_alleles_feature) {
             if (debug_call_gates) {
                 std::cerr << "[FASTGATK_CALL_GATE] pos=" << result.candidates[i].position
                           << " ref=" << candidate_reference(result.candidates[i])
@@ -17551,17 +17655,41 @@ Result run(const io::ReadBatch& reads,
                       << " support=" << result.candidates[i].alternate_count
                       << " somatic_pair_evidence=" << somatic_pair_evidence
                       << " genotype=" << static_cast<unsigned>(genotype_host(i))
-                      << " qual=" << qual << " decision=emit\n";
+                      << " qual=" << qual
+                      << (implausible ? " decision=forced_low_qual\n" : " decision=emit\n");
         }
         GenotypeCall call;
         call.candidate = result.candidates[i];
         call.likelihoods = result.likelihoods[i];
         call.genotype = genotype_host(i);
         call.gq = gq_host(i);
-        call.qual = qual;
+        call.qual = implausible ? 0.0 : qual;
+        if (implausible) call.filter = "LowQual";
+        if (implausible && result.candidates[i].forced_by_alleles_feature) {
+            // A forced implausible ALT that sits inside a supported spanning
+            // deletion is emitted with the symbolic '*' prepended (GATK's
+            // "*,A" row).  Reuse the existing triallelic spanning-deletion PL
+            // and reorder it from [REF, ALT, *] to GATK's [REF, *, ALT].
+            std::vector<std::int32_t> spanning_pl;
+            if (derive_pairhmm_spanning_deletion_pl(result, i, spanning_pl) &&
+                spanning_pl.size() == 6) {
+                call.emit_symbolic_spanning_deletion = true;
+                call.spanning_deletion_pl = {
+                    spanning_pl[0], spanning_pl[3], spanning_pl[5],
+                    spanning_pl[1], spanning_pl[4], spanning_pl[2]};
+                std::size_t spanning_depth = 0;
+                if (i < result.spanning_deletion_read_likelihoods.size())
+                    for (const auto likelihood : result.spanning_deletion_read_likelihoods[i])
+                        if (std::isfinite(likelihood)) ++spanning_depth;
+                call.spanning_deletion_depth = static_cast<std::int32_t>(
+                    std::min<std::size_t>(spanning_depth,
+                        static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max())));
+            }
+        }
         call.annotations = calculate_variant_annotations(
-            corrected_reads, call.candidate, qual,
-            options.informative_read_overlap_margin, &result, i);
+            corrected_reads, call.candidate, call.qual,
+            options.informative_read_overlap_margin, &result, i,
+            nullptr, nullptr, false, call.emit_symbolic_spanning_deletion);
         result.calls.push_back(call);
         if (std::getenv("FASTGATK_DEBUG_EVENTMAP_LIFECYCLE") != nullptr) {
             std::cerr << "[FASTGATK_EVENTMAP_CALL] tid=" << call.candidate.tid
@@ -17688,7 +17816,7 @@ Result run(const io::ReadBatch& reads,
             result.reference_blocks, &result.reference_confidence_prepare_seconds,
             &result.reference_confidence_seconds,
             &result.reference_confidence_execution_space,
-            &result.reference_confidence_regions, nullptr,
+            &result.reference_confidence_regions, nullptr, &result,
             options.somatic_mode ? &result.somatic_reference_confidence_loci : nullptr);
     } else {
         build_reference_blocks(rcm_loci, reference_confidence_observations, corrected_reads,

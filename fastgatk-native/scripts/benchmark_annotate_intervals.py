@@ -80,6 +80,7 @@ def main() -> int:
         output = work / "annotated.tsv"
         manifest = work / "annotated.manifest.json"
         command = [str(binary), "-R", str(reference), "-L", str(interval_list),
+                   "--interval-merging-rule", "OVERLAPPING_ONLY",
                    "-O", str(output), "--threads", str(args.threads),
                    "--output-manifest", str(manifest)]
         if args.with_tracks:

@@ -81,6 +81,8 @@ struct Options {
     // GATK's --sample-ploidy: the fallback ploidy for a genotype that declares
     // none of its own.
     int sample_ploidy = 2;
+    // GATK's -D/--dbsnp: a VCF of known sites whose IDs annotate matching calls.
+    std::string dbsnp_path;
     // Optional GATK GenotypingEngine annotation.  NDA records the number of
     // concrete ALT alleles discovered before max-ALT subsetting, so callers
     // can distinguish an intentionally reduced site from a site that never
@@ -642,6 +644,8 @@ Options parse(int argc, char** argv) {
                 ? "--stand-call-conf" : "--standard-min-confidence-threshold-for-calling";
             options.standard_confidence_for_calling = std::stod(require_value(
                 i, argc, argv, argument, name));
+        } else if (is_option(argument, "--dbsnp") || argument == "-D") {
+            options.dbsnp_path = require_value(i, argc, argv, argument, "--dbsnp");
         } else if (is_option(argument, "--sample-ploidy")) {
             // GATK's GenotypingEngineConfiguration.samplePloidy: the ploidy used
             // for a genotype that carries none of its own (Genotype.getPloidy()
@@ -5109,6 +5113,87 @@ std::string format_gatk_qual_value(const std::string& value) {
     }
 }
 
+// GATK's -D/--dbsnp assigns an output record the ID of a dbSNP record at the
+// same site whose REF and ALT set agree (ignoring <NON_REF>).  Measured against
+// the pinned oracle on its own chr20 corpus with a constructed dbSNP file: all 42
+// sites whose alleles agreed received their rsID and no other row did; two sites
+// whose dbSNP ALT was deliberately changed received none, while a third mutated
+// site whose new ALT still agreed kept its ID.
+using DbSnpEntry = std::tuple<std::string, std::string, std::string>;
+using DbSnpIndex = std::map<std::pair<std::string, int>, std::vector<DbSnpEntry>>;
+
+std::string allele_set_key(const std::vector<std::string>& alleles,
+                           std::size_t begin) {
+    std::vector<std::string> kept;
+    for (std::size_t index = begin; index < alleles.size(); ++index)
+        if (alleles[index] != "<NON_REF>") kept.push_back(alleles[index]);
+    std::sort(kept.begin(), kept.end());
+    std::string key;
+    for (const auto& allele : kept) {
+        key += allele;
+        key += ',';
+    }
+    return key;
+}
+
+DbSnpIndex load_dbsnp_index(const std::string& path) {
+    DbSnpIndex index;
+    htsFile* input = bcf_open(path.c_str(), "r");
+    if (input == nullptr)
+        throw std::runtime_error("BAD_INPUT: cannot open the --dbsnp file " + path);
+    bcf_hdr_t* header = bcf_hdr_read(input);
+    if (header == nullptr) {
+        bcf_close(input);
+        throw std::runtime_error("BAD_INPUT: cannot read the --dbsnp header");
+    }
+    bcf1_t* record = bcf_init();
+    int status = 0;
+    while ((status = bcf_read(input, header, record)) == 0) {
+        if (record->rid < 0 || record->n_allele < 1) continue;
+        const char* contig = bcf_hdr_id2name(header, record->rid);
+        const std::string id = record->d.id == nullptr ? std::string{}
+                                                       : std::string(record->d.id);
+        if (contig == nullptr || id.empty() || id == ".") continue;
+        std::vector<std::string> alleles;
+        alleles.reserve(static_cast<std::size_t>(record->n_allele));
+        for (int allele = 0; allele < record->n_allele; ++allele)
+            alleles.emplace_back(record->d.allele[allele] == nullptr
+                                     ? std::string{} : std::string(record->d.allele[allele]));
+        if (alleles.empty()) continue;
+        index[{std::string(contig), record->pos + 1}].emplace_back(
+            alleles.front(), allele_set_key(alleles, 1), id);
+    }
+    // -1 is end of input; anything lower is a parse failure that must not be
+    // mistaken for EOF (the systemic guard from the malformed-input fix).
+    if (status < -1) {
+        bcf_destroy(record);
+        bcf_hdr_destroy(header);
+        bcf_close(input);
+        throw std::runtime_error("BAD_INPUT: --dbsnp record parse failed");
+    }
+    bcf_destroy(record);
+    bcf_hdr_destroy(header);
+    bcf_close(input);
+    return index;
+}
+
+void apply_dbsnp_id(const bcf_hdr_t* output_header, Record& record,
+                    const DbSnpIndex& index) {
+    if (index.empty() || record.value == nullptr || record.alleles.empty()) return;
+    const char* contig = bcf_hdr_id2name(output_header, record.value->rid);
+    if (contig == nullptr) return;
+    const auto found = index.find({std::string(contig), record.pos + 1});
+    if (found == index.end()) return;
+    const auto key = allele_set_key(record.alleles, 1);
+    for (const auto& entry : found->second) {
+        if (std::get<0>(entry) != record.alleles.front()) continue;
+        if (std::get<1>(entry) != key) continue;
+        if (bcf_update_id(output_header, record.value, std::get<2>(entry).c_str()) != 0)
+            throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot write the dbSNP ID");
+        return;
+    }
+}
+
 std::string gatk_compatible_record_text(const std::string& formatted,
                                         bool drop_read_level = false,
                                         bool drop_excess_het = false,
@@ -6365,6 +6450,8 @@ int run_streaming_genotype_gvcf(Options& options,
     std::uint64_t indexed_interval_queries = 0;
     int expected_sample_count = -1;
     std::vector<VariantSpan> variant_spans;
+    const DbSnpIndex dbsnp_index = options.dbsnp_path.empty()
+        ? DbSnpIndex{} : load_dbsnp_index(options.dbsnp_path);
 
     try {
         if (!options.reference.empty()) reference_index = fai_load(options.reference.c_str());
@@ -6880,6 +6967,8 @@ int run_streaming_genotype_gvcf(Options& options,
                 if (!apply_gatk_output_allele_subset(output_header, record, options,
                                                      upstream_deletions))
                     return std::nullopt;
+                if (!dbsnp_index.empty())
+                    apply_dbsnp_id(output_header, record, dbsnp_index);
                 if (record.finalized_monomorphic_ref) {
                     // The REF-only call is complete: GATK emits it directly from
                     // regenotypeVC, so no site or standard annotation runs.
@@ -7042,6 +7131,8 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
     std::uint64_t indexed_interval_queries = 0;
     std::uint64_t native_record_indexed_inputs = 0;
     std::uint64_t native_record_index_skipped_inputs = 0;
+    const DbSnpIndex aggregate_dbsnp_index = options.dbsnp_path.empty()
+        ? DbSnpIndex{} : load_dbsnp_index(options.dbsnp_path);
     fastgatk::io::IntervalFileStats interval_file_stats;
     std::vector<Region> regions;
     std::vector<Region> excluded_regions;
@@ -7671,6 +7762,8 @@ int run_tool(Options& options, const fastgatk::runtime::ResourceSnapshot& resour
                 if (!apply_gatk_output_allele_subset(output_header, record, options,
                                                      upstream_deletions))
                     return std::nullopt;
+                if (!aggregate_dbsnp_index.empty())
+                    apply_dbsnp_id(output_header, record, aggregate_dbsnp_index);
                 if (record.finalized_monomorphic_ref) {
                     // The REF-only call is complete: GATK emits it directly from
                     // regenotypeVC, so no site or standard annotation runs.

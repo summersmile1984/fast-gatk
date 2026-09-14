@@ -860,7 +860,10 @@ def main() -> int:
         ], text=True, env=env)
         model_stats_data = json.loads(model_stats.read_text(encoding="utf-8"))
         assert model_stats_data["empirical_somatic_model_learned"] is True
-        assert model_stats_data["empirical_somatic_model_records"] == 0, model_stats_data
+        # Two records in the model body, one ALT each -> 2 empirical-model
+        # records.  This was 0 while the field silently ignored the streaming
+        # learning pipeline's datum count.
+        assert model_stats_data["empirical_somatic_model_records"] == 2, model_stats_data
         assert model_stats_data["callable_sites"] == 1000000
         assert len(model_stats_data["empirical_variant_priors"]) == 21
         assert abs(model_stats_data["log_snv_prior"] + 13.815510557964274) < 1.0e-9

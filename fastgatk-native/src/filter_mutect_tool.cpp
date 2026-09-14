@@ -3940,7 +3940,8 @@ static void run_java_learning_pipeline(
     Kokkos::View<double*>& orientation_log_device,
     const std::unordered_map<std::string, float>& contamination_by_sample,
     const float effective_contamination,
-    FilterKernelTelemetry* telemetry) {
+    FilterKernelTelemetry* telemetry,
+    std::uint64_t* empirical_records_out) {
     fmc_j::SomaticModel model;
     model.clusters.push_back(fmc_j::Cluster{0, 1.0, 1.0, 0.5});
     model.clusters.push_back(fmc_j::Cluster{0, 10.0, 1.0, 10.0 / 11.0});
@@ -4375,6 +4376,11 @@ static void run_java_learning_pipeline(
     std::vector<double> errors;
     accumulate_pass(false, &errors);
     dump_model("pass3");
+    // The final (non-learning) pass leaves model.data populated; report its
+    // size as the empirical somatic model record count so the stats JSON no
+    // longer reads 0 while the model is in fact learned.
+    if (empirical_records_out != nullptr)
+        *empirical_records_out = static_cast<std::uint64_t>(model.data.size());
 
     if (std::getenv("FASTGATK_DEBUG_FMC") != nullptr) {
         std::fprintf(stderr, "[FMCERRORS]");
@@ -4782,7 +4788,7 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                     strand_artifact_filter,
                     orientation_prior_device, orientation_log_device,
                     contamination_by_sample, effective_contamination,
-                    &kernel_telemetry);
+                    &kernel_telemetry, &empirical_somatic_model_records);
                 joint_error_threshold_observations = java_observations;
                 // GATK ThresholdCalculator only learns the threshold for the
                 // OPTIMAL_F_SCORE strategy; CONSTANT and FALSE_DISCOVERY_RATE

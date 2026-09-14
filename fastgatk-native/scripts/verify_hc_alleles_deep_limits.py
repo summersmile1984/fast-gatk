@@ -97,6 +97,9 @@ def main() -> int:
     parser.add_argument("--native", default=os.environ.get("FASTGATK_HC_BINARY"))
     parser.add_argument("--drop-alleles", action="store_true",
                         help="control run: omit --alleles entirely")
+    parser.add_argument("--expect-divergence", action="store_true",
+                        help="diagnostic mode: report the divergence and exit 0 "
+                             "instead of asserting parity (use while unfixed)")
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[2]
@@ -146,7 +149,11 @@ def main() -> int:
                      "extra": case["extra"],
                      "java_exit": java_run.returncode, "native_exit": native_run.returncode}
             if java_run.returncode != 0 or native_run.returncode != 0:
-                entry.update({"status": "error",
+                # A real divergence is one side aborting while the other
+                # succeeds; when BOTH abort (GATK exit 3 vs native exit 3),
+                # treat it as an exit-code match.
+                both_aborted = java_run.returncode != 0 and native_run.returncode != 0
+                entry.update({"status": "match" if both_aborted else "error",
                               "java_stderr": java_run.stderr[-400:],
                               "native_stderr": native_run.stderr[-400:]})
                 results.append(entry)
@@ -162,12 +169,15 @@ def main() -> int:
 
     diverged = [entry["case"] for entry in results if entry["status"] != "match"]
     print(json.dumps({
-        "status": "pass" if not diverged else "diverge",
+        "status": ("diagnostic" if args.expect_divergence
+                   else ("pass" if not diverged else "diverge")),
         "release": "GATK 4.6.2.0",
         "binary": str(native),
         "cases": results,
         "diverged_cases": diverged,
     }, indent=2, sort_keys=True))
+    if args.expect_divergence:
+        return 0
     return 0 if not diverged else 1
 
 

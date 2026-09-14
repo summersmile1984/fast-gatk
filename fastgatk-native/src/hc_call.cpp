@@ -3157,6 +3157,99 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
                                                                : std::to_string(tid_value);
         const auto position = std::get<1>(key);
         const auto& ref = std::get<2>(key);
+        // A forced implausible ALT inside a supported spanning deletion is
+        // emitted as a three-allele "*,A" record with LowQual
+        // (GenotypingEngine.java:167-186).  The ordinary path below assumes
+        // one call == one ALT, so handle this single three-allele shape
+        // directly.
+        if (calls.size() == 1 && calls[0]->emit_symbolic_spanning_deletion &&
+            calls[0]->spanning_deletion_pl.size() == 6) {
+            const auto* call = calls[0];
+            const auto concrete_alt = candidate_alternate(call->candidate);
+            const auto ref_pseudocount = result.genotype_snp_heterozygosity /
+                (result.genotype_heterozygosity_stdev * result.genotype_heterozygosity_stdev);
+            const auto snp_pseudocount =
+                result.genotype_snp_heterozygosity * ref_pseudocount;
+            // spanning_deletion_pl is stored in [REF, *, ALT] order.
+            const auto af = fastgatk::kernels::calculate_allele_frequency_kokkos(
+                call->spanning_deletion_pl, 1, 3, 2,
+                {ref_pseudocount, snp_pseudocount, snp_pseudocount});
+            // integer_allele_counts is [REF, *, ALT]; publish the two ALT
+            // counts in the same [*, ALT] order.
+            const std::vector<int> ac =
+                af.integer_allele_counts.size() >= 3
+                    ? std::vector<int>{af.integer_allele_counts[1],
+                                       af.integer_allele_counts[2]}
+                    : std::vector<int>{0, 0};
+            const std::vector<int> mle_ac = ac;
+            // BestAllele AD over REF, concrete ALT, * (GATK's internal
+            // order), republished as [REF, *, ALT].
+            std::vector<int> ad{static_cast<int>(call->candidate.reference_count),
+                                call->spanning_deletion_depth, 0};
+            if (const auto depths = derive_multiallelic_depths(
+                    result, {call}, true);
+                depths.has_value() && depths->first.size() == 3) {
+                ad = {depths->first[0], depths->first[2], depths->first[1]};
+            }
+            int best_gq = 99;
+            {
+                std::vector<int> sorted = call->spanning_deletion_pl;
+                std::sort(sorted.begin(), sorted.end());
+                if (sorted.size() >= 2)
+                    best_gq = std::clamp(sorted[1] - sorted[0], 0, 99);
+            }
+            const auto& annotations = call->annotations;
+            const int an = sample_ploidy;
+            out << chrom << '\t' << (position + 1) << "\t.\t" << ref << "\t*,"
+                << concrete_alt << "\t0\tLowQual\tAC=" << ac[0] << ',' << ac[1];
+            out << ";AF=";
+            for (std::size_t alt = 0; alt < 2; ++alt) {
+                if (alt != 0) out << ',';
+                out << (ac[alt] == 0 ? std::string("0.00")
+                                     : format_allele_frequency(
+                                           static_cast<double>(ac[alt]) / an));
+            }
+            out << ";AN=" << an;
+            out << ";DP=" << call->candidate.depth;
+            if (sample_ploidy == 2) out << ";ExcessHet=0.0000";
+            if (std::isfinite(annotations.fs))
+                out << ";FS=" << annotation_text(annotations.fs, 3);
+            out << ";MLEAC=";
+            for (std::size_t alt = 0; alt < 2; ++alt) {
+                if (alt != 0) out << ',';
+                out << mle_ac[alt];
+            }
+            out << ";MLEAF=";
+            for (std::size_t alt = 0; alt < 2; ++alt) {
+                if (alt != 0) out << ',';
+                out << (mle_ac[alt] == 0 ? std::string("0.00")
+                                         : format_allele_frequency(
+                                               static_cast<double>(mle_ac[alt]) / an));
+            }
+            if (std::isfinite(annotations.mq))
+                out << ";MQ=" << annotation_text(annotations.mq, 2);
+            if (std::isfinite(annotations.mq_rank_sum))
+                out << ";MQRankSum=" << annotation_text(annotations.mq_rank_sum, 3);
+            if (std::isfinite(annotations.qd))
+                out << ";QD=" << annotation_text(annotations.qd, 2);
+            if (std::isfinite(annotations.read_pos_rank_sum))
+                out << ";ReadPosRankSum="
+                    << annotation_text(annotations.read_pos_rank_sum, 3);
+            if (std::isfinite(annotations.sor))
+                out << ";SOR=" << annotation_text(annotations.sor, 3);
+            if (!sites_only_vcf_output) {
+                out << "\tGT:AD:DP:GQ:PL\t0/1:"
+                    << ad[0] << ',' << ad[1] << ',' << ad[2] << ':'
+                    << call->candidate.depth << ':' << best_gq << ':';
+                for (std::size_t pl_index = 0;
+                     pl_index < call->spanning_deletion_pl.size(); ++pl_index) {
+                    if (pl_index != 0) out << ',';
+                    out << call->spanning_deletion_pl[pl_index];
+                }
+            }
+            out << '\n';
+            continue;
+        }
         // A full contig result keeps each AssemblyRegion's PairHMM matrix in
         // its owning Result to avoid retaining a dense global copy.  Prefer
         // the direct matrix for a non-streamed result, then resolve the
@@ -3282,8 +3375,22 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
             return false;
         };
         std::vector<int> spanning_pl;
-        const bool has_spanning_deletion = sample_ploidy != 2 &&
+        bool has_spanning_deletion = sample_ploidy != 2 &&
             joint_from_owner(spanning_pl, true);
+        if (std::getenv("FASTGATK_DEBUG_MAXALT") != nullptr) {
+            std::cerr << "[FASTGATK_MAXALT] pos=" << (position + 1)
+                      << " ref=" << ref << " calls=" << calls.size()
+                      << " has_spanning_deletion=" << (has_spanning_deletion ? 1 : 0)
+                      << " spanning_pl_size=" << spanning_pl.size()
+                      << " allele_count=" << allele_count
+                      << " ploidy=" << sample_ploidy
+                      << " max_alt=" << max_alternate_alleles << " alts=";
+            for (const auto* call : calls)
+                std::cerr << candidate_alternate(call->candidate)
+                          << "(forced=" << (call->candidate.forced_by_alleles_feature ? 1 : 0)
+                          << ",ac=" << call->candidate.alternate_count << ") ";
+            std::cerr << '\n';
+        }
         bool joint = false;
         if (has_spanning_deletion) {
             // GenotypingEngine calculates GL/AF on REF/concrete ALT(s)/*,
@@ -3335,31 +3442,56 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
         // Do that structural work on the Host and leave the subsequent AF
         // posterior to calculate_allele_frequency_kokkos.
         bool max_allele_subset_changed = false;
-        if (calls.size() > max_alternate_alleles) {
+        const std::size_t ranking_alt_count =
+            calls.size() + (has_spanning_deletion ? 1U : 0U);
+        if (ranking_alt_count > max_alternate_alleles) {
+            // GATK's calculateMostLikelyAlleles ranks REF + every proper ALT
+            // (including the trailing `*`) together before AFCalculator, so a
+            // supported spanning deletion displaces a zero-support concrete
+            // ALT instead of that ALT always surviving on stable tie-break
+            // order.
+            const std::vector<int>& ranking_pl = has_spanning_deletion ? spanning_pl : pl;
             const auto retained_alt_indices = gatk_most_likely_alt_indices(
-                pl, static_cast<int>(allele_count), sample_ploidy, calls.size(),
-                max_alternate_alleles);
+                ranking_pl,
+                static_cast<int>(allele_count) + (has_spanning_deletion ? 1 : 0),
+                sample_ploidy, ranking_alt_count, max_alternate_alleles);
+            std::vector<std::size_t> retained_concrete;
+            bool retained_spanning = false;
+            retained_concrete.reserve(max_alternate_alleles);
+            for (const auto alt : retained_alt_indices) {
+                if (alt < calls.size()) retained_concrete.push_back(alt);
+                else retained_spanning = true;
+            }
+            if (std::getenv("FASTGATK_DEBUG_MAXALT") != nullptr) {
+                std::cerr << "[FASTGATK_MAXALT] max-alt reduction retained=";
+                for (const auto alt : retained_alt_indices) std::cerr << alt << ',';
+                std::cerr << " retained_spanning=" << (retained_spanning ? 1 : 0) << '\n';
+            }
             std::vector<std::size_t> new_to_old{0U};
-            new_to_old.reserve(retained_alt_indices.size() + 1U);
-            for (const auto alt : retained_alt_indices) new_to_old.push_back(alt + 1U);
+            new_to_old.reserve(retained_concrete.size() + 1U);
+            for (const auto alt : retained_concrete) new_to_old.push_back(alt + 1U);
             pl = remap_pl_for_allele_subset(
                 pl, static_cast<int>(allele_count), sample_ploidy, new_to_old);
             if (has_spanning_deletion) {
-                auto spanning_new_to_old = new_to_old;
-                // In ordinary VCF mode `*` is held only for the AF
-                // calculation.  Preserve it while remapping that internal
-                // likelihood matrix, exactly as GATK does before suppressing
-                // it from the public ALT list.
-                spanning_new_to_old.push_back(allele_count);
-                spanning_pl = remap_pl_for_allele_subset(
-                    spanning_pl, static_cast<int>(allele_count + 1U), sample_ploidy,
-                    spanning_new_to_old);
+                if (retained_spanning) {
+                    auto spanning_new_to_old = new_to_old;
+                    // In ordinary VCF mode `*` is held only for the AF
+                    // calculation.  Preserve it while remapping that internal
+                    // likelihood matrix, exactly as GATK does before
+                    // suppressing it from the public ALT list.
+                    spanning_new_to_old.push_back(allele_count);
+                    spanning_pl = remap_pl_for_allele_subset(
+                        spanning_pl, static_cast<int>(allele_count + 1U), sample_ploidy,
+                        spanning_new_to_old);
+                } else {
+                    has_spanning_deletion = false;
+                }
             }
             if (ad.size() == calls.size() + 1U)
                 ad = remap_r_length_values(ad, new_to_old);
             std::vector<const fastgatk::calling::GenotypeCall*> retained_calls;
-            retained_calls.reserve(retained_alt_indices.size());
-            for (const auto alt : retained_alt_indices) retained_calls.push_back(calls[alt]);
+            retained_calls.reserve(retained_concrete.size());
+            for (const auto alt : retained_concrete) retained_calls.push_back(calls[alt]);
             calls = std::move(retained_calls);
             allele_count = calls.size() + 1U;
             max_allele_subset_changed = true;
@@ -7144,8 +7276,16 @@ int main(int argc, char** argv) {
         Kokkos::finalize();
         return 0;
     } catch (const std::exception& error) {
-        std::cerr << "error: " << error.what() << '\n';
+        // GATK exits 3 for a runtime IllegalArgumentException (a "USER ERROR
+        // has occurred" during traversal), 2 for a command-line error.  Native
+        // marks the former with the "java.lang.IllegalArgumentException:"
+        // prefix so the exit code matches GATK's.
+        const std::string message = error.what();
+        const bool runtime_user_error =
+            message.rfind("java.lang.IllegalArgumentException", 0) == 0;
+        std::cerr << (runtime_user_error ? "A USER ERROR has occurred: " : "error: ")
+                  << error.what() << '\n';
         if (initialized && Kokkos::is_initialized()) Kokkos::finalize();
-        return 2;
+        return runtime_user_error ? 3 : 2;
     }
 }

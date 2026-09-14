@@ -653,6 +653,15 @@ struct GenotypeCall {
     // Site-level AF posterior quality used for call-thresholding and VCF
     // QUAL.  This is distinct from FORMAT/GQ (genotype-vs-next-genotype).
     double qual = 0.0;
+    // VCF FILTER column.  Empty means PASS (rendered '.').  "LowQual" marks a
+    // retained-but-implausible forced allele (GenotypingEngine.java:183-186).
+    std::string filter;
+    // A forced concrete ALT that sits inside a supported spanning deletion is
+    // emitted with the symbolic '*' prepended (GATK's "*,A" row).  The
+    // precomputed triallelic PL below carries REF,*,concrete-ALT order.
+    bool emit_symbolic_spanning_deletion = false;
+    std::vector<std::int32_t> spanning_deletion_pl;
+    std::int32_t spanning_deletion_depth = 0;
     // Standard GATK VariantContext annotations computed at the Host evidence
     // boundary.  Missing values remain NaN and are omitted from the VCF;
     // device kernels never receive these string/report concerns.

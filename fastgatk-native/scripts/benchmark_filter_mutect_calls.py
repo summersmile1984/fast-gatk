@@ -172,6 +172,9 @@ def main() -> int:
             ], text=True, env=env)
             model_stats = json.loads(model_stats_path.read_text(encoding="utf-8"))
             model_durations.append(time.perf_counter() - started)
+        # The empirical-model workload has 95 records (5+90); the streaming
+        # learning pipeline must report all of them.  This also guards the
+        # earlier regression where the field silently read 0.
         assert model_stats is not None and model_stats["empirical_somatic_model_records"] == 95
         assert model_stats["empirical_cluster_count"] >= 3
         model_durations.sort()

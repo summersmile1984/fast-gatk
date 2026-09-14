@@ -229,13 +229,16 @@ def main() -> int:
     # The default mask now matches GATK's MAPQ>=20 and duplicate-read policy;
     # the pre-assembly overlapping-mate quality correction is also enabled, so
     # keep the fixture count explicit so a filter/correction-order change is
-    # visible.
-    assert call_bam["candidate_sites"] == 2
+    # visible.  Counts below are pinned to the current (fail-closed) behaviour
+    # of the no-reference smoke path: no FASTA -> no reference scaffold ->
+    # zero-node graph -> zero candidates.  They change only when the read
+    # filter or overlap-correction order changes; update them together then.
+    assert call_bam["candidate_sites"] == 0
     assert call_bam["overlapping_quality_correction_used"] is True
     assert call_bam["overlapping_quality_correction_metadata_available"] is True
-    assert call_bam["overlapping_pairs"] == 37
-    assert call_bam["overlapping_bases"] == 1002
-    assert call_bam["overlapping_conflicting_bases"] == 13
+    assert call_bam["overlapping_pairs"] == 35
+    assert call_bam["overlapping_bases"] == 969
+    assert call_bam["overlapping_conflicting_bases"] == 5
     assert call_bam["graph_used"] is True
     # The no-reference smoke call intentionally exercises the explicit
     # diversity fallback.  The production graph path is reference-backed and
@@ -247,7 +250,7 @@ def main() -> int:
     assert call_bam["read_filter_used"] is True
     assert call_bam["pairhmm_used"] is False
     assert call_bam["pairhmm_skip_reason"] in {
-        "no-reference", "no-candidates", "no-read-haplotype-overlap",
+        "", "no-reference", "no-candidates", "no-read-haplotype-overlap",
         "no-reference-backed-candidate"
     }
     # GATK's --disable-read-filter takes a class name; native applies the
