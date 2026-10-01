@@ -1,6 +1,0 @@
-19:22:17.892 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_compression.so
-[Sat Sep 19 19:22:17 CST 2026] BuildBamIndex --INPUT public_pipeline/full_chr20/fair16/gatk/mkdup.bam --OUTPUT public_pipeline/full_chr20/fair16/gatk/mkdup.bai --VERBOSITY INFO --QUIET false --VALIDATION_STRINGENCY STRICT --COMPRESSION_LEVEL 2 --MAX_RECORDS_IN_RAM 500000 --CREATE_INDEX false --CREATE_MD5_FILE false --help false --version false --showHidden false --USE_JDK_DEFLATER false --USE_JDK_INFLATER false
-[Sat Sep 19 19:22:21 CST 2026] Executing as turing-agents@turing-agents-MotherBoard-Series on Linux 7.0.0-31-generic amd64; OpenJDK 64-Bit Server VM 17.0.20+8; Deflater: Intel; Inflater: Intel; Provider GCS is available; Picard version: Version:4.6.2.0
-INFO	2026-09-19 19:22:25	BuildBamIndex	Successfully wrote bam index file public_pipeline/full_chr20/fair16/gatk/mkdup.bai
-[Sat Sep 19 19:22:25 CST 2026] picard.sam.BuildBamIndex done. Elapsed time: 0.13 minutes.
-Runtime.totalMemory()=1461780480

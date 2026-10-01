@@ -1,6 +1,0 @@
-mkdup wall: 32s
-bqsr wall: 148s
-apply wall: 85s
-hc wall: 1404s
-gt wall: 98s
-NATIVE_DONE

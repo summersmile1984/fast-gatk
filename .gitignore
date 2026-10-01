@@ -64,3 +64,6 @@ __pycache__/
 # ---- 会话态与根目录临时数据（不入库） ----
 .omp/
 /NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam
+/public_pipeline/
+report/headline_comparison_*/
+report/*/work/

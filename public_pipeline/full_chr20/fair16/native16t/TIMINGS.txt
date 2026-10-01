@@ -1,6 +1,0 @@
-mkdup wall: 30s rc=0
-bqsr wall: 142s rc=0
-apply wall: 75s rc=0
-hc wall: 1470s rc=0
-gt wall: 114s rc=0
-NATIVE16T_DONE
