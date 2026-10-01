@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "tool": "CollectAllelicCounts",
+  "native_binary": "fastgatk-collect-allelic-counts",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 46.938,
+  "scripts": [
+    {
+      "name": "verify_collect_allelic_counts.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.06,
+      "wall_clock_seconds": 0.06,
+      "peak_rss_bytes": 4599808,
+      "peak_vm_hwm_bytes": 4599808,
+      "cpu_time_seconds": 611.841,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 4599808,
+        "peak_vm_hwm_bytes": 4599808,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-allelic-counts -I /tmp/fastgatk-collect-allelic-97w2qu5g/reads.sam -R /tmp/fastgatk-collect-allelic-97w2qu5g/reference.fa"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"include_duplicates_reads_used\": 6, \"reads_seen\": 7, \"reads_used\": 5, \"reference_n_rows_omitted\": 2, \"rows\": 8, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_collect_allelic_counts_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 46.878,
+      "wall_clock_seconds": 46.878,
+      "peak_rss_bytes": 387194880,
+      "peak_vm_hwm_bytes": 387194880,
+      "cpu_time_seconds": 630.877,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 10,
+      "native": {
+        "peak_rss_bytes": 5853184,
+        "peak_vm_hwm_bytes": 5853184,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-allelic-counts -I /tmp/fastgatk-collect-allelic-gatk-e55xxii_/reads.bam -R /tmp/fastgatk-collect-allelic-gatk-e55xxii_/re",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-allelic-counts -I /tmp/fastgatk-collect-allelic-gatk-e55xxii_/reads.bam -R /tmp/fastgatk-collect-allelic-gatk-e55xxii_/re",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-allelic-counts -I /tmp/fastgatk-collect-allelic-gatk-e55xxii_/reads.bam -R /tmp/fastgatk-collect-allelic-gatk-e55xxii_/re",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-allelic-counts -I /tmp/fastgatk-collect-allelic-gatk-e55xxii_/reads.bam -R /tmp/fastgatk-collect-allelic-gatk-e55xxii_/re"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 387194880,
+        "peak_vm_hwm_bytes": 387194880,
+        "wall_clock_seconds_sum": 46.82,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CreateSequenceDicti",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam I=/tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CollectAllelicCount",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CollectAllelicCount",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CollectAllelicCount",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CollectAllelicCount"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"default_filter_resolution_exact\": true, \"disable_tool_defaults_exact\": true, \"exclude_interval_locus_boundary_exact\": true, \"explicit_filter_reenable_exact\": true, \"gatk_version\": \"4.6.2.0\", \"secondary_supplementary_qcfail_retained_by_default\": true, \"status\": \"pass\", \"wellformed_cigar_n_filter_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

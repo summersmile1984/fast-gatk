@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "tool": "IndexFeatureFile",
+  "native_binary": "fastgatk-index-feature-file",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 31.923,
+  "scripts": [
+    {
+      "name": "verify_index_feature_file.py",
+      "exit_code": 0,
+      "elapsed_seconds": 31.923,
+      "wall_clock_seconds": 31.923,
+      "peak_rss_bytes": 290648064,
+      "peak_vm_hwm_bytes": 290648064,
+      "cpu_time_seconds": 5491.234,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 16,
+      "native": {
+        "peak_rss_bytes": 6434816,
+        "peak_vm_hwm_bytes": 6434816,
+        "wall_clock_seconds_sum": 0.047,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/tools/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file -I /tmp/fastgatk-index-feature-file-tevnv2w0/sample.g.vcf --output-manifest /tmp/fastgatk-index-feature-file-t",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file -I /tmp/fastgatk-index-feature-file-tevnv2w0/sample.vcf --output-manifest /tmp/fastgatk-index-feature-file-tev",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file -I /tmp/fastgatk-index-feature-file-tevnv2w0/dense.vcf --output-manifest /tmp/fastgatk-index-feature-file-tevn",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/tools/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/tools/"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 290471936,
+        "peak_vm_hwm_bytes": 290471936,
+        "wall_clock_seconds_sum": 27.396,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVarian",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVarian",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 290648064,
+        "peak_vm_hwm_bytes": 290648064,
+        "wall_clock_seconds_sum": 4.444,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_index_feature_file.py"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"suite\": \"index-feature-file\", \"binary\": \"/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file\", \"plain_gvcf_linear_idx\": true, \"plain_vcf_dynamic_idx\": true, \"dense_vcf_interval_idx\": true, \"plain_bed_dynamic_idx\": true, \"dense_bed_interval_idx\": true, \"empty_vcf_dynamic_idx\": true, \"java_binary_oracle\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

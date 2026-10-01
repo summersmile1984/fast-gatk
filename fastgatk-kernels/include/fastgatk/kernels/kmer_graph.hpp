@@ -209,6 +209,9 @@ struct KmerGraphResult {
     std::size_t adaptive_pruned_nodes = 0;
     std::uint32_t kmer_size = 0;
     std::size_t kmer_iterations = 1;
+    // k-mer sizes whose graph attempt GATK's createGraph accepted (its
+    // "Using kmer size of N in read threading assembler" log).
+    std::vector<std::uint32_t> kmer_sizes_used;
     bool has_non_reference_cycles = false;
     // K-mers observed more than once within any individual read/reference
     // sequence, matching ReadThreadingGraph.getNonUniqueKmers() semantics.

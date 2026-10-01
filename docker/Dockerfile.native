@@ -1,0 +1,90 @@
+# Native-only production image for the fast-gatk compute cluster.
+#
+# This image deliberately does NOT contain a JRE. Production workers must not
+# fall back to GATK 4.6.2.0 silently; the oracle image (Dockerfile.oracle)
+# carries the pinned GATK jar and JRE for CI-only verification.
+#
+# Build:   bash fastgatk-native/scripts/build_container.sh
+# Inspect: docker run --rm fastgatk-native:latest /opt/fastgatk/bin/fastgatk-hc-smoke --help
+# Cluster: docker run --rm fastgatk-native:latest /opt/fastgatk/bin/fastgatk-hc-call \
+#              -I /data/sample.bam -R /data/ref.fa -L chr17:69000-69400 \
+#              -O /scratch/calls.vcf --output-manifest /scratch/calls.vcf.manifest.json
+
+FROM ubuntu:24.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PATH=/opt/fastgatk/bin:/opt/fastgatk/dispatcher:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Native binaries link against libgomp / libstdc++ / libm / libgcc_s on the
+# build host.  The fast-gatk build host is currently a rolling Ubuntu
+# (glibc 2.43, libstdc++ GLIBCXX_3.4.35), so this image picks Ubuntu
+# 24.04 (noble) as the runtime floor — that ships GLIBC 2.39 plus
+# libstdc++ with GLIBCXX_3.4.31.  ``libstdc++6`` from noble-backports
+# provides the newer symbols; if the build host moves further ahead,
+# bump this base tag in lockstep and update the docker-test-oracle CTest
+# digest pin.  --no-install-recommends keeps the layer minimal, and the
+# explicit runtime-only list makes it obvious that no JDK or GATK jar
+# can be smuggled in by apt.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        libgomp1 \
+        libstdc++6 \
+        libgcc-s1 \
+        libhts3 \
+        zlib1g \
+        libbz2-1.0 \
+        liblzma5 \
+        libcurl4 \
+        libdeflate0 \
+        python3 \
+        python3-minimal \
+        tzdata \
+        tini \
+    && rm -rf /var/lib/apt/lists/*
+
+# Layout chosen to match the on-disk paths the dispatcher and runtime
+# resource probe read at startup. Anything mounted at /scratch becomes the
+# SLURM $TMPDIR equivalent; /data is the conventional input mount.
+RUN mkdir -p /opt/fastgatk/bin /opt/fastgatk/dispatcher /opt/fastgatk/lib /scratch /data \
+    && groupadd --system fastgatk \
+    && useradd --system --gid fastgatk --home /opt/fastgatk --shell /usr/sbin/nologin fastgatk \
+    && chown -R fastgatk:fastgatk /opt/fastgatk /scratch
+
+# Build context = repo root. The build script binds the native build/ directory
+# and the dispatcher/ directory into the image. The build script also pins the
+# resulting SHA256 into container_manifest.sha256 so that an off-cluster rebuild
+# can fail-closed against a moved target.
+COPY --chown=fastgatk:fastgatk fastgatk-native/build/ /opt/fastgatk/bin/
+COPY --chown=fastgatk:fastgatk fastgatk-native/dispatcher/ /opt/fastgatk/dispatcher/
+COPY --chown=fastgatk:fastgatk fastgatk-native/scripts/ /opt/fastgatk/scripts/
+# Runtime library + headers + tests; the layout mirrors fastgatk-runtime/ on
+# disk so /opt/fastgatk/lib/{include,src,tests} is consumable by an
+# interactive shell session in the production image.
+COPY --chown=fastgatk:fastgatk fastgatk-runtime/ /opt/fastgatk/lib/
+
+# Surface a self-identifying marker. Any cluster node that boots a worker from
+# this image can prove provenance with `cat /etc/fastgatk-image.json`.
+RUN { \
+        echo '{'; \
+        echo '  "name": "fastgatk-native",'; \
+        echo '  "schema_version": 1,'; \
+        echo '  "jvm": "absent",'; \
+        echo '  "fallback_policy": "fail-closed",'; \
+        echo '  "java_path": null,'; \
+        echo '  "gatk_jar": null,'; \
+        echo '  "build_script": "fastgatk-native/scripts/build_container.sh",'; \
+        echo '  "evidence": "fastgatk-native/evidence/container-manifest.json"'; \
+        echo '}'; \
+    } > /etc/fastgatk-image.json
+
+USER fastgatk
+WORKDIR /scratch
+
+# Smoke entrypoint: prove at start that no JVM exists in $PATH and the
+# dispatcher is the sole entry. This guards against a CI cache that quietly
+# installed openjdk-* into the runtime layer.
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/bin/sh", "-c", "command -v java && exit 1 || /opt/fastgatk/bin/fastgatk-hc-call --help"]

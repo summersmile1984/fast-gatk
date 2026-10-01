@@ -1,0 +1,2 @@
+MD5	Length	human_g1k_v37.chr17_1Mb.fasta	human_g1k_v37.chr17_1Mb.fasta
+3aeb31a0ae05bd5dd11a1c6a104edc3c	1000000	17	17

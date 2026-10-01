@@ -1,0 +1,1023 @@
+#:GATKReport.v1.1:5
+#:GATKTable:2:17:%s:%s:;
+#:GATKTable:Arguments:Recalibration argument collection values used in this run
+Argument                    Value                                                                   
+binary_tag_name             null                                                                    
+covariate                   ReadGroupCovariate,QualityScoreCovariate,ContextCovariate,CycleCovariate
+default_platform            null                                                                    
+deletions_default_quality   45                                                                      
+force_platform              null                                                                    
+indels_context_size         3                                                                       
+insertions_default_quality  45                                                                      
+low_quality_tail            2                                                                       
+maximum_cycle_value         500                                                                     
+mismatches_context_size     2                                                                       
+mismatches_default_quality  -1                                                                      
+no_standard_covs            false                                                                   
+quantizing_levels           16                                                                      
+recalibration_report        null                                                                    
+run_without_dbsnp           false                                                                   
+solid_nocall_strategy       THROW_EXCEPTION                                                         
+solid_recal_mode            SET_Q_ZERO                                                              
+
+#:GATKTable:3:94:%d:%d:%d:;
+#:GATKTable:Quantized:Quality quantization map
+QualityScore  Count  QuantizedScore
+           0      0              16
+           1      0              16
+           2      0              16
+           3      0              16
+           4      0              16
+           5      0              16
+           6      2              16
+           7      6              16
+           8      1              16
+           9      7              16
+          10      5              16
+          11      2              16
+          12      4              16
+          13      2              16
+          14      1              16
+          15      4              16
+          16      4              16
+          17      1              16
+          18      5              16
+          19      1              16
+          20      3              16
+          21      3              16
+          22      4              16
+          23      4              16
+          24     11              16
+          25     15              17
+          26     13              17
+          27     20              17
+          28     21              17
+          29     23              17
+          30     17              16
+          31     25              16
+          32     22              32
+          33     44              33
+          34     38              34
+          35     34              35
+          36     26              36
+          37     20              15
+          38     11              15
+          39     25              39
+          40     56              40
+          41     58              41
+          42    130              42
+          43     58              43
+          44     17              13
+          45      1              13
+          46      0              13
+          47      0              13
+          48      0              13
+          49      0              13
+          50      0              13
+          51      0              13
+          52      0              13
+          53      0              13
+          54      0              13
+          55      0              13
+          56      0              13
+          57      0              13
+          58      0              13
+          59      0              13
+          60      0              13
+          61      0              13
+          62      0              13
+          63      0              13
+          64      0              13
+          65      0              13
+          66      0              13
+          67      0              13
+          68      0              13
+          69      0              13
+          70      0              13
+          71      0              13
+          72      0              13
+          73      0              13
+          74      0              13
+          75      0              13
+          76      0              13
+          77      0              13
+          78      0              13
+          79      0              13
+          80      0              13
+          81      0              13
+          82      0              13
+          83      0              13
+          84      0              13
+          85      0              13
+          86      0              13
+          87      0              13
+          88      0              13
+          89      0              13
+          90      0              13
+          91      0              13
+          92      0              13
+          93      0              13
+
+#:GATKTable:6:1:%s:%s:%.4f:%.4f:%d:%.2f:;
+#:GATKTable:RecalTable0:
+ReadGroup  EventType  EmpiricalQuality  EstimatedQReported  Observations  Errors
+SRR622461  M                   23.0000             22.0971           744    0.00
+
+#:GATKTable:6:40:%s:%s:%s:%.4f:%d:%.2f:;
+#:GATKTable:RecalTable1:
+ReadGroup  QualityScore  EventType  EmpiricalQuality  Observations  Errors
+SRR622461             6  M                    6.0000             2    0.00
+SRR622461             7  M                    7.0000             6    0.00
+SRR622461             8  M                    8.0000             1    0.00
+SRR622461             9  M                    9.0000             7    0.00
+SRR622461            10  M                   10.0000             5    0.00
+SRR622461            11  M                   11.0000             2    0.00
+SRR622461            12  M                   12.0000             4    0.00
+SRR622461            13  M                   13.0000             2    0.00
+SRR622461            14  M                   14.0000             1    0.00
+SRR622461            15  M                   15.0000             4    0.00
+SRR622461            16  M                   16.0000             4    0.00
+SRR622461            17  M                   17.0000             1    0.00
+SRR622461            18  M                   18.0000             5    0.00
+SRR622461            19  M                   19.0000             1    0.00
+SRR622461            20  M                   20.0000             3    0.00
+SRR622461            21  M                   21.0000             3    0.00
+SRR622461            22  M                   22.0000             4    0.00
+SRR622461            23  M                   23.0000             4    0.00
+SRR622461            24  M                   24.0000            11    0.00
+SRR622461            25  M                   25.0000            15    0.00
+SRR622461            26  M                   26.0000            13    0.00
+SRR622461            27  M                   27.0000            20    0.00
+SRR622461            28  M                   28.0000            21    0.00
+SRR622461            29  M                   29.0000            23    0.00
+SRR622461            30  M                   30.0000            17    0.00
+SRR622461            31  M                   31.0000            25    0.00
+SRR622461            32  M                   32.0000            22    0.00
+SRR622461            33  M                   33.0000            44    0.00
+SRR622461            34  M                   34.0000            38    0.00
+SRR622461            35  M                   35.0000            34    0.00
+SRR622461            36  M                   36.0000            26    0.00
+SRR622461            37  M                   37.0000            20    0.00
+SRR622461            38  M                   38.0000            11    0.00
+SRR622461            39  M                   39.0000            25    0.00
+SRR622461            40  M                   40.0000            56    0.00
+SRR622461            41  M                   41.0000            58    0.00
+SRR622461            42  M                   42.0000           130    0.00
+SRR622461            43  M                   43.0000            58    0.00
+SRR622461            44  M                   44.0000            17    0.00
+SRR622461            45  M                   45.0000             1    0.00
+
+#:GATKTable:8:850:%s:%s:%s:%s:%s:%.4f:%d:%.2f:;
+#:GATKTable:RecalTable2:
+ReadGroup  QualityScore  CovariateValue  CovariateName  EventType  EmpiricalQuality  Observations  Errors
+SRR622461             7  AA              Context        M                    7.0000             1    0.00
+SRR622461             9  AA              Context        M                    9.0000             2    0.00
+SRR622461            10  AA              Context        M                   10.0000             1    0.00
+SRR622461            11  AA              Context        M                   11.0000             1    0.00
+SRR622461            16  AA              Context        M                   16.0000             1    0.00
+SRR622461            18  AA              Context        M                   18.0000             3    0.00
+SRR622461            19  AA              Context        M                   19.0000             1    0.00
+SRR622461            20  AA              Context        M                   20.0000             1    0.00
+SRR622461            22  AA              Context        M                   22.0000             2    0.00
+SRR622461            24  AA              Context        M                   24.0000             5    0.00
+SRR622461            25  AA              Context        M                   25.0000             4    0.00
+SRR622461            26  AA              Context        M                   26.0000             8    0.00
+SRR622461            27  AA              Context        M                   27.0000             2    0.00
+SRR622461            28  AA              Context        M                   28.0000             3    0.00
+SRR622461            29  AA              Context        M                   29.0000             6    0.00
+SRR622461            30  AA              Context        M                   30.0000             6    0.00
+SRR622461            31  AA              Context        M                   31.0000             9    0.00
+SRR622461            32  AA              Context        M                   32.0000             4    0.00
+SRR622461            33  AA              Context        M                   33.0000             1    0.00
+SRR622461            34  AA              Context        M                   34.0000            12    0.00
+SRR622461            35  AA              Context        M                   35.0000            13    0.00
+SRR622461            36  AA              Context        M                   36.0000             2    0.00
+SRR622461            37  AA              Context        M                   37.0000             3    0.00
+SRR622461            40  AA              Context        M                   40.0000             1    0.00
+SRR622461            42  AA              Context        M                   42.0000             4    0.00
+SRR622461            43  AA              Context        M                   43.0000            11    0.00
+SRR622461            44  AA              Context        M                   44.0000            11    0.00
+SRR622461            45  AA              Context        M                   45.0000             1    0.00
+SRR622461             7  AC              Context        M                    7.0000             1    0.00
+SRR622461            12  AC              Context        M                   12.0000             1    0.00
+SRR622461            13  AC              Context        M                   13.0000             1    0.00
+SRR622461            17  AC              Context        M                   17.0000             1    0.00
+SRR622461            22  AC              Context        M                   22.0000             1    0.00
+SRR622461            23  AC              Context        M                   23.0000             1    0.00
+SRR622461            25  AC              Context        M                   25.0000             2    0.00
+SRR622461            27  AC              Context        M                   27.0000             1    0.00
+SRR622461            35  AC              Context        M                   35.0000             1    0.00
+SRR622461            36  AC              Context        M                   36.0000             2    0.00
+SRR622461            37  AC              Context        M                   37.0000             1    0.00
+SRR622461            39  AC              Context        M                   39.0000             5    0.00
+SRR622461            40  AC              Context        M                   40.0000            12    0.00
+SRR622461            41  AC              Context        M                   41.0000             1    0.00
+SRR622461            12  AG              Context        M                   12.0000             1    0.00
+SRR622461            13  AG              Context        M                   13.0000             1    0.00
+SRR622461            16  AG              Context        M                   16.0000             1    0.00
+SRR622461            20  AG              Context        M                   20.0000             1    0.00
+SRR622461            26  AG              Context        M                   26.0000             1    0.00
+SRR622461            27  AG              Context        M                   27.0000             2    0.00
+SRR622461            34  AG              Context        M                   34.0000             1    0.00
+SRR622461            37  AG              Context        M                   37.0000             2    0.00
+SRR622461            39  AG              Context        M                   39.0000             1    0.00
+SRR622461            41  AG              Context        M                   41.0000             1    0.00
+SRR622461            42  AG              Context        M                   42.0000            13    0.00
+SRR622461            43  AG              Context        M                   43.0000             3    0.00
+SRR622461            10  AT              Context        M                   10.0000             2    0.00
+SRR622461            24  AT              Context        M                   24.0000             1    0.00
+SRR622461            29  AT              Context        M                   29.0000             1    0.00
+SRR622461            30  AT              Context        M                   30.0000             1    0.00
+SRR622461            31  AT              Context        M                   31.0000             1    0.00
+SRR622461            32  AT              Context        M                   32.0000             1    0.00
+SRR622461            33  AT              Context        M                   33.0000             1    0.00
+SRR622461            35  AT              Context        M                   35.0000             1    0.00
+SRR622461            36  AT              Context        M                   36.0000             1    0.00
+SRR622461            37  AT              Context        M                   37.0000             1    0.00
+SRR622461            38  AT              Context        M                   38.0000             4    0.00
+SRR622461            39  AT              Context        M                   39.0000             1    0.00
+SRR622461            40  AT              Context        M                   40.0000             4    0.00
+SRR622461            41  AT              Context        M                   41.0000            10    0.00
+SRR622461            42  AT              Context        M                   42.0000            22    0.00
+SRR622461            43  AT              Context        M                   43.0000             3    0.00
+SRR622461            12  CA              Context        M                   12.0000             1    0.00
+SRR622461            26  CA              Context        M                   26.0000             1    0.00
+SRR622461            28  CA              Context        M                   28.0000             1    0.00
+SRR622461            29  CA              Context        M                   29.0000             1    0.00
+SRR622461            30  CA              Context        M                   30.0000             1    0.00
+SRR622461            32  CA              Context        M                   32.0000             1    0.00
+SRR622461            33  CA              Context        M                   33.0000             1    0.00
+SRR622461            34  CA              Context        M                   34.0000             3    0.00
+SRR622461            35  CA              Context        M                   35.0000             2    0.00
+SRR622461            36  CA              Context        M                   36.0000             1    0.00
+SRR622461            37  CA              Context        M                   37.0000             1    0.00
+SRR622461            38  CA              Context        M                   38.0000             2    0.00
+SRR622461            39  CA              Context        M                   39.0000             1    0.00
+SRR622461            40  CA              Context        M                   40.0000             6    0.00
+SRR622461            41  CA              Context        M                   41.0000             5    0.00
+SRR622461            42  CA              Context        M                   42.0000            34    0.00
+SRR622461            43  CA              Context        M                   43.0000             9    0.00
+SRR622461             6  CC              Context        M                    6.0000             2    0.00
+SRR622461             7  CC              Context        M                    7.0000             1    0.00
+SRR622461            36  CC              Context        M                   36.0000             1    0.00
+SRR622461            37  CC              Context        M                   37.0000             2    0.00
+SRR622461            40  CC              Context        M                   40.0000             1    0.00
+SRR622461            41  CC              Context        M                   41.0000             5    0.00
+SRR622461            42  CC              Context        M                   42.0000             3    0.00
+SRR622461            21  CG              Context        M                   21.0000             1    0.00
+SRR622461            25  CG              Context        M                   25.0000             1    0.00
+SRR622461            26  CG              Context        M                   26.0000             1    0.00
+SRR622461            27  CG              Context        M                   27.0000             1    0.00
+SRR622461            31  CG              Context        M                   31.0000             1    0.00
+SRR622461            33  CG              Context        M                   33.0000             3    0.00
+SRR622461             9  CT              Context        M                    9.0000             1    0.00
+SRR622461            27  CT              Context        M                   27.0000             1    0.00
+SRR622461            29  CT              Context        M                   29.0000             1    0.00
+SRR622461            31  CT              Context        M                   31.0000             2    0.00
+SRR622461            32  CT              Context        M                   32.0000             2    0.00
+SRR622461            33  CT              Context        M                   33.0000             2    0.00
+SRR622461            34  CT              Context        M                   34.0000             2    0.00
+SRR622461            35  CT              Context        M                   35.0000             1    0.00
+SRR622461            36  CT              Context        M                   36.0000             1    0.00
+SRR622461            37  CT              Context        M                   37.0000             4    0.00
+SRR622461            40  CT              Context        M                   40.0000             1    0.00
+SRR622461            41  CT              Context        M                   41.0000             5    0.00
+SRR622461            42  CT              Context        M                   42.0000             8    0.00
+SRR622461            43  CT              Context        M                   43.0000            24    0.00
+SRR622461            44  CT              Context        M                   44.0000             6    0.00
+SRR622461             8  GA              Context        M                    8.0000             1    0.00
+SRR622461            16  GA              Context        M                   16.0000             1    0.00
+SRR622461            27  GA              Context        M                   27.0000             1    0.00
+SRR622461            33  GA              Context        M                   33.0000             1    0.00
+SRR622461            36  GA              Context        M                   36.0000             1    0.00
+SRR622461            39  GA              Context        M                   39.0000             2    0.00
+SRR622461            40  GA              Context        M                   40.0000             1    0.00
+SRR622461            41  GA              Context        M                   41.0000             2    0.00
+SRR622461            42  GA              Context        M                   42.0000             6    0.00
+SRR622461            43  GA              Context        M                   43.0000             1    0.00
+SRR622461            15  GC              Context        M                   15.0000             1    0.00
+SRR622461            20  GC              Context        M                   20.0000             1    0.00
+SRR622461            21  GC              Context        M                   21.0000             1    0.00
+SRR622461            25  GC              Context        M                   25.0000             1    0.00
+SRR622461            27  GC              Context        M                   27.0000             1    0.00
+SRR622461            29  GC              Context        M                   29.0000             1    0.00
+SRR622461            33  GC              Context        M                   33.0000             1    0.00
+SRR622461            34  GC              Context        M                   34.0000             1    0.00
+SRR622461            36  GC              Context        M                   36.0000             1    0.00
+SRR622461            41  GC              Context        M                   41.0000             5    0.00
+SRR622461            27  GG              Context        M                   27.0000             1    0.00
+SRR622461            28  GG              Context        M                   28.0000             1    0.00
+SRR622461            33  GG              Context        M                   33.0000             1    0.00
+SRR622461            34  GG              Context        M                   34.0000             1    0.00
+SRR622461            35  GG              Context        M                   35.0000             1    0.00
+SRR622461            38  GG              Context        M                   38.0000             2    0.00
+SRR622461            41  GG              Context        M                   41.0000             2    0.00
+SRR622461            42  GG              Context        M                   42.0000            20    0.00
+SRR622461            43  GG              Context        M                   43.0000             4    0.00
+SRR622461            15  GT              Context        M                   15.0000             1    0.00
+SRR622461            16  GT              Context        M                   16.0000             1    0.00
+SRR622461            18  GT              Context        M                   18.0000             1    0.00
+SRR622461            31  GT              Context        M                   31.0000             1    0.00
+SRR622461            32  GT              Context        M                   32.0000             1    0.00
+SRR622461            36  GT              Context        M                   36.0000             3    0.00
+SRR622461            39  GT              Context        M                   39.0000             1    0.00
+SRR622461            40  GT              Context        M                   40.0000             5    0.00
+SRR622461            41  GT              Context        M                   41.0000             1    0.00
+SRR622461            42  GT              Context        M                   42.0000             5    0.00
+SRR622461            14  TA              Context        M                   14.0000             1    0.00
+SRR622461            15  TA              Context        M                   15.0000             1    0.00
+SRR622461            23  TA              Context        M                   23.0000             1    0.00
+SRR622461            30  TA              Context        M                   30.0000             3    0.00
+SRR622461            31  TA              Context        M                   31.0000             2    0.00
+SRR622461            32  TA              Context        M                   32.0000             1    0.00
+SRR622461            35  TA              Context        M                   35.0000             2    0.00
+SRR622461            36  TA              Context        M                   36.0000             5    0.00
+SRR622461            37  TA              Context        M                   37.0000             2    0.00
+SRR622461            38  TA              Context        M                   38.0000             1    0.00
+SRR622461            39  TA              Context        M                   39.0000             8    0.00
+SRR622461            40  TA              Context        M                   40.0000             5    0.00
+SRR622461            41  TA              Context        M                   41.0000            14    0.00
+SRR622461            42  TA              Context        M                   42.0000             7    0.00
+SRR622461            10  TC              Context        M                   10.0000             2    0.00
+SRR622461            11  TC              Context        M                   11.0000             1    0.00
+SRR622461            12  TC              Context        M                   12.0000             1    0.00
+SRR622461            28  TC              Context        M                   28.0000             3    0.00
+SRR622461            29  TC              Context        M                   29.0000             1    0.00
+SRR622461            30  TC              Context        M                   30.0000             1    0.00
+SRR622461            31  TC              Context        M                   31.0000             2    0.00
+SRR622461            32  TC              Context        M                   32.0000             1    0.00
+SRR622461            33  TC              Context        M                   33.0000             1    0.00
+SRR622461            34  TC              Context        M                   34.0000             3    0.00
+SRR622461            35  TC              Context        M                   35.0000             2    0.00
+SRR622461            36  TC              Context        M                   36.0000             2    0.00
+SRR622461            40  TC              Context        M                   40.0000             4    0.00
+SRR622461            41  TC              Context        M                   41.0000             6    0.00
+SRR622461             9  TG              Context        M                    9.0000             1    0.00
+SRR622461            15  TG              Context        M                   15.0000             1    0.00
+SRR622461            27  TG              Context        M                   27.0000             1    0.00
+SRR622461            28  TG              Context        M                   28.0000             2    0.00
+SRR622461            30  TG              Context        M                   30.0000             1    0.00
+SRR622461            32  TG              Context        M                   32.0000             1    0.00
+SRR622461            34  TG              Context        M                   34.0000             1    0.00
+SRR622461            35  TG              Context        M                   35.0000             1    0.00
+SRR622461            36  TG              Context        M                   36.0000             4    0.00
+SRR622461            37  TG              Context        M                   37.0000             1    0.00
+SRR622461            42  TG              Context        M                   42.0000             8    0.00
+SRR622461            43  TG              Context        M                   43.0000             3    0.00
+SRR622461             7  TT              Context        M                    7.0000             3    0.00
+SRR622461             9  TT              Context        M                    9.0000             3    0.00
+SRR622461            18  TT              Context        M                   18.0000             1    0.00
+SRR622461            21  TT              Context        M                   21.0000             1    0.00
+SRR622461            22  TT              Context        M                   22.0000             1    0.00
+SRR622461            23  TT              Context        M                   23.0000             2    0.00
+SRR622461            24  TT              Context        M                   24.0000             5    0.00
+SRR622461            25  TT              Context        M                   25.0000             7    0.00
+SRR622461            26  TT              Context        M                   26.0000             2    0.00
+SRR622461            27  TT              Context        M                   27.0000             9    0.00
+SRR622461            28  TT              Context        M                   28.0000            11    0.00
+SRR622461            29  TT              Context        M                   29.0000            12    0.00
+SRR622461            30  TT              Context        M                   30.0000             4    0.00
+SRR622461            31  TT              Context        M                   31.0000             7    0.00
+SRR622461            32  TT              Context        M                   32.0000             9    0.00
+SRR622461            33  TT              Context        M                   33.0000            32    0.00
+SRR622461            34  TT              Context        M                   34.0000            14    0.00
+SRR622461            35  TT              Context        M                   35.0000            10    0.00
+SRR622461            36  TT              Context        M                   36.0000             2    0.00
+SRR622461            37  TT              Context        M                   37.0000             3    0.00
+SRR622461            38  TT              Context        M                   38.0000             2    0.00
+SRR622461            39  TT              Context        M                   39.0000             6    0.00
+SRR622461            40  TT              Context        M                   40.0000            16    0.00
+SRR622461            41  TT              Context        M                   41.0000             1    0.00
+SRR622461            21  -101            Cycle          M                   21.0000             1    0.00
+SRR622461            24  -99             Cycle          M                   24.0000             1    0.00
+SRR622461            31  -98             Cycle          M                   31.0000             1    0.00
+SRR622461            15  -97             Cycle          M                   15.0000             1    0.00
+SRR622461            16  -97             Cycle          M                   16.0000             1    0.00
+SRR622461            25  -96             Cycle          M                   25.0000             1    0.00
+SRR622461            28  -95             Cycle          M                   28.0000             1    0.00
+SRR622461            20  -93             Cycle          M                   20.0000             1    0.00
+SRR622461            36  -93             Cycle          M                   36.0000             1    0.00
+SRR622461            37  -93             Cycle          M                   37.0000             1    0.00
+SRR622461             7  -92             Cycle          M                    7.0000             1    0.00
+SRR622461            36  -92             Cycle          M                   36.0000             1    0.00
+SRR622461            31  -91             Cycle          M                   31.0000             1    0.00
+SRR622461            31  -89             Cycle          M                   31.0000             1    0.00
+SRR622461            41  -89             Cycle          M                   41.0000             1    0.00
+SRR622461            12  -87             Cycle          M                   12.0000             1    0.00
+SRR622461            26  -87             Cycle          M                   26.0000             1    0.00
+SRR622461            17  -86             Cycle          M                   17.0000             1    0.00
+SRR622461            29  -85             Cycle          M                   29.0000             1    0.00
+SRR622461            42  -85             Cycle          M                   42.0000             1    0.00
+SRR622461            23  -84             Cycle          M                   23.0000             1    0.00
+SRR622461            35  -84             Cycle          M                   35.0000             1    0.00
+SRR622461            36  -84             Cycle          M                   36.0000             1    0.00
+SRR622461            40  -84             Cycle          M                   40.0000             1    0.00
+SRR622461            27  -83             Cycle          M                   27.0000             1    0.00
+SRR622461            35  -83             Cycle          M                   35.0000             1    0.00
+SRR622461            37  -83             Cycle          M                   37.0000             1    0.00
+SRR622461            30  -82             Cycle          M                   30.0000             1    0.00
+SRR622461            27  -81             Cycle          M                   27.0000             1    0.00
+SRR622461            29  -81             Cycle          M                   29.0000             1    0.00
+SRR622461            43  -80             Cycle          M                   43.0000             1    0.00
+SRR622461            27  -79             Cycle          M                   27.0000             1    0.00
+SRR622461            32  -79             Cycle          M                   32.0000             1    0.00
+SRR622461            34  -79             Cycle          M                   34.0000             1    0.00
+SRR622461            40  -79             Cycle          M                   40.0000             1    0.00
+SRR622461            43  -79             Cycle          M                   43.0000             1    0.00
+SRR622461            28  -78             Cycle          M                   28.0000             1    0.00
+SRR622461            32  -78             Cycle          M                   32.0000             1    0.00
+SRR622461            42  -78             Cycle          M                   42.0000             2    0.00
+SRR622461            43  -77             Cycle          M                   43.0000             1    0.00
+SRR622461            43  -76             Cycle          M                   43.0000             1    0.00
+SRR622461            15  -75             Cycle          M                   15.0000             1    0.00
+SRR622461            10  -74             Cycle          M                   10.0000             1    0.00
+SRR622461            10  -73             Cycle          M                   10.0000             1    0.00
+SRR622461            12  -73             Cycle          M                   12.0000             1    0.00
+SRR622461            42  -73             Cycle          M                   42.0000             1    0.00
+SRR622461            43  -73             Cycle          M                   43.0000             1    0.00
+SRR622461            29  -72             Cycle          M                   29.0000             1    0.00
+SRR622461            29  -71             Cycle          M                   29.0000             1    0.00
+SRR622461            42  -71             Cycle          M                   42.0000             2    0.00
+SRR622461            43  -70             Cycle          M                   43.0000             1    0.00
+SRR622461            21  -68             Cycle          M                   21.0000             1    0.00
+SRR622461            42  -68             Cycle          M                   42.0000             1    0.00
+SRR622461            18  -67             Cycle          M                   18.0000             1    0.00
+SRR622461             7  -66             Cycle          M                    7.0000             1    0.00
+SRR622461            10  -66             Cycle          M                   10.0000             1    0.00
+SRR622461            37  -66             Cycle          M                   37.0000             1    0.00
+SRR622461            44  -66             Cycle          M                   44.0000             1    0.00
+SRR622461            33  -65             Cycle          M                   33.0000             1    0.00
+SRR622461            35  -65             Cycle          M                   35.0000             1    0.00
+SRR622461            41  -65             Cycle          M                   41.0000             2    0.00
+SRR622461            44  -65             Cycle          M                   44.0000             2    0.00
+SRR622461            29  -64             Cycle          M                   29.0000             1    0.00
+SRR622461            38  -64             Cycle          M                   38.0000             1    0.00
+SRR622461            41  -64             Cycle          M                   41.0000             1    0.00
+SRR622461            42  -64             Cycle          M                   42.0000             1    0.00
+SRR622461            44  -64             Cycle          M                   44.0000             1    0.00
+SRR622461            15  -63             Cycle          M                   15.0000             1    0.00
+SRR622461            41  -63             Cycle          M                   41.0000             1    0.00
+SRR622461            42  -63             Cycle          M                   42.0000             1    0.00
+SRR622461            37  -62             Cycle          M                   37.0000             1    0.00
+SRR622461            42  -62             Cycle          M                   42.0000             1    0.00
+SRR622461             7  -61             Cycle          M                    7.0000             1    0.00
+SRR622461             8  -60             Cycle          M                    8.0000             1    0.00
+SRR622461            29  -60             Cycle          M                   29.0000             1    0.00
+SRR622461            33  -59             Cycle          M                   33.0000             1    0.00
+SRR622461            28  -58             Cycle          M                   28.0000             1    0.00
+SRR622461            34  -58             Cycle          M                   34.0000             1    0.00
+SRR622461            10  -57             Cycle          M                   10.0000             1    0.00
+SRR622461            31  -57             Cycle          M                   31.0000             1    0.00
+SRR622461            34  -57             Cycle          M                   34.0000             1    0.00
+SRR622461            42  -57             Cycle          M                   42.0000             1    0.00
+SRR622461            30  -56             Cycle          M                   30.0000             1    0.00
+SRR622461            43  -56             Cycle          M                   43.0000             1    0.00
+SRR622461            40  -55             Cycle          M                   40.0000             1    0.00
+SRR622461             7  -54             Cycle          M                    7.0000             1    0.00
+SRR622461            25  -54             Cycle          M                   25.0000             1    0.00
+SRR622461            18  -53             Cycle          M                   18.0000             1    0.00
+SRR622461            34  -53             Cycle          M                   34.0000             1    0.00
+SRR622461            36  -53             Cycle          M                   36.0000             1    0.00
+SRR622461             6  -52             Cycle          M                    6.0000             1    0.00
+SRR622461            31  -52             Cycle          M                   31.0000             1    0.00
+SRR622461            36  -52             Cycle          M                   36.0000             1    0.00
+SRR622461            42  -52             Cycle          M                   42.0000             1    0.00
+SRR622461            32  -51             Cycle          M                   32.0000             1    0.00
+SRR622461            42  -51             Cycle          M                   42.0000             1    0.00
+SRR622461             9  -50             Cycle          M                    9.0000             1    0.00
+SRR622461            42  -50             Cycle          M                   42.0000             1    0.00
+SRR622461            27  -49             Cycle          M                   27.0000             1    0.00
+SRR622461            34  -49             Cycle          M                   34.0000             1    0.00
+SRR622461            18  -48             Cycle          M                   18.0000             1    0.00
+SRR622461            26  -48             Cycle          M                   26.0000             1    0.00
+SRR622461            36  -48             Cycle          M                   36.0000             1    0.00
+SRR622461            40  -48             Cycle          M                   40.0000             1    0.00
+SRR622461            33  -47             Cycle          M                   33.0000             1    0.00
+SRR622461            35  -47             Cycle          M                   35.0000             1    0.00
+SRR622461            39  -47             Cycle          M                   39.0000             1    0.00
+SRR622461            42  -47             Cycle          M                   42.0000             1    0.00
+SRR622461            43  -47             Cycle          M                   43.0000             1    0.00
+SRR622461             9  -46             Cycle          M                    9.0000             1    0.00
+SRR622461            24  -46             Cycle          M                   24.0000             1    0.00
+SRR622461            40  -46             Cycle          M                   40.0000             2    0.00
+SRR622461            28  -45             Cycle          M                   28.0000             1    0.00
+SRR622461            34  -45             Cycle          M                   34.0000             1    0.00
+SRR622461            43  -45             Cycle          M                   43.0000             1    0.00
+SRR622461            25  -44             Cycle          M                   25.0000             1    0.00
+SRR622461            41  -44             Cycle          M                   41.0000             1    0.00
+SRR622461            43  -44             Cycle          M                   43.0000             1    0.00
+SRR622461            32  -43             Cycle          M                   32.0000             1    0.00
+SRR622461            41  -43             Cycle          M                   41.0000             1    0.00
+SRR622461            42  -43             Cycle          M                   42.0000             1    0.00
+SRR622461            43  -43             Cycle          M                   43.0000             1    0.00
+SRR622461             7  -42             Cycle          M                    7.0000             1    0.00
+SRR622461            13  -42             Cycle          M                   13.0000             1    0.00
+SRR622461            18  -42             Cycle          M                   18.0000             1    0.00
+SRR622461            27  -42             Cycle          M                   27.0000             1    0.00
+SRR622461            33  -42             Cycle          M                   33.0000             1    0.00
+SRR622461            35  -42             Cycle          M                   35.0000             1    0.00
+SRR622461            38  -42             Cycle          M                   38.0000             1    0.00
+SRR622461            41  -42             Cycle          M                   41.0000             1    0.00
+SRR622461            40  -41             Cycle          M                   40.0000             1    0.00
+SRR622461            44  -41             Cycle          M                   44.0000             1    0.00
+SRR622461            34  -40             Cycle          M                   34.0000             1    0.00
+SRR622461            38  -40             Cycle          M                   38.0000             1    0.00
+SRR622461            42  -40             Cycle          M                   42.0000             1    0.00
+SRR622461            43  -40             Cycle          M                   43.0000             1    0.00
+SRR622461            41  -39             Cycle          M                   41.0000             1    0.00
+SRR622461            42  -39             Cycle          M                   42.0000             3    0.00
+SRR622461             7  -38             Cycle          M                    7.0000             1    0.00
+SRR622461            41  -38             Cycle          M                   41.0000             1    0.00
+SRR622461            42  -38             Cycle          M                   42.0000             3    0.00
+SRR622461            40  -37             Cycle          M                   40.0000             1    0.00
+SRR622461            42  -37             Cycle          M                   42.0000             2    0.00
+SRR622461             9  -36             Cycle          M                    9.0000             1    0.00
+SRR622461            29  -36             Cycle          M                   29.0000             1    0.00
+SRR622461            35  -36             Cycle          M                   35.0000             1    0.00
+SRR622461            42  -36             Cycle          M                   42.0000             2    0.00
+SRR622461            26  -35             Cycle          M                   26.0000             1    0.00
+SRR622461            27  -35             Cycle          M                   27.0000             1    0.00
+SRR622461            31  -35             Cycle          M                   31.0000             2    0.00
+SRR622461            42  -35             Cycle          M                   42.0000             3    0.00
+SRR622461            25  -34             Cycle          M                   25.0000             1    0.00
+SRR622461            35  -34             Cycle          M                   35.0000             1    0.00
+SRR622461            40  -34             Cycle          M                   40.0000             1    0.00
+SRR622461            42  -34             Cycle          M                   42.0000             2    0.00
+SRR622461            43  -34             Cycle          M                   43.0000             3    0.00
+SRR622461            28  -33             Cycle          M                   28.0000             2    0.00
+SRR622461            33  -33             Cycle          M                   33.0000             1    0.00
+SRR622461            36  -33             Cycle          M                   36.0000             1    0.00
+SRR622461            39  -33             Cycle          M                   39.0000             1    0.00
+SRR622461            40  -33             Cycle          M                   40.0000             1    0.00
+SRR622461            41  -33             Cycle          M                   41.0000             3    0.00
+SRR622461            43  -33             Cycle          M                   43.0000             2    0.00
+SRR622461            40  -32             Cycle          M                   40.0000             1    0.00
+SRR622461            42  -32             Cycle          M                   42.0000             4    0.00
+SRR622461            26  -31             Cycle          M                   26.0000             1    0.00
+SRR622461            40  -31             Cycle          M                   40.0000             1    0.00
+SRR622461            42  -31             Cycle          M                   42.0000             2    0.00
+SRR622461            43  -31             Cycle          M                   43.0000             1    0.00
+SRR622461             9  -30             Cycle          M                    9.0000             1    0.00
+SRR622461            27  -30             Cycle          M                   27.0000             2    0.00
+SRR622461            39  -30             Cycle          M                   39.0000             1    0.00
+SRR622461            40  -30             Cycle          M                   40.0000             2    0.00
+SRR622461             6  -29             Cycle          M                    6.0000             1    0.00
+SRR622461            25  -29             Cycle          M                   25.0000             1    0.00
+SRR622461            26  -29             Cycle          M                   26.0000             1    0.00
+SRR622461            29  -29             Cycle          M                   29.0000             1    0.00
+SRR622461            42  -29             Cycle          M                   42.0000             1    0.00
+SRR622461            43  -29             Cycle          M                   43.0000             1    0.00
+SRR622461            27  -28             Cycle          M                   27.0000             3    0.00
+SRR622461            29  -28             Cycle          M                   29.0000             1    0.00
+SRR622461            33  -28             Cycle          M                   33.0000             1    0.00
+SRR622461            39  -28             Cycle          M                   39.0000             1    0.00
+SRR622461            43  -28             Cycle          M                   43.0000             1    0.00
+SRR622461            29  -27             Cycle          M                   29.0000             1    0.00
+SRR622461            35  -27             Cycle          M                   35.0000             1    0.00
+SRR622461            39  -27             Cycle          M                   39.0000             1    0.00
+SRR622461            40  -27             Cycle          M                   40.0000             1    0.00
+SRR622461            41  -27             Cycle          M                   41.0000             2    0.00
+SRR622461            42  -27             Cycle          M                   42.0000             2    0.00
+SRR622461            27  -26             Cycle          M                   27.0000             1    0.00
+SRR622461            29  -26             Cycle          M                   29.0000             1    0.00
+SRR622461            32  -26             Cycle          M                   32.0000             1    0.00
+SRR622461            33  -26             Cycle          M                   33.0000             1    0.00
+SRR622461            35  -26             Cycle          M                   35.0000             1    0.00
+SRR622461            36  -26             Cycle          M                   36.0000             1    0.00
+SRR622461            40  -26             Cycle          M                   40.0000             1    0.00
+SRR622461            43  -26             Cycle          M                   43.0000             1    0.00
+SRR622461            34  -25             Cycle          M                   34.0000             2    0.00
+SRR622461            40  -25             Cycle          M                   40.0000             1    0.00
+SRR622461            41  -25             Cycle          M                   41.0000             1    0.00
+SRR622461            42  -25             Cycle          M                   42.0000             2    0.00
+SRR622461            43  -25             Cycle          M                   43.0000             2    0.00
+SRR622461            16  -24             Cycle          M                   16.0000             1    0.00
+SRR622461            26  -24             Cycle          M                   26.0000             1    0.00
+SRR622461            32  -24             Cycle          M                   32.0000             1    0.00
+SRR622461            34  -24             Cycle          M                   34.0000             1    0.00
+SRR622461            35  -24             Cycle          M                   35.0000             1    0.00
+SRR622461            39  -24             Cycle          M                   39.0000             1    0.00
+SRR622461            42  -24             Cycle          M                   42.0000             2    0.00
+SRR622461            43  -24             Cycle          M                   43.0000             1    0.00
+SRR622461            22  -23             Cycle          M                   22.0000             1    0.00
+SRR622461            23  -23             Cycle          M                   23.0000             1    0.00
+SRR622461            29  -23             Cycle          M                   29.0000             1    0.00
+SRR622461            31  -23             Cycle          M                   31.0000             1    0.00
+SRR622461            38  -23             Cycle          M                   38.0000             1    0.00
+SRR622461            39  -23             Cycle          M                   39.0000             1    0.00
+SRR622461            40  -23             Cycle          M                   40.0000             1    0.00
+SRR622461            24  -22             Cycle          M                   24.0000             1    0.00
+SRR622461            33  -22             Cycle          M                   33.0000             3    0.00
+SRR622461            35  -22             Cycle          M                   35.0000             2    0.00
+SRR622461            40  -22             Cycle          M                   40.0000             3    0.00
+SRR622461            41  -22             Cycle          M                   41.0000             1    0.00
+SRR622461            42  -22             Cycle          M                   42.0000             2    0.00
+SRR622461            29  -21             Cycle          M                   29.0000             1    0.00
+SRR622461            30  -21             Cycle          M                   30.0000             1    0.00
+SRR622461            33  -21             Cycle          M                   33.0000             1    0.00
+SRR622461            39  -21             Cycle          M                   39.0000             1    0.00
+SRR622461            40  -21             Cycle          M                   40.0000             2    0.00
+SRR622461            41  -21             Cycle          M                   41.0000             1    0.00
+SRR622461            26  -20             Cycle          M                   26.0000             1    0.00
+SRR622461            34  -20             Cycle          M                   34.0000             1    0.00
+SRR622461            39  -20             Cycle          M                   39.0000             1    0.00
+SRR622461            41  -20             Cycle          M                   41.0000             3    0.00
+SRR622461            42  -20             Cycle          M                   42.0000             1    0.00
+SRR622461            11  -19             Cycle          M                   11.0000             1    0.00
+SRR622461            12  -19             Cycle          M                   12.0000             1    0.00
+SRR622461            25  -19             Cycle          M                   25.0000             1    0.00
+SRR622461            41  -19             Cycle          M                   41.0000             2    0.00
+SRR622461            35  -18             Cycle          M                   35.0000             1    0.00
+SRR622461            39  -18             Cycle          M                   39.0000             1    0.00
+SRR622461            40  -18             Cycle          M                   40.0000             1    0.00
+SRR622461            41  -18             Cycle          M                   41.0000             1    0.00
+SRR622461             9  -17             Cycle          M                    9.0000             1    0.00
+SRR622461            24  -17             Cycle          M                   24.0000             1    0.00
+SRR622461            25  -17             Cycle          M                   25.0000             1    0.00
+SRR622461            39  -17             Cycle          M                   39.0000             1    0.00
+SRR622461            40  -17             Cycle          M                   40.0000             2    0.00
+SRR622461            34  -16             Cycle          M                   34.0000             1    0.00
+SRR622461            38  -16             Cycle          M                   38.0000             1    0.00
+SRR622461            42  -16             Cycle          M                   42.0000             2    0.00
+SRR622461            26  -15             Cycle          M                   26.0000             1    0.00
+SRR622461            37  -15             Cycle          M                   37.0000             1    0.00
+SRR622461            40  -15             Cycle          M                   40.0000             1    0.00
+SRR622461            41  -15             Cycle          M                   41.0000             1    0.00
+SRR622461            27  -14             Cycle          M                   27.0000             1    0.00
+SRR622461            42  -14             Cycle          M                   42.0000             1    0.00
+SRR622461            32  -13             Cycle          M                   32.0000             1    0.00
+SRR622461            33  -13             Cycle          M                   33.0000             1    0.00
+SRR622461            34  -13             Cycle          M                   34.0000             1    0.00
+SRR622461            39  -13             Cycle          M                   39.0000             2    0.00
+SRR622461            40  -13             Cycle          M                   40.0000             1    0.00
+SRR622461            42  -13             Cycle          M                   42.0000             1    0.00
+SRR622461            32  -12             Cycle          M                   32.0000             1    0.00
+SRR622461            40  -12             Cycle          M                   40.0000             2    0.00
+SRR622461            41  -12             Cycle          M                   41.0000             2    0.00
+SRR622461            22  -11             Cycle          M                   22.0000             1    0.00
+SRR622461            30  -11             Cycle          M                   30.0000             2    0.00
+SRR622461            31  -11             Cycle          M                   31.0000             1    0.00
+SRR622461            37  -11             Cycle          M                   37.0000             1    0.00
+SRR622461            39  -11             Cycle          M                   39.0000             2    0.00
+SRR622461            41  -11             Cycle          M                   41.0000             1    0.00
+SRR622461            33  -10             Cycle          M                   33.0000             1    0.00
+SRR622461            34  -10             Cycle          M                   34.0000             2    0.00
+SRR622461            38  -10             Cycle          M                   38.0000             2    0.00
+SRR622461            40  -10             Cycle          M                   40.0000             1    0.00
+SRR622461            30  -9              Cycle          M                   30.0000             1    0.00
+SRR622461            36  -9              Cycle          M                   36.0000             1    0.00
+SRR622461            39  -9              Cycle          M                   39.0000             1    0.00
+SRR622461            13  -8              Cycle          M                   13.0000             1    0.00
+SRR622461            28  -8              Cycle          M                   28.0000             1    0.00
+SRR622461            29  -8              Cycle          M                   29.0000             1    0.00
+SRR622461            35  -8              Cycle          M                   35.0000             1    0.00
+SRR622461            38  -8              Cycle          M                   38.0000             1    0.00
+SRR622461            40  -8              Cycle          M                   40.0000             1    0.00
+SRR622461            29  -7              Cycle          M                   29.0000             1    0.00
+SRR622461            30  -7              Cycle          M                   30.0000             1    0.00
+SRR622461            31  -7              Cycle          M                   31.0000             2    0.00
+SRR622461            32  -7              Cycle          M                   32.0000             1    0.00
+SRR622461            36  -7              Cycle          M                   36.0000             2    0.00
+SRR622461            37  -7              Cycle          M                   37.0000             1    0.00
+SRR622461            29  -6              Cycle          M                   29.0000             1    0.00
+SRR622461            33  -6              Cycle          M                   33.0000             1    0.00
+SRR622461            34  -6              Cycle          M                   34.0000             1    0.00
+SRR622461            36  -6              Cycle          M                   36.0000             1    0.00
+SRR622461            31  -5              Cycle          M                   31.0000             1    0.00
+SRR622461            33  -5              Cycle          M                   33.0000             1    0.00
+SRR622461            34  -5              Cycle          M                   34.0000             2    0.00
+SRR622461            42  -5              Cycle          M                   42.0000             1    0.00
+SRR622461            12  -4              Cycle          M                   12.0000             1    0.00
+SRR622461            33  -4              Cycle          M                   33.0000             1    0.00
+SRR622461            34  -3              Cycle          M                   34.0000             1    0.00
+SRR622461            36  -3              Cycle          M                   36.0000             1    0.00
+SRR622461            33  -2              Cycle          M                   33.0000             1    0.00
+SRR622461            35  -2              Cycle          M                   35.0000             1    0.00
+SRR622461            37  -2              Cycle          M                   37.0000             1    0.00
+SRR622461            32  -1              Cycle          M                   32.0000             1    0.00
+SRR622461            16  2               Cycle          M                   16.0000             1    0.00
+SRR622461            34  2               Cycle          M                   34.0000             1    0.00
+SRR622461            27  3               Cycle          M                   27.0000             1    0.00
+SRR622461            37  3               Cycle          M                   37.0000             1    0.00
+SRR622461            26  4               Cycle          M                   26.0000             1    0.00
+SRR622461            35  4               Cycle          M                   35.0000             2    0.00
+SRR622461            36  4               Cycle          M                   36.0000             2    0.00
+SRR622461            33  5               Cycle          M                   33.0000             1    0.00
+SRR622461            36  5               Cycle          M                   36.0000             1    0.00
+SRR622461            37  5               Cycle          M                   37.0000             2    0.00
+SRR622461            30  6               Cycle          M                   30.0000             1    0.00
+SRR622461            33  6               Cycle          M                   33.0000             1    0.00
+SRR622461            34  6               Cycle          M                   34.0000             1    0.00
+SRR622461            37  6               Cycle          M                   37.0000             1    0.00
+SRR622461            39  7               Cycle          M                   39.0000             1    0.00
+SRR622461            41  7               Cycle          M                   41.0000             1    0.00
+SRR622461            39  8               Cycle          M                   39.0000             1    0.00
+SRR622461            41  8               Cycle          M                   41.0000             1    0.00
+SRR622461            42  8               Cycle          M                   42.0000             2    0.00
+SRR622461            39  9               Cycle          M                   39.0000             3    0.00
+SRR622461            40  9               Cycle          M                   40.0000             1    0.00
+SRR622461            27  10              Cycle          M                   27.0000             1    0.00
+SRR622461            40  10              Cycle          M                   40.0000             1    0.00
+SRR622461            42  10              Cycle          M                   42.0000             1    0.00
+SRR622461            28  11              Cycle          M                   28.0000             1    0.00
+SRR622461            34  11              Cycle          M                   34.0000             1    0.00
+SRR622461            40  11              Cycle          M                   40.0000             1    0.00
+SRR622461            42  11              Cycle          M                   42.0000             1    0.00
+SRR622461            39  12              Cycle          M                   39.0000             1    0.00
+SRR622461            40  12              Cycle          M                   40.0000             2    0.00
+SRR622461            21  13              Cycle          M                   21.0000             1    0.00
+SRR622461            35  13              Cycle          M                   35.0000             1    0.00
+SRR622461            40  13              Cycle          M                   40.0000             1    0.00
+SRR622461            41  13              Cycle          M                   41.0000             1    0.00
+SRR622461            42  13              Cycle          M                   42.0000             1    0.00
+SRR622461            40  14              Cycle          M                   40.0000             1    0.00
+SRR622461            42  14              Cycle          M                   42.0000             1    0.00
+SRR622461            40  15              Cycle          M                   40.0000             1    0.00
+SRR622461            40  16              Cycle          M                   40.0000             1    0.00
+SRR622461            41  16              Cycle          M                   41.0000             1    0.00
+SRR622461            32  17              Cycle          M                   32.0000             1    0.00
+SRR622461            41  17              Cycle          M                   41.0000             1    0.00
+SRR622461            43  17              Cycle          M                   43.0000             1    0.00
+SRR622461            34  18              Cycle          M                   34.0000             1    0.00
+SRR622461            42  18              Cycle          M                   42.0000             1    0.00
+SRR622461            43  18              Cycle          M                   43.0000             1    0.00
+SRR622461            28  19              Cycle          M                   28.0000             1    0.00
+SRR622461            33  19              Cycle          M                   33.0000             1    0.00
+SRR622461            41  19              Cycle          M                   41.0000             1    0.00
+SRR622461            43  19              Cycle          M                   43.0000             1    0.00
+SRR622461            39  20              Cycle          M                   39.0000             1    0.00
+SRR622461            43  20              Cycle          M                   43.0000             1    0.00
+SRR622461            31  21              Cycle          M                   31.0000             1    0.00
+SRR622461            36  21              Cycle          M                   36.0000             1    0.00
+SRR622461            42  21              Cycle          M                   42.0000             1    0.00
+SRR622461            43  21              Cycle          M                   43.0000             3    0.00
+SRR622461            24  22              Cycle          M                   24.0000             1    0.00
+SRR622461            25  22              Cycle          M                   25.0000             1    0.00
+SRR622461            31  22              Cycle          M                   31.0000             1    0.00
+SRR622461            42  22              Cycle          M                   42.0000             2    0.00
+SRR622461            43  22              Cycle          M                   43.0000             1    0.00
+SRR622461            35  23              Cycle          M                   35.0000             1    0.00
+SRR622461            43  23              Cycle          M                   43.0000             1    0.00
+SRR622461            11  24              Cycle          M                   11.0000             1    0.00
+SRR622461            20  24              Cycle          M                   20.0000             1    0.00
+SRR622461            33  25              Cycle          M                   33.0000             2    0.00
+SRR622461            42  26              Cycle          M                   42.0000             1    0.00
+SRR622461            40  27              Cycle          M                   40.0000             1    0.00
+SRR622461            42  27              Cycle          M                   42.0000             2    0.00
+SRR622461            43  27              Cycle          M                   43.0000             1    0.00
+SRR622461            26  28              Cycle          M                   26.0000             1    0.00
+SRR622461            28  28              Cycle          M                   28.0000             1    0.00
+SRR622461            29  28              Cycle          M                   29.0000             1    0.00
+SRR622461            33  28              Cycle          M                   33.0000             2    0.00
+SRR622461            42  28              Cycle          M                   42.0000             1    0.00
+SRR622461            22  29              Cycle          M                   22.0000             1    0.00
+SRR622461            24  29              Cycle          M                   24.0000             1    0.00
+SRR622461            28  29              Cycle          M                   28.0000             1    0.00
+SRR622461            29  29              Cycle          M                   29.0000             1    0.00
+SRR622461            32  29              Cycle          M                   32.0000             1    0.00
+SRR622461            34  29              Cycle          M                   34.0000             1    0.00
+SRR622461            42  29              Cycle          M                   42.0000             1    0.00
+SRR622461            26  30              Cycle          M                   26.0000             1    0.00
+SRR622461            28  30              Cycle          M                   28.0000             1    0.00
+SRR622461            31  30              Cycle          M                   31.0000             1    0.00
+SRR622461            33  30              Cycle          M                   33.0000             2    0.00
+SRR622461            41  30              Cycle          M                   41.0000             1    0.00
+SRR622461            42  30              Cycle          M                   42.0000             1    0.00
+SRR622461            43  30              Cycle          M                   43.0000             1    0.00
+SRR622461            41  31              Cycle          M                   41.0000             1    0.00
+SRR622461            42  31              Cycle          M                   42.0000             1    0.00
+SRR622461            43  31              Cycle          M                   43.0000             1    0.00
+SRR622461            44  31              Cycle          M                   44.0000             1    0.00
+SRR622461            33  32              Cycle          M                   33.0000             1    0.00
+SRR622461            41  32              Cycle          M                   41.0000             1    0.00
+SRR622461            42  32              Cycle          M                   42.0000             2    0.00
+SRR622461            33  33              Cycle          M                   33.0000             1    0.00
+SRR622461            40  33              Cycle          M                   40.0000             1    0.00
+SRR622461            41  33              Cycle          M                   41.0000             1    0.00
+SRR622461            42  33              Cycle          M                   42.0000             1    0.00
+SRR622461            43  33              Cycle          M                   43.0000             2    0.00
+SRR622461            27  34              Cycle          M                   27.0000             1    0.00
+SRR622461            29  34              Cycle          M                   29.0000             1    0.00
+SRR622461            42  34              Cycle          M                   42.0000             2    0.00
+SRR622461            43  34              Cycle          M                   43.0000             1    0.00
+SRR622461            30  35              Cycle          M                   30.0000             1    0.00
+SRR622461            41  35              Cycle          M                   41.0000             2    0.00
+SRR622461            43  35              Cycle          M                   43.0000             1    0.00
+SRR622461            26  36              Cycle          M                   26.0000             1    0.00
+SRR622461            42  36              Cycle          M                   42.0000             1    0.00
+SRR622461            25  37              Cycle          M                   25.0000             1    0.00
+SRR622461            35  37              Cycle          M                   35.0000             1    0.00
+SRR622461            42  37              Cycle          M                   42.0000             3    0.00
+SRR622461            42  38              Cycle          M                   42.0000             3    0.00
+SRR622461            32  39              Cycle          M                   32.0000             1    0.00
+SRR622461            41  39              Cycle          M                   41.0000             1    0.00
+SRR622461            42  39              Cycle          M                   42.0000             1    0.00
+SRR622461            31  40              Cycle          M                   31.0000             1    0.00
+SRR622461            38  40              Cycle          M                   38.0000             1    0.00
+SRR622461            41  40              Cycle          M                   41.0000             1    0.00
+SRR622461            42  40              Cycle          M                   42.0000             1    0.00
+SRR622461            31  41              Cycle          M                   31.0000             1    0.00
+SRR622461            34  41              Cycle          M                   34.0000             1    0.00
+SRR622461            42  41              Cycle          M                   42.0000             2    0.00
+SRR622461            42  42              Cycle          M                   42.0000             2    0.00
+SRR622461            25  43              Cycle          M                   25.0000             1    0.00
+SRR622461            32  43              Cycle          M                   32.0000             1    0.00
+SRR622461            35  43              Cycle          M                   35.0000             1    0.00
+SRR622461            42  43              Cycle          M                   42.0000             2    0.00
+SRR622461            28  44              Cycle          M                   28.0000             1    0.00
+SRR622461            30  44              Cycle          M                   30.0000             1    0.00
+SRR622461            31  44              Cycle          M                   31.0000             1    0.00
+SRR622461            32  44              Cycle          M                   32.0000             1    0.00
+SRR622461            34  44              Cycle          M                   34.0000             1    0.00
+SRR622461            40  44              Cycle          M                   40.0000             1    0.00
+SRR622461            42  44              Cycle          M                   42.0000             3    0.00
+SRR622461            23  45              Cycle          M                   23.0000             2    0.00
+SRR622461            25  45              Cycle          M                   25.0000             1    0.00
+SRR622461            36  45              Cycle          M                   36.0000             1    0.00
+SRR622461            41  45              Cycle          M                   41.0000             2    0.00
+SRR622461            42  45              Cycle          M                   42.0000             1    0.00
+SRR622461            31  46              Cycle          M                   31.0000             1    0.00
+SRR622461            35  46              Cycle          M                   35.0000             1    0.00
+SRR622461            41  46              Cycle          M                   41.0000             1    0.00
+SRR622461            42  46              Cycle          M                   42.0000             2    0.00
+SRR622461            44  46              Cycle          M                   44.0000             1    0.00
+SRR622461            32  47              Cycle          M                   32.0000             1    0.00
+SRR622461            34  47              Cycle          M                   34.0000             1    0.00
+SRR622461            37  47              Cycle          M                   37.0000             1    0.00
+SRR622461            40  47              Cycle          M                   40.0000             2    0.00
+SRR622461            42  47              Cycle          M                   42.0000             1    0.00
+SRR622461            33  48              Cycle          M                   33.0000             1    0.00
+SRR622461            34  48              Cycle          M                   34.0000             1    0.00
+SRR622461            35  48              Cycle          M                   35.0000             1    0.00
+SRR622461            42  48              Cycle          M                   42.0000             4    0.00
+SRR622461            24  49              Cycle          M                   24.0000             1    0.00
+SRR622461            32  49              Cycle          M                   32.0000             1    0.00
+SRR622461            33  49              Cycle          M                   33.0000             2    0.00
+SRR622461            40  49              Cycle          M                   40.0000             2    0.00
+SRR622461            43  49              Cycle          M                   43.0000             1    0.00
+SRR622461            44  49              Cycle          M                   44.0000             1    0.00
+SRR622461            30  50              Cycle          M                   30.0000             1    0.00
+SRR622461            32  50              Cycle          M                   32.0000             1    0.00
+SRR622461            33  50              Cycle          M                   33.0000             1    0.00
+SRR622461            36  50              Cycle          M                   36.0000             1    0.00
+SRR622461            40  50              Cycle          M                   40.0000             1    0.00
+SRR622461            42  50              Cycle          M                   42.0000             2    0.00
+SRR622461            43  50              Cycle          M                   43.0000             1    0.00
+SRR622461            34  51              Cycle          M                   34.0000             1    0.00
+SRR622461            35  51              Cycle          M                   35.0000             1    0.00
+SRR622461            42  51              Cycle          M                   42.0000             2    0.00
+SRR622461            43  51              Cycle          M                   43.0000             1    0.00
+SRR622461            44  51              Cycle          M                   44.0000             1    0.00
+SRR622461            28  52              Cycle          M                   28.0000             1    0.00
+SRR622461            33  52              Cycle          M                   33.0000             1    0.00
+SRR622461            36  52              Cycle          M                   36.0000             1    0.00
+SRR622461            40  52              Cycle          M                   40.0000             1    0.00
+SRR622461            41  52              Cycle          M                   41.0000             1    0.00
+SRR622461            42  52              Cycle          M                   42.0000             2    0.00
+SRR622461            34  53              Cycle          M                   34.0000             3    0.00
+SRR622461            42  53              Cycle          M                   42.0000             2    0.00
+SRR622461            43  53              Cycle          M                   43.0000             2    0.00
+SRR622461            44  53              Cycle          M                   44.0000             1    0.00
+SRR622461            24  54              Cycle          M                   24.0000             1    0.00
+SRR622461            33  54              Cycle          M                   33.0000             2    0.00
+SRR622461            41  54              Cycle          M                   41.0000             1    0.00
+SRR622461            42  54              Cycle          M                   42.0000             1    0.00
+SRR622461            44  54              Cycle          M                   44.0000             1    0.00
+SRR622461            30  55              Cycle          M                   30.0000             2    0.00
+SRR622461            33  55              Cycle          M                   33.0000             1    0.00
+SRR622461            36  55              Cycle          M                   36.0000             1    0.00
+SRR622461            42  55              Cycle          M                   42.0000             1    0.00
+SRR622461            44  55              Cycle          M                   44.0000             1    0.00
+SRR622461            27  56              Cycle          M                   27.0000             1    0.00
+SRR622461            33  56              Cycle          M                   33.0000             1    0.00
+SRR622461            36  56              Cycle          M                   36.0000             1    0.00
+SRR622461            41  56              Cycle          M                   41.0000             1    0.00
+SRR622461            43  56              Cycle          M                   43.0000             1    0.00
+SRR622461            28  57              Cycle          M                   28.0000             1    0.00
+SRR622461            34  57              Cycle          M                   34.0000             1    0.00
+SRR622461            42  57              Cycle          M                   42.0000             1    0.00
+SRR622461            43  57              Cycle          M                   43.0000             1    0.00
+SRR622461            44  57              Cycle          M                   44.0000             1    0.00
+SRR622461            33  58              Cycle          M                   33.0000             1    0.00
+SRR622461            36  58              Cycle          M                   36.0000             1    0.00
+SRR622461            40  58              Cycle          M                   40.0000             1    0.00
+SRR622461            42  58              Cycle          M                   42.0000             3    0.00
+SRR622461            33  59              Cycle          M                   33.0000             1    0.00
+SRR622461            40  59              Cycle          M                   40.0000             1    0.00
+SRR622461            41  59              Cycle          M                   41.0000             1    0.00
+SRR622461            43  59              Cycle          M                   43.0000             1    0.00
+SRR622461            27  60              Cycle          M                   27.0000             1    0.00
+SRR622461            42  60              Cycle          M                   42.0000             2    0.00
+SRR622461            43  60              Cycle          M                   43.0000             1    0.00
+SRR622461            44  61              Cycle          M                   44.0000             1    0.00
+SRR622461            34  62              Cycle          M                   34.0000             1    0.00
+SRR622461            41  65              Cycle          M                   41.0000             1    0.00
+SRR622461            10  66              Cycle          M                   10.0000             1    0.00
+SRR622461            31  66              Cycle          M                   31.0000             1    0.00
+SRR622461            37  66              Cycle          M                   37.0000             1    0.00
+SRR622461            42  66              Cycle          M                   42.0000             1    0.00
+SRR622461            44  66              Cycle          M                   44.0000             1    0.00
+SRR622461             9  67              Cycle          M                    9.0000             1    0.00
+SRR622461            34  67              Cycle          M                   34.0000             1    0.00
+SRR622461            37  67              Cycle          M                   37.0000             1    0.00
+SRR622461            44  67              Cycle          M                   44.0000             1    0.00
+SRR622461            16  68              Cycle          M                   16.0000             1    0.00
+SRR622461            35  68              Cycle          M                   35.0000             1    0.00
+SRR622461            25  69              Cycle          M                   25.0000             1    0.00
+SRR622461            30  69              Cycle          M                   30.0000             1    0.00
+SRR622461            37  69              Cycle          M                   37.0000             1    0.00
+SRR622461            18  70              Cycle          M                   18.0000             1    0.00
+SRR622461            35  70              Cycle          M                   35.0000             1    0.00
+SRR622461            40  70              Cycle          M                   40.0000             1    0.00
+SRR622461            44  70              Cycle          M                   44.0000             1    0.00
+SRR622461            34  71              Cycle          M                   34.0000             1    0.00
+SRR622461            36  71              Cycle          M                   36.0000             1    0.00
+SRR622461            37  71              Cycle          M                   37.0000             1    0.00
+SRR622461             9  72              Cycle          M                    9.0000             1    0.00
+SRR622461            14  72              Cycle          M                   14.0000             1    0.00
+SRR622461            15  72              Cycle          M                   15.0000             1    0.00
+SRR622461            19  72              Cycle          M                   19.0000             1    0.00
+SRR622461            33  72              Cycle          M                   33.0000             2    0.00
+SRR622461            40  72              Cycle          M                   40.0000             1    0.00
+SRR622461            41  72              Cycle          M                   41.0000             1    0.00
+SRR622461            42  72              Cycle          M                   42.0000             1    0.00
+SRR622461            32  73              Cycle          M                   32.0000             1    0.00
+SRR622461            37  73              Cycle          M                   37.0000             1    0.00
+SRR622461            42  73              Cycle          M                   42.0000             2    0.00
+SRR622461            20  74              Cycle          M                   20.0000             1    0.00
+SRR622461            24  74              Cycle          M                   24.0000             1    0.00
+SRR622461            31  74              Cycle          M                   31.0000             1    0.00
+SRR622461            40  74              Cycle          M                   40.0000             1    0.00
+SRR622461            25  75              Cycle          M                   25.0000             1    0.00
+SRR622461            29  75              Cycle          M                   29.0000             2    0.00
+SRR622461            32  75              Cycle          M                   32.0000             1    0.00
+SRR622461            36  75              Cycle          M                   36.0000             1    0.00
+SRR622461            42  75              Cycle          M                   42.0000             1    0.00
+SRR622461            22  76              Cycle          M                   22.0000             1    0.00
+SRR622461            31  76              Cycle          M                   31.0000             1    0.00
+SRR622461            33  76              Cycle          M                   33.0000             1    0.00
+SRR622461            35  76              Cycle          M                   35.0000             1    0.00
+SRR622461            42  76              Cycle          M                   42.0000             1    0.00
+SRR622461            28  77              Cycle          M                   28.0000             1    0.00
+SRR622461            35  77              Cycle          M                   35.0000             1    0.00
+SRR622461            42  77              Cycle          M                   42.0000             1    0.00
+SRR622461            43  77              Cycle          M                   43.0000             1    0.00
+SRR622461            28  78              Cycle          M                   28.0000             1    0.00
+SRR622461            34  78              Cycle          M                   34.0000             1    0.00
+SRR622461            35  78              Cycle          M                   35.0000             1    0.00
+SRR622461            42  78              Cycle          M                   42.0000             1    0.00
+SRR622461            25  79              Cycle          M                   25.0000             1    0.00
+SRR622461            42  79              Cycle          M                   42.0000             1    0.00
+SRR622461            35  80              Cycle          M                   35.0000             2    0.00
+SRR622461            28  81              Cycle          M                   28.0000             1    0.00
+SRR622461            30  81              Cycle          M                   30.0000             2    0.00
+SRR622461            33  81              Cycle          M                   33.0000             1    0.00
+SRR622461            43  81              Cycle          M                   43.0000             1    0.00
+SRR622461            24  82              Cycle          M                   24.0000             1    0.00
+SRR622461            26  82              Cycle          M                   26.0000             1    0.00
+SRR622461            41  82              Cycle          M                   41.0000             1    0.00
+SRR622461            29  83              Cycle          M                   29.0000             1    0.00
+SRR622461            37  83              Cycle          M                   37.0000             1    0.00
+SRR622461            43  83              Cycle          M                   43.0000             1    0.00
+SRR622461            32  84              Cycle          M                   32.0000             1    0.00
+SRR622461            42  84              Cycle          M                   42.0000             1    0.00
+SRR622461            43  84              Cycle          M                   43.0000             1    0.00
+SRR622461            40  85              Cycle          M                   40.0000             1    0.00
+SRR622461            43  85              Cycle          M                   43.0000             1    0.00
+SRR622461            29  86              Cycle          M                   29.0000             1    0.00
+SRR622461            31  86              Cycle          M                   31.0000             1    0.00
+SRR622461            39  86              Cycle          M                   39.0000             1    0.00
+SRR622461            42  86              Cycle          M                   42.0000             1    0.00
+SRR622461            43  86              Cycle          M                   43.0000             1    0.00
+SRR622461            45  86              Cycle          M                   45.0000             1    0.00
+SRR622461            28  87              Cycle          M                   28.0000             1    0.00
+SRR622461            30  87              Cycle          M                   30.0000             1    0.00
+SRR622461            36  87              Cycle          M                   36.0000             1    0.00
+SRR622461            41  87              Cycle          M                   41.0000             1    0.00
+SRR622461            41  88              Cycle          M                   41.0000             1    0.00
+SRR622461            43  88              Cycle          M                   43.0000             1    0.00
+SRR622461            41  89              Cycle          M                   41.0000             1    0.00
+SRR622461            42  90              Cycle          M                   42.0000             1    0.00
+SRR622461            43  90              Cycle          M                   43.0000             1    0.00
+SRR622461            31  91              Cycle          M                   31.0000             1    0.00
+SRR622461            41  91              Cycle          M                   41.0000             1    0.00
+SRR622461            43  91              Cycle          M                   43.0000             1    0.00
+SRR622461            33  92              Cycle          M                   33.0000             1    0.00
+SRR622461            41  94              Cycle          M                   41.0000             1    0.00
+SRR622461            42  94              Cycle          M                   42.0000             1    0.00
+SRR622461            28  95              Cycle          M                   28.0000             1    0.00
+SRR622461            37  95              Cycle          M                   37.0000             1    0.00
+SRR622461            35  96              Cycle          M                   35.0000             3    0.00
+SRR622461            41  96              Cycle          M                   41.0000             1    0.00
+SRR622461            25  97              Cycle          M                   25.0000             1    0.00
+SRR622461            31  97              Cycle          M                   31.0000             1    0.00
+SRR622461            34  97              Cycle          M                   34.0000             1    0.00
+SRR622461            38  97              Cycle          M                   38.0000             1    0.00
+SRR622461            39  97              Cycle          M                   39.0000             1    0.00
+SRR622461            27  98              Cycle          M                   27.0000             1    0.00
+SRR622461            32  98              Cycle          M                   32.0000             1    0.00
+SRR622461            38  98              Cycle          M                   38.0000             1    0.00
+SRR622461            28  99              Cycle          M                   28.0000             1    0.00
+SRR622461            27  100             Cycle          M                   27.0000             1    0.00
+SRR622461            24  101             Cycle          M                   24.0000             1    0.00
+

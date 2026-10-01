@@ -1,4 +1,5 @@
 #include "fastgatk/runtime/resource.hpp"
+#include "fastgatk/io/bam_htsjdk.hpp"
 #include "fastgatk/runtime/output.hpp"
 #include "optional_boolean.hpp"
 
@@ -452,7 +453,11 @@ std::uint64_t estimate_library_size(std::uint64_t read_pairs_examined,
 std::string fragment_name(const bam1_t* record, std::size_t order) {
     const char* qname = bam_get_qname(record);
     std::string name = qname == nullptr ? std::string{} : std::string(qname);
-    if ((record->core.flag & BAM_FPAIRED) == 0)
+    // Reads without usable mate coordinates lose their pair in picard's
+    // ReadEnds and are pooled as single ends, where each RECORD is its own
+    // end: the two ends of one name share a key and can mark each other as
+    // duplicates.  Keep the same paired predicate as duplicate_key().
+    if ((record->core.flag & BAM_FPAIRED) == 0 || record->core.mtid < 0)
         return "__unpaired_" + std::to_string(order);
     {
         if (name.size() > 2 && name.compare(name.size() - 2, 2, "/1") == 0)
@@ -1343,7 +1348,15 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
         if (!output) throw std::runtime_error("cannot open MarkDuplicates output: " + options.output);
         if (!options.reference.empty() && hts_set_fai_filename(output, options.reference.c_str()) != 0)
             throw std::runtime_error("BAD_INPUT: cannot configure output reference");
-        if (sam_hdr_write(output, header) < 0) throw std::runtime_error("cannot write MarkDuplicates header");
+        // htsjdk SAMTextHeaderCodec write semantics: @HD VN 1.6, DT/PT
+        // timestamps re-emitted in the process time zone; the record's
+        // reference identifiers are unchanged by the rewrite.
+        sam_hdr_t* output_header = fastgatk::io::htsjdk_header(header, nullptr);
+        if (output_header == nullptr)
+            throw std::runtime_error("INTERNAL_ERROR: cannot normalize MarkDuplicates header");
+        const int header_status = sam_hdr_write(output, output_header);
+        sam_hdr_destroy(output_header);
+        if (header_status < 0) throw std::runtime_error("cannot write MarkDuplicates header");
         record = bam_init1();
         if (!record) throw std::runtime_error("RESOURCE_EXHAUSTED: bam_init1 failed for second pass");
         std::uint64_t second_order = 0;
@@ -1360,6 +1373,11 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             // but make the default match the pinned Picard behavior too.
             record->core.flag &= ~BAM_FDUP;
             auto* duplicate_tag = bam_aux_get(record, "DT");
+            // htsjdk materializes a record's attribute list on the first
+            // setAttribute and then re-encodes integer values by type on
+            // write; untouched records keep their binary encoding.  Track
+            // which records were modified so only those are normalized.
+            bool attributes_touched = duplicate_tag != nullptr;
             if (duplicate_tag != nullptr) bam_aux_del(record, duplicate_tag);
             bool duplicate = false;
             bool optical = false;
@@ -1396,8 +1414,11 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
                 // OpticalOnly share exactly the same duplicate accounting.
                 if (tagging_all || (tagging_optical_only && optical)) {
                     const char* tag = optical ? "SQ" : "LB";
-                    if (bam_aux_update_str(record, "DT", 3, tag) != 0)
-                        throw std::runtime_error("cannot tag MarkDuplicates record");
+                    // htsjdk SAMRecord#setAttribute placement: a new tag is
+                    // inserted before the first greater tag (little-endian
+                    // 16-bit tag code), not appended at the end.
+                    fastgatk::io::set_bam_aux_z(record, "DT", tag);
+                    attributes_touched = true;
                 }
             }
             // Picard's ADD_PG_TAG_TO_READS also attaches the newly-created
@@ -1408,15 +1429,14 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             if (options.add_pg_tag) {
                 if (options.pg_id.size() >= static_cast<std::size_t>(std::numeric_limits<int>::max()))
                     throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: MarkDuplicates @PG ID is too long");
-                if (bam_aux_update_str(record, "PG",
-                                       static_cast<int>(options.pg_id.size() + 1),
-                                       options.pg_id.c_str()) != 0)
-                    throw std::runtime_error("cannot tag MarkDuplicates record with PG");
+                fastgatk::io::set_bam_aux_z(record, "PG", options.pg_id.c_str());
+                attributes_touched = true;
             }
             const bool omit_record = duplicate &&
                 (options.remove_duplicates ||
                  (options.remove_sequencing_duplicates && optical));
             if (!omit_record) {
+                if (attributes_touched) fastgatk::io::normalize_bam_aux(record);
                 if (sam_write1(output, header, record) < 0)
                     throw std::runtime_error("cannot write MarkDuplicates record");
                 ++output_records;

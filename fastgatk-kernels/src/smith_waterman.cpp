@@ -1,3 +1,4 @@
+#include "fastgatk/kernels/gpu_safety.hpp"
 #include "fastgatk/kernels/smith_waterman.hpp"
 
 #include <algorithm>

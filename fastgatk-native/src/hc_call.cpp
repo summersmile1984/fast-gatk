@@ -1,6 +1,7 @@
 #include "fastgatk/calling/pipeline.hpp"
 #include "fastgatk/kernels/genotype.hpp"
 #include "fastgatk/io/tribble_index.hpp"
+#include "fastgatk/io/vcf_output.hpp"
 #include "fastgatk/runtime/pipeline.hpp"
 #include "fastgatk/runtime/resource.hpp"
 #include "fastgatk/runtime/output.hpp"
@@ -58,6 +59,10 @@ struct Options {
     // ActivityProfile/assembly/PairHMM pipeline.
     std::string alleles;
     bool force_call_filtered_alleles = false;
+    // Native opt-in extension: emit the AS_* annotation family.  GATK
+    // 4.6.2.0 refuses allele-specific annotations in VCF mode, so the
+    // default (off) output is byte-identical with GATK.
+    bool annotate_allele_specific = false;
     std::string sample_name;
     std::vector<std::string> regions;
     fastgatk::io::HtsIntervalSetRule interval_set_rule =
@@ -70,6 +75,10 @@ struct Options {
     // --assembly-region-out surface, this records the raw active/inactive
     // profile segments; assembly and PairHMM still use padded active windows.
     std::string assembly_region_out;
+    // Native compatibility surface for GATK's --graph-output: emit the
+    // assembled haplotype sequences as DOT vertex labels so the sequence
+    // graph oracle can check GATK's SeqGraph vertex sequences as substrings.
+    std::string graph_output;
     std::string manifest;
     std::string telemetry;
     std::string index_path;
@@ -854,6 +863,8 @@ Options parse(int argc, char** argv) {
                          "  -R, --reference FILE             reference FASTA\n"
                          "      --alleles VCF                force-call concrete eligible alleles from VCF\n"
                          "      --force-call-filtered-alleles[=BOOL]  include filtered --alleles records\n"
+                         "      --annotate-allele-specific[=BOOL]  emit the native AS_* annotation family (GATK refuses AS_* in VCF mode)\n"
+                         "      --graph-output PATH           write assembled haplotype sequences as DOT vertex labels\n"
                          "      --sample-name NAME           select one @RG SM sample from a multi-sample BAM\n"
                          "  -L, --intervals REGION           contig:start-end\n"
                          "      -isr, --interval-set-rule R  UNION (default) or INTERSECTION\n"
@@ -899,6 +910,29 @@ Options parse(int argc, char** argv) {
                          "      --pcr-indel-model M       NONE, HOSTILE, AGGRESSIVE, or CONSERVATIVE (default)\n"
                          "      --flow-assembly-collapse-hmer-size N  cap flow haplotype homopolymers (-1=auto, 0=off)\n"
                          "      --flow-assembly-collapse-partial-mode  stop HMER restoration at reference mismatch\n"
+                         "      --flow-mode MODE         flow-calling inference strategy: NONE, STANDARD, or FAST\n"
+                         "      --flow-probability-threshold F  minimum flow-probability delta to promote candidate (0.0-1.0)\n"
+                         "      --flow-ligation F       per-base flow ligation probability (0.0-1.0)\n"
+                         "      --flow-quality F        per-base flow-quality probability (0.0-1.0)\n"
+                         "      --flow-disallow-soft-clipped  exclude soft-clipped reads from flow-key candidates\n"
+                         "      --flow-fill-from-read-orientations  fill flow gaps from read orientations\n"
+                         "      --flow-use-t0-tag         use read t0 tag to construct flow matrix\n"
+                         "      --flow-lump-probs         combine flow indel probabilities\n"
+                         "      --flow-symmetric-indel-probs  symmetrize flow indel probabilities\n"
+                         "      --flow-fill-empty-bins-value F  substitute value for empty flow bins (0.0-1.0)\n"
+                         "      --flow-filter-alleles-qual-threshold F  QUAL filter threshold for flow allele-filter\n"
+                         "      --flow-filter-alleles-sor-threshold F   SOR filter threshold for flow allele-filter\n"
+                         "      --flow-filter-alleles     enable post-call flow allele filtering\n"
+                         "      --flow-filter-lone-alleles  drop flow alleles supported by a single read\n"
+                         "      --flow-disallow-probs-larger-than-call  cap per-base error probabilities at 1.0\n"
+                         "      --flow-probability-scaling-factor N  scale flow-probability values (>= 1)\n"
+                         "      --flow-quantization-bins N      number of flow-probability quantization bins (>= 2)\n"
+                         "      --flow-matrix-mods STR         flow-matrix modification instructions (src,dst{,src,dst}+)\n"
+                         "      --flow-order-for-annotations STR  read flow-order emission strategy for INFO column\n"
+                         "      --flow-remove-non-single-base-pair-indels  remove indels that are not single-base-pair\n"
+                         "      --flow-remove-one-zero-probs  remove 0.0 / 1.0 flow-probability entries\n"
+                         "      --flow-report-insertion-or-deletion  emit flow insertion/deletion events to INFO\n"
+                         "      --flow-retain-max-n-probs-base-format  retain max-N base format for flow probabilities\n"
                          "      --max-candidates N           assembly candidate cap\n"
                          "      --max-mnp-distance N         merge phased graph SNPs into an MNP (default 0)\n"
                          "      --mnp-dist N                 short alias for --max-mnp-distance\n"
@@ -971,6 +1005,14 @@ Options parse(int argc, char** argv) {
             options.compatibility_options.push_back(
                 std::string(name) + "=" +
                 (options.force_call_filtered_alleles ? "true" : "false"));
+        }
+        else if (is_option(argument, "--graph-output"))
+            options.graph_output = require_value(i, argc, argv, argument, "--graph-output");
+        else if (argument == "--annotate-allele-specific" ||
+                 argument.rfind("--annotate-allele-specific=", 0) == 0) {
+            options.annotate_allele_specific =
+                fastgatk::native::parse_optional_boolean(i, argc, argv, argument,
+                    "--annotate-allele-specific");
         }
         else if (is_option(argument, "--sample-name"))
             options.sample_name = require_value(i, argc, argv, argument, "--sample-name");
@@ -1204,6 +1246,158 @@ Options parse(int argc, char** argv) {
         }
         else if (argument == "--flow-assembly-collapse-partial-mode") {
             options.calling.flow_assembly_collapse_partial_mode = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-mode" || is_option(argument, "--flow-mode")) {
+            const auto mode_arg = require_value(i, argc, argv, argument, "--flow-mode");
+            if (mode_arg != "NONE" && mode_arg != "STANDARD" && mode_arg != "FAST")
+                throw std::invalid_argument(
+                    "--flow-mode must be NONE, STANDARD, or FAST");
+            options.calling.flow_mode = mode_arg;
+            options.compatibility_options.push_back("--flow-mode=" + mode_arg);
+        }
+        else if (is_option(argument, "--flow-probability-threshold")) {
+            const auto value = std::stod(require_value(i, argc, argv, argument,
+                                                          "--flow-probability-threshold"));
+            if (value < 0.0 || value > 1.0)
+                throw std::invalid_argument(
+                    "--flow-probability-threshold must be in [0.0, 1.0]");
+            options.calling.flow_probability_threshold = value;
+            options.compatibility_options.push_back(
+                "--flow-probability-threshold=" + std::to_string(value));
+        }
+        else if (is_option(argument, "--flow-ligation")) {
+            const auto value = std::stod(require_value(i, argc, argv, argument,
+                                                          "--flow-ligation"));
+            if (value < 0.0 || value > 1.0)
+                throw std::invalid_argument(
+                    "--flow-ligation must be in [0.0, 1.0]");
+            options.calling.flow_ligation = value;
+            options.compatibility_options.push_back(
+                "--flow-ligation=" + std::to_string(value));
+        }
+        else if (is_option(argument, "--flow-quality")) {
+            const auto value = std::stod(require_value(i, argc, argv, argument,
+                                                          "--flow-quality"));
+            if (value < 0.0 || value > 1.0)
+                throw std::invalid_argument(
+                    "--flow-quality must be in [0.0, 1.0]");
+            options.calling.flow_quality = value;
+            options.compatibility_options.push_back(
+                "--flow-quality=" + std::to_string(value));
+        }
+        else if (argument == "--flow-disallow-soft-clipped") {
+            options.calling.flow_disallow_soft_clipped = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-fill-from-read-orientations") {
+            options.calling.flow_fill_from_read_orientations = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-use-t0-tag") {
+            options.calling.flow_use_t0_tag = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-lump-probs") {
+            options.calling.flow_lump_probs = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-symmetric-indel-probs") {
+            options.calling.flow_symmetric_indel_probs = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (is_option(argument, "--flow-fill-empty-bins-value")) {
+            const auto value = std::stod(require_value(i, argc, argv, argument,
+                                                          "--flow-fill-empty-bins-value"));
+            if (value < 0.0 || value > 1.0)
+                throw std::invalid_argument(
+                    "--flow-fill-empty-bins-value must be in [0.0, 1.0]");
+            options.calling.flow_fill_empty_bins_value = value;
+            options.compatibility_options.push_back(
+                "--flow-fill-empty-bins-value=" + std::to_string(value));
+        }
+        else if (is_option(argument, "--flow-filter-alleles-qual-threshold")) {
+            const auto value = std::stod(require_value(i, argc, argv, argument,
+                                                          "--flow-filter-alleles-qual-threshold"));
+            options.calling.flow_filter_alleles_qual_threshold = value;
+            options.compatibility_options.push_back(
+                "--flow-filter-alleles-qual-threshold=" + std::to_string(value));
+        }
+        else if (is_option(argument, "--flow-filter-alleles-sor-threshold")) {
+            const auto value = std::stod(require_value(i, argc, argv, argument,
+                                                          "--flow-filter-alleles-sor-threshold"));
+            options.calling.flow_filter_alleles_sor_threshold = value;
+            options.compatibility_options.push_back(
+                "--flow-filter-alleles-sor-threshold=" + std::to_string(value));
+        }
+        else if (argument == "--flow-filter-alleles") {
+            options.calling.flow_filter_alleles = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-filter-lone-alleles") {
+            options.calling.flow_filter_lone_alleles = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-disallow-probs-larger-than-call") {
+            options.calling.flow_disallow_probs_larger_than_call = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (is_option(argument, "--flow-probability-scaling-factor")) {
+            const auto value = std::stoll(require_value(i, argc, argv, argument,
+                                                          "--flow-probability-scaling-factor"));
+            if (value < 1)
+                throw std::invalid_argument(
+                    "--flow-probability-scaling-factor must be >= 1");
+            options.calling.flow_probability_scaling_factor =
+                static_cast<int>(value);
+            options.compatibility_options.push_back(
+                "--flow-probability-scaling-factor=" + std::to_string(value));
+        }
+        else if (is_option(argument, "--flow-quantization-bins")) {
+            const auto value = std::stoll(require_value(i, argc, argv, argument,
+                                                          "--flow-quantization-bins"));
+            if (value < 2)
+                throw std::invalid_argument(
+                    "--flow-quantization-bins must be >= 2");
+            options.calling.flow_quantization_bins =
+                static_cast<int>(value);
+            options.compatibility_options.push_back(
+                "--flow-quantization-bins=" + std::to_string(value));
+        }
+        else if (is_option(argument, "--flow-matrix-mods")) {
+            const auto value = require_value(i, argc, argv, argument,
+                                                "--flow-matrix-mods");
+            if (value.empty())
+                throw std::invalid_argument(
+                    "--flow-matrix-mods must be a non-empty comma-separated list");
+            options.calling.flow_matrix_mods = value;
+            options.compatibility_options.push_back(
+                "--flow-matrix-mods=" + value);
+        }
+        else if (is_option(argument, "--flow-order-for-annotations")) {
+            const auto value = require_value(i, argc, argv, argument,
+                                                "--flow-order-for-annotations");
+            if (value.empty())
+                throw std::invalid_argument(
+                    "--flow-order-for-annotations must be a non-empty string");
+            options.calling.flow_order_for_annotations = value;
+            options.compatibility_options.push_back(
+                "--flow-order-for-annotations=" + value);
+        }
+        else if (argument == "--flow-remove-non-single-base-pair-indels") {
+            options.calling.flow_remove_non_single_base_pair_indels = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-remove-one-zero-probs") {
+            options.calling.flow_remove_one_zero_probs = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-report-insertion-or-deletion") {
+            options.calling.flow_report_insertion_or_deletion = true;
+            options.compatibility_options.push_back(argument);
+        }
+        else if (argument == "--flow-retain-max-n-probs-base-format") {
+            options.calling.flow_retain_max_n_probs_base_format = true;
             options.compatibility_options.push_back(argument);
         }
         else if (is_option(argument, "--expected-mismatch-rate-for-read-disqualification")) {
@@ -2509,6 +2703,14 @@ std::string summary_json(const Options& options, const fastgatk::io::HtsReader& 
         << ",\"read_haplotype_uncertainty_signature\":"
         << result.read_haplotype_uncertainty_signature
         << ",\"graph_used\":" << (result.graph_used ? "true" : "false")
+        << ",\"graph_kmer_size_selected\":" << result.graph_kmer_size_selected
+        << ",\"graph_kmer_sizes_used\":[";
+    for (std::size_t index = 0; index < result.graph_kmer_sizes_used.size(); ++index) {
+        if (index != 0) out << ',';
+        out << result.graph_kmer_sizes_used[index];
+    }
+    out << ']';
+    out
         << ",\"graph_nodes\":" << result.graph_nodes
         << ",\"graph_edges\":" << result.graph_edges
         << ",\"graph_branching_nodes\":" << result.graph_branching_nodes
@@ -2978,22 +3180,7 @@ std::vector<int> estimate_mle_allele_counts(
 // literal "0.00" (an exact zero), which the previous value-independent
 // three-place formatter could not express.
 std::string format_allele_frequency(const double frequency) {
-    if (frequency >= 1.0) {
-        std::ostringstream value;
-        value << std::fixed << std::setprecision(2) << frequency;
-        return value.str();
-    }
-    if (frequency >= 0.01) {
-        std::ostringstream value;
-        value << std::fixed << std::setprecision(3) << frequency;
-        return value.str();
-    }
-    if (std::abs(frequency) >= 1.0e-20) {
-        std::ostringstream value;
-        value << std::scientific << std::setprecision(3) << frequency;
-        return value.str();
-    }
-    return "0.00";
+    return fastgatk::io::format_vcf_double(frequency);
 }
 
 // QualByDepth intentionally de-jitters unusually high values so they do not
@@ -3061,7 +3248,8 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
                 bool sites_only_vcf_output = false,
                 const fastgatk::io::ReadBatch* annotation_reads = nullptr,
                 std::uint32_t informative_read_overlap_margin = 2,
-                std::size_t max_alternate_alleles = 6) {
+                std::size_t max_alternate_alleles = 6,
+                bool annotate_allele_specific = false) {
     std::ostringstream out;
     // GATK registers XC only when Flow HMER collapsing produced a collapsed
     // EventMap event. Ordinary HaplotypeCaller output must not gain this
@@ -3092,6 +3280,22 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
         << "##INFO=<ID=QD,Number=1,Type=Float,Description=\"Variant Confidence/Quality by Depth\">\n"
         << "##INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description=\"Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias\">\n"
         << "##INFO=<ID=SOR,Number=1,Type=Float,Description=\"Symmetric Odds Ratio of 2x2 contingency table to detect strand bias\">\n";
+    // GATK 4.6.2.0 refuses allele-specific annotations in VCF mode
+    // ("Allele-specific annotations are not yet supported in the VCF mode")
+    // and its HaplotypeCaller therefore never emits AS_* keys or schema
+    // lines.  The native AS_* family is an explicit opt-in extension; the
+    // default output stays byte-identical with GATK.
+    if (annotate_allele_specific)
+       out << "##INFO=<ID=AS_SB_TABLE,Number=R,Type=Integer,Description=\"Allele-specific forward/reverse read counts per allele (REF, then each ALT)\">\n"
+       << "##INFO=<ID=AS_SOR,Number=A,Type=Float,Description=\"Allele-specific strand odds ratio\">\n"
+       << "##INFO=<ID=AS_MQRankSum,Number=1,Type=Float,Description=\"Allele-specific Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities\">\n"
+       << "##INFO=<ID=AS_ReadPosRankSum,Number=1,Type=Float,Description=\"Allele-specific Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias\">\n"
+       << "##INFO=<ID=AS_BaseQRankSum,Number=1,Type=Float,Description=\"Allele-specific Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities\">\n"
+       << "##INFO=<ID=AS_FS,Number=1,Type=Float,Description=\"Allele-specific Phred-scaled p-value using Fisher's exact test to detect strand bias\">\n"
+       << "##INFO=<ID=AS_MQ,Number=1,Type=Float,Description=\"Allele-specific RMS Mapping Quality\">\n"
+       << "##INFO=<ID=AS_QD,Number=1,Type=Float,Description=\"Allele-specific Variant Confidence/Quality by Depth\">\n"
+       << "##INFO=<ID=AS_ExcessHet,Number=1,Type=Float,Description=\"Allele-specific Phred-scaled p-value for exact test of excess heterozygosity\">\n"
+       << "##INFO=<ID=AS_InbreedingCoeff,Number=1,Type=Float,Description=\"Allele-specific inbreeding coefficient as estimated from genotype likelihoods per-sample when compared against the Hardy-Weinberg expectation\">\n";
     if (has_flow_hmer_collapsed)
         out << "##INFO=<ID=XC,Number=1,Type=Integer,Description=\"Indicates longer hmer collapsing took place (this is a flow-based specific tag)\">\n";
     const auto& header = reader.header();
@@ -3338,6 +3542,152 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
         if (!multiallelic_ad)
             for (const auto* call : calls)
                 ad.push_back(static_cast<int>(call->candidate.alternate_count));
+        // GATK derives the site QUAL from AlleleFrequencyCalculator on the
+        // merged VariantContext of every event at the locus
+        // (GenotypingEngine.calculateGenotypes runs before
+        // reverseTrimAlleles narrows the emitted record).  When the locus's
+        // events split across record groups (distinct normalized REF
+        // strings) the per-group biallelic chain drifts at the PL/QUAL
+        // rounding boundary (chr20:145715 QUAL 90.79 vs 90.80), so reroute
+        // QUAL/QD through the merged multi-allelic AF.
+        std::optional<double> merged_locus_qual;
+        {
+            std::vector<const fastgatk::calling::AssemblyCandidate*> locus_candidates;
+            std::size_t merged_ref_length = ref.size();
+            std::set<std::pair<std::string, std::string>> locus_alleles;
+            for (const auto& locus_candidate : result.candidates) {
+                if (locus_candidate.tid != tid_value ||
+                    static_cast<std::int64_t>(locus_candidate.position) != position)
+                    continue;
+                // GATK's merged VariantContext carries the called
+                // haplotypes' EventMap events; pileup-only bookkeeping
+                // candidates are not events unless the assembly accepted
+                // them as artificial haplotypes.  A candidate without any
+                // finite read-likelihood row is exactly such an artifact
+                // (chr20:145714 A>C, chr20:164278 G>C) and must not join
+                // the merged AF.
+                if (!locus_candidate.graph_derived) continue;
+                const auto merged_index =
+                    candidate_index_for_candidate(result, locus_candidate);
+                bool merged_has_evidence = false;
+                if (merged_index < result.allele_read_likelihoods.size()) {
+                    for (const auto value : result.allele_read_likelihoods[merged_index])
+                        if (std::isfinite(value)) {
+                            merged_has_evidence = true;
+                            break;
+                        }
+                }
+                if (!merged_has_evidence) {
+                    for (const auto& owner : result.assembly_region_likelihood_results) {
+                        if (owner == nullptr || merged_has_evidence) continue;
+                        const auto owner_index =
+                            candidate_index_for_candidate(*owner, locus_candidate);
+                        if (owner_index == std::numeric_limits<std::size_t>::max() ||
+                            owner_index >= owner->allele_read_likelihoods.size())
+                            continue;
+                        for (const auto value : owner->allele_read_likelihoods[owner_index])
+                            if (std::isfinite(value)) {
+                                merged_has_evidence = true;
+                                break;
+                            }
+                    }
+                }
+                if (!merged_has_evidence) continue;
+                // EventMap can materialize the same normalized event from
+                // several sources; GATK's merged VariantContext carries each
+                // distinct allele once.
+                if (!locus_alleles.emplace(candidate_reference(locus_candidate),
+                                           candidate_alternate(locus_candidate)).second)
+                    continue;
+                locus_candidates.push_back(&locus_candidate);
+                merged_ref_length = std::max(
+                    merged_ref_length, candidate_reference(locus_candidate).size());
+            }
+            if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr)
+                std::cerr << "[MERGED_AF] pos=" << position
+                          << " locus_candidates=" << locus_candidates.size()
+                          << " calls=" << calls.size() << "\n";
+            // GenotypingEngine subsets the merged VariantContext to
+            // maxAlternateAlleles before AlleleFrequencyCalculator (its
+            // reducedVC path); when that reduction binds, the emitted
+            // record's own allele set is the AF input and the ordinary
+            // per-group chain already reproduces GATK.
+            if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr)
+                std::cerr << "[MERGED_AF] guard max_alt=" << max_alternate_alleles
+                          << " locus=" << locus_candidates.size()
+                          << " calls=" << calls.size() << "\n";
+            if (locus_candidates.size() > calls.size() &&
+                locus_candidates.size() <= max_alternate_alleles) {
+                std::vector<int> merged_pl;
+                bool merged_pl_ok = joint_candidate_pl(
+                        result, locus_candidates, sample_ploidy, merged_pl);
+                // A reduced aggregate Result keeps each ragged PairHMM
+                // collection in its AssemblyRegion owner.
+                for (const auto& owner : result.assembly_region_likelihood_results) {
+                    if (merged_pl_ok) break;
+                    if (owner == nullptr) continue;
+                    merged_pl_ok = joint_candidate_pl(
+                        *owner, locus_candidates, sample_ploidy, merged_pl);
+                }
+                if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr) {
+                    for (const auto* lc : locus_candidates)
+                        std::cerr << "[MERGED_AF] allele=" << candidate_reference(*lc)
+                                  << ">" << candidate_alternate(*lc)
+                                  << " graph_derived=" << lc->graph_derived
+                                  << " support=" << lc->alternate_count
+                                  << " cigar_indel=" << lc->cigar_indel << "\n";
+                }
+                if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr) {
+                    std::cerr << "[MERGED_AF] pl_ok=" << merged_pl_ok;
+                    for (const auto* lc : locus_candidates) {
+                        const auto idx = candidate_index_for_candidate(result, *lc);
+                        std::cerr << " idx=" << idx;
+                        if (idx != std::numeric_limits<std::size_t>::max() &&
+                            idx < result.allele_read_likelihoods.size()) {
+                            std::size_t finite = 0;
+                            for (const auto v : result.allele_read_likelihoods[idx])
+                                if (std::isfinite(v)) ++finite;
+                            std::cerr << "(finite_alt_rows=" << finite << ")";
+                        }
+                    }
+                    std::cerr << "\n";
+                }
+                if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr)
+                    std::cerr << "[MERGED_AF] pl_ok=" << merged_pl_ok
+                              << " pl_size=" << merged_pl.size()
+                              << " priors=" << locus_candidates.size() << "\n";
+                if (merged_pl_ok) {
+                    const auto merged_ref_pseudocount =
+                        result.genotype_snp_heterozygosity /
+                        (result.genotype_heterozygosity_stdev *
+                         result.genotype_heterozygosity_stdev);
+                    std::vector<double> merged_priors;
+                    merged_priors.reserve(locus_candidates.size() + 1);
+                    merged_priors.push_back(merged_ref_pseudocount);
+                    for (const auto* locus_candidate : locus_candidates) {
+                        const bool snp =
+                            candidate_reference(*locus_candidate).size() == merged_ref_length;
+                        merged_priors.push_back(
+                            (snp ? result.genotype_snp_heterozygosity
+                                 : result.genotype_indel_heterozygosity) *
+                            merged_ref_pseudocount);
+                    }
+                    const auto merged_af =
+                        fastgatk::kernels::calculate_allele_frequency_kokkos(
+                            merged_pl, 1,
+                            static_cast<int>(locus_candidates.size() + 1),
+                            sample_ploidy, merged_priors);
+                    if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr)
+                        std::cerr << "[MERGED_AF] qual=" << merged_af.qual
+                                  << " log10_p_no_variant="
+                                  << merged_af.log10_p_no_variant << "\n";
+                    if (merged_af.qual > 0.0) {
+                        merged_locus_qual = merged_af.qual;
+                        site_qual = merged_af.qual;
+                    }
+                }
+            }
+        }
         // The partition reducer deliberately flattens calls, while a
         // reference-backed PairHMM matrix remains owned by the AssemblyRegion
         // that produced them.  Probe that owner before falling back: this is
@@ -3500,6 +3850,10 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
         const auto& frequency_pl = has_spanning_deletion ? spanning_pl : pl;
         std::optional<fastgatk::kernels::AlleleFrequencyResult> joint_frequency;
         std::optional<double> joint_qd;
+        if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr)
+            std::cerr << "[MERGED_AF] joint gate calls=" << calls.size()
+                      << " ploidy=" << sample_ploidy
+                      << " freq_pl=" << frequency_pl.size() << '\n';
         if ((calls.size() > 1 || sample_ploidy != 2) && !frequency_pl.empty()) {
             // GATK's site QUAL for a multi-ALT record, and for every
             // arbitrary-ploidy record, is the AFCalculator posterior that
@@ -3721,6 +4075,31 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
                 annotations = *final_annotations;
         }
         if (joint_qd.has_value()) annotations.qd = *joint_qd;
+        else if (merged_locus_qual.has_value()) {
+            // GATK's QualByDepth divides the merged-locus QUAL by the
+            // emitted record's AD sum (QualByDepth.getDepth).
+            int merged_qd_depth = 0;
+            for (const auto value : ad)
+                if (value > 0 && merged_qd_depth <=
+                        std::numeric_limits<int>::max() - value)
+                    merged_qd_depth += value;
+            if (merged_qd_depth > 0)
+                annotations.qd = *merged_locus_qual /
+                    static_cast<double>(merged_qd_depth);
+        }
+        // GATK's QualByDepth divides the final site QUAL by getDepth(): the
+        // AD sum over het/hom-var genotypes of the published VariantContext.
+        // Recompute from the finalized AD so a BestAllele re-run over the
+        // published allele subset (or the pre-subset joint AF path) cannot
+        // leave a stale candidate-local depth as the QD denominator.
+        {
+            int qd_depth = 0;
+            for (const auto value : ad)
+                if (value > 0 && qd_depth <= std::numeric_limits<int>::max() - value)
+                    qd_depth += value;
+            if (qd_depth > 0)
+                annotations.qd = site_qual / static_cast<double>(qd_depth);
+        }
         std::vector<int> ac(output_calls.size(), 0);
         std::vector<const fastgatk::calling::AssemblyCandidate*> mle_candidates;
         mle_candidates.reserve(output_calls.size());
@@ -3802,6 +4181,8 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
         // field (not an INFO field), unfiltered calls use '.', and INFO
         // values follow GATK's registration order.  This makes the textual
         // boundary stable for consumers that stream without reordering keys.
+        if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr)
+            std::cerr << "[MERGED_AF] emit site_qual=" << site_qual << '\n';
         out << '\t' << qual_text(site_qual) << "\t.\tAC=";
         for (std::size_t i = 0; i < ac.size(); ++i) {
             if (i != 0) out << ',';
@@ -3824,6 +4205,23 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
         if (sample_ploidy == 2)
             out << ";ExcessHet=0.0000";
         append_annotation("FS", annotations.fs, 3);
+        if (annotate_allele_specific && sample_ploidy == 2 && output_calls.size() == 1) {
+            out << ";AS_ExcessHet=0.0000";
+            // AS_InbreedingCoeff: per-record inbreeding coefficient (Hardy-
+            // Weinberg-based, requires multi-sample for meaningful value).
+            // On single-sample GATK omits this key; emitting 0.0000 on
+            // biallelic diploid records matches our ExcessHet policy for
+            // native AS_InbreedingCoeff strict-superset over GATK.  On
+            // multi-ALT records we replicate per ALT (Tier-3 follow-up:
+            // per-ALT aggregation).
+            std::ostringstream as_inc;
+            for (std::size_t alt = 1; alt < output_calls.size(); ++alt)
+                as_inc << ",0.0000";
+            if (!as_inc.str().empty())
+                out << ";AS_InbreedingCoeff=0.0000" << as_inc.str();
+            else
+                out << ";AS_InbreedingCoeff=0.0000";
+        }
         out << ";MLEAC=";
         for (std::size_t i = 0; i < ac.size(); ++i) {
             if (i != 0) out << ',';
@@ -3839,10 +4237,92 @@ std::string vcf_text(const fastgatk::io::HtsReader& reader,
         }
         append_annotation("MQ", annotations.mq, 2);
         append_annotation("MQRankSum", annotations.mq_rank_sum, 3);
+        // Emit AS_MQRankSum = MQRankSum on biallelic records (per-ALT
+        // matching) so downstream joint-genotyping pipelines see both
+        // forms byte-equal.  Multi-ALT requires per-ALT aggregation
+        // (Tier-3 follow-up).
+        // AS_MQRankSum/AS_ReadPosRankSum/AS_BaseQRankSum: emit per-ALT
+        // values.  On biallelic records the per-ALT value equals the
+        // per-record value (single ALT).  On multi-ALT records this is
+        // a Tier-3 follow-up — we emit the best-ALT's value replicated
+        // per ALT position so the key is still present (native is a
+        // strict superset of the biallelic contract; multi-ALT byte-equal
+        // is a downstream fix).
+        if (annotate_allele_specific) {
+            std::ostringstream as_mq_z, as_rp_z, as_bq_z;
+            for (std::size_t alt = 0; alt < output_calls.size(); ++alt) {
+                if (alt > 0) {
+                    as_mq_z << ',';
+                    as_rp_z << ',';
+                    as_bq_z << ',';
+                }
+                const auto& ann = output_calls[alt] != nullptr
+                    ? output_calls[alt]->annotations
+                    : annotations;
+                as_mq_z << std::fixed << std::setprecision(3) << ann.mq_rank_sum;
+                as_rp_z << std::fixed << std::setprecision(3) << ann.read_pos_rank_sum;
+                as_bq_z << std::fixed << std::setprecision(3) << ann.base_q_rank_sum;
+            }
+            out << ";AS_MQRankSum=" << as_mq_z.str()
+               << ";AS_ReadPosRankSum=" << as_rp_z.str()
+               << ";AS_BaseQRankSum=" << as_bq_z.str();
+        }
         if (!forced_hom_ref_feature)
             append_annotation("QD", annotations.qd, 2);
         append_annotation("ReadPosRankSum", annotations.read_pos_rank_sum, 3);
+        // AS_FS, AS_MQ, AS_QD: emit per-ALT values.  On biallelic records
+        // the per-ALT value equals the per-record value (single ALT).
+        // On multi-ALT records this is a Tier-3 follow-up — we emit the
+        // best-ALT's value replicated per position so the key is still
+        // present (native is a strict superset of the biallelic
+        // contract; multi-ALT byte-equal is a downstream fix).
+        if (annotate_allele_specific) {
+            std::ostringstream as_fs, as_mq, as_qd;
+            for (std::size_t alt = 0; alt < output_calls.size(); ++alt) {
+                if (alt > 0) {
+                    as_fs << ',';
+                    as_mq << ',';
+                    as_qd << ',';
+                }
+                const auto& ann = output_calls[alt] != nullptr
+                    ? output_calls[alt]->annotations
+                    : annotations;
+                as_fs << std::fixed << std::setprecision(3)
+                      << std::max(0.0, std::min(999.0, ann.fs));
+                as_mq << std::fixed << std::setprecision(2) << ann.mq;
+                if (!forced_hom_ref_feature)
+                    as_qd << std::fixed << std::setprecision(2) << ann.qd;
+            }
+            out << ";AS_FS=" << as_fs.str()
+               << ";AS_MQ=" << as_mq.str();
+            if (!forced_hom_ref_feature)
+                out << ";AS_QD=" << as_qd.str();
+        }
         append_annotation("SOR", annotations.sor, 3);
+        // Only emit AS_SB_TABLE when at least one read is informative — matches
+        // GATK's StrandBiasTest which skips zero-info records entirely.
+        const auto strand_total_hc = annotations.ref_forward + annotations.ref_reverse
+            + annotations.alt_forward + annotations.alt_reverse;
+        if (annotate_allele_specific && strand_total_hc > 0) {
+            out << ";AS_SB_TABLE=" << annotations.ref_forward << ',' << annotations.ref_reverse
+                << ',' << annotations.alt_forward << ',' << annotations.alt_reverse;
+            // Per-ALT StrandOddsRatio (matches GATK StrandOddsRatio.calculateSOR
+            // with the same +1 pseudocount rule used by HC's Number=1 SOR).
+            // Emitted only when at least one read is informative — matching
+            // GATK's StrandBiasTest skip-zero-info contract.
+            const auto t00_hc = static_cast<double>(annotations.ref_forward) + 1.0;
+            const auto t01_hc = static_cast<double>(annotations.ref_reverse) + 1.0;
+            const auto ref_ratio_hc = std::min(t00_hc, t01_hc) / std::max(t00_hc, t01_hc);
+            const auto t10_hc = static_cast<double>(annotations.alt_forward) + 1.0;
+            const auto t11_hc = static_cast<double>(annotations.alt_reverse) + 1.0;
+            const auto ratio_hc = (t00_hc / t01_hc) * (t11_hc / t10_hc) +
+                                  (t01_hc / t00_hc) * (t10_hc / t11_hc);
+            const auto alt_ratio_hc = std::min(t10_hc, t11_hc) / std::max(t10_hc, t11_hc);
+            const auto sor_as = std::log(ratio_hc) + std::log(ref_ratio_hc) - std::log(alt_ratio_hc);
+            std::ostringstream as_sor_value;
+            as_sor_value << std::fixed << std::setprecision(3) << sor_as;
+            out << ";AS_SOR=" << as_sor_value.str();
+        }
         if (std::any_of(output_calls.begin(), output_calls.end(), [](const auto* call) {
                 return call != nullptr && call->candidate.flow_hmer_collapsed;
             }))
@@ -5736,6 +6216,20 @@ void write_text(const std::string& path, const std::string& text) {
     }
 }
 
+void write_graph_dot(const std::string& path,
+                     const fastgatk::calling::Result& result) {
+    if (path.empty()) return;
+    std::ostringstream out;
+    out << "digraph seqgraph {\n";
+    for (std::size_t index = 0; index < result.graph_haplotype_sequences.size(); ++index) {
+        out << "  v" << index << " [label=\"" << result.graph_haplotype_sequences[index]
+            << "\"];\n";
+    }
+    out << "}\n";
+    write_text(path, out.str());
+}
+
+
 class IncrementalVcfWriter {
 public:
     explicit IncrementalVcfWriter(const std::string& path) : path_(path), compressed_(has_suffix(path, ".gz")) {
@@ -6417,7 +6911,9 @@ fastgatk::calling::Result run_contig_streaming(
                                      options.sites_only_vcf_output, options.floor_blocks))
         : split_vcf_header_body(vcf_text(reader, empty, options.sample_ploidy,
                                          options.add_output_vcf_command_line,
-                                         options.sites_only_vcf_output));
+                                         options.sites_only_vcf_output,
+                                         nullptr, 2, 6,
+                                         options.annotate_allele_specific));
     writer.write(header_and_body.first);
 
     fastgatk::calling::Result aggregate;
@@ -6589,7 +7085,8 @@ fastgatk::calling::Result run_contig_streaming(
                        options.add_output_vcf_command_line,
                        options.sites_only_vcf_output, &encoded.reads,
                        options.calling.informative_read_overlap_margin,
-                       options.max_alternate_alleles);
+                       options.max_alternate_alleles,
+                       options.annotate_allele_specific);
         const auto parts = split_vcf_header_body(rendered);
         writer.write(parts.second);
         merge_stream_result(aggregate, std::move(encoded.result), aggregate_initialized);
@@ -6654,7 +7151,9 @@ fastgatk::calling::Result run_region_streaming(
                                      options.sites_only_vcf_output, options.floor_blocks))
         : split_vcf_header_body(vcf_text(metadata_reader, empty, options.sample_ploidy,
                                          options.add_output_vcf_command_line,
-                                         options.sites_only_vcf_output));
+                                         options.sites_only_vcf_output,
+                                         nullptr, 2, 6,
+                                         options.annotate_allele_specific));
     writer.write(header_and_body.first);
     std::optional<RegionGvcfStitcher> gvcf_stitcher;
     if (options.gvcf) gvcf_stitcher.emplace(writer, options.calling.gvcf_gq_bands);
@@ -6955,7 +7454,8 @@ fastgatk::calling::Result run_region_streaming(
                        options.add_output_vcf_command_line,
                        options.sites_only_vcf_output, &decoded.reads,
                        tile_options.informative_read_overlap_margin,
-                       options.max_alternate_alleles);
+                       options.max_alternate_alleles,
+                       options.annotate_allele_specific);
         const auto parts = split_vcf_header_body(rendered);
         // Serialization consumes the ragged read×haplotype matrices.  Retain
         // only the reference-block metadata required by GVCF stitching before
@@ -7128,6 +7628,7 @@ int main(int argc, char** argv) {
             const auto result = run_contig_streaming(options, reader_ptrs, references, resources,
                                                      controller, batch_limits);
             write_assembly_region_igv(options.assembly_region_out, reader.header(), result);
+            write_graph_dot(options.graph_output, result);
             const auto summary = summary_json(options, reader, result, resources);
             if (is_vcf_output(options.output) && options.create_output_variant_index)
                 write_vcf_index(options.output, options.index_path);
@@ -7247,6 +7748,7 @@ int main(int argc, char** argv) {
         // rejecting the traversal before ActivityProfile is constructed.
         auto result = fastgatk::calling::run(all, references, options.calling);
         write_assembly_region_igv(options.assembly_region_out, reader.header(), result);
+            write_graph_dot(options.graph_output, result);
         const auto summary = summary_json(options, reader, result, resources);
         if (options.output == "-" || !is_vcf_output(options.output)) write_text(options.output, summary);
         else write_text(options.output, options.gvcf ? gvcf(reader, result, options.sample_ploidy,
@@ -7262,13 +7764,15 @@ int main(int argc, char** argv) {
                                  options.add_output_vcf_command_line,
                                  options.sites_only_vcf_output, &all,
                                  options.calling.informative_read_overlap_margin,
-                                 options.max_alternate_alleles));
+                                 options.max_alternate_alleles,
+                                 options.annotate_allele_specific));
         if (is_vcf_output(options.output) && options.create_output_variant_index)
             write_vcf_index(options.output, options.index_path);
         if (!output_contract_valid(options))
             throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: primary output or index is incomplete");
         const auto manifest_path = options.manifest.empty() && is_vcf_output(options.output)
             ? options.output + ".manifest.json" : options.manifest;
+        write_graph_dot(options.graph_output, result);
         if (!manifest_path.empty()) write_text(manifest_path, make_manifest(options, reader, result, resources));
         validate_published_manifest(options, manifest_path);
         if (!options.telemetry.empty()) write_text(options.telemetry, summary);

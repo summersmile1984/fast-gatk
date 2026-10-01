@@ -4,7 +4,7 @@
   "method": "weighted-gates-v1",
   "score_is_expert_estimate": true,
   "tool_audit_schema_version": 1,
-  "tool_audit_expected_entries": 48,
+  "tool_audit_expected_entries": 50,
   "gate_weights": {
     "api_cli": 0.2,
     "oracle": 0.3,
@@ -113,11 +113,11 @@
     }
   },
   "registry_snapshot": {
-    "entries": 48,
+    "entries": 50,
     "prototype": 0,
-    "contract_compatible": 47,
+    "contract_compatible": 49,
     "adapter": 1,
-    "contract_compatible_fraction": 0.9791666666666666
+    "contract_compatible_fraction": 0.98
   },
   "global_score": 0.75725,
   "global_percent_rounded": 76,

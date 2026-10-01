@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "tool": "FilterIntervals",
+  "native_binary": "fastgatk-filter-intervals",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 14.057,
+  "scripts": [
+    {
+      "name": "verify_filter_intervals.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.057,
+      "wall_clock_seconds": 14.057,
+      "peak_rss_bytes": 361345024,
+      "peak_vm_hwm_bytes": 361345024,
+      "cpu_time_seconds": 1058.596,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 13,
+      "native": {
+        "peak_rss_bytes": 18436096,
+        "peak_vm_hwm_bytes": 18436096,
+        "wall_clock_seconds_sum": 0.057,
+        "process_count": 10,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-n3asnwdg/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-n3asnwdg/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-n3asnwdg/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-n3asnwdg/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-n3asnwdg/left.interval_list -L /tmp/fastgatk-filter-intervals-n3asnwdg/right.i",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-n3asnwdg/multi.interval_list -L /tmp/fastgatk-filter-intervals-n3asnwdg/multi-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-n3asnwdg/count-targets.interval_list -I /tmp/fastgatk-filter-intervals-n3asnwd",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-read-counts -I /tmp/fastgatk-filter-intervals-n3asnwdg/hdf5-reads.sam -L /tmp/fastgatk-filter-intervals-n3asnwdg/hdf5-tar"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 361345024,
+        "peak_vm_hwm_bytes": 361345024,
+        "wall_clock_seconds_sum": 9.548,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FilterIntervals -L ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FilterIntervals -L "
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 358060032,
+        "peak_vm_hwm_bytes": 358060032,
+        "wall_clock_seconds_sum": 4.422,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_filter_intervals.py"
+        ]
+      },
+      "stdout_tail": "{\"count_input_intervals\": 6, \"count_java_oracle\": true, \"count_output_intervals\": 5, \"dictionary_order_union\": true, \"hdf5_output_intervals\": 2, \"input_intervals\": 5, \"java_oracle\": true, \"merge_validation\": true, \"output_intervals\": 2, \"padding_rejection\": true, \"set_rule_validation\": true, \"short_aliases\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

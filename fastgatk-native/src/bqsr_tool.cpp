@@ -1,3 +1,4 @@
+#include "fastgatk/io/bam_htsjdk.hpp"
 #include "fastgatk/io/hts_reader.hpp"
 #include "fastgatk/kernels/bqsr.hpp"
 #include "fastgatk/runtime/pipeline.hpp"
@@ -542,6 +543,127 @@ struct KnownSiteInterval {
         return end < other.end;
     }
 };
+
+
+// GATK's calculateKnownSites maps every known-site reference interval onto
+// READ offsets through ReadUtils.getReadIndexForReferenceCoordinate and
+// fills the covered read range with a skip mark.  The quirks are observable
+// and preserved here for byte parity:
+//   * soft-clipped bases consume reference coordinates in the walk;
+//   * a site boundary inside a deletion maps to the first read index after
+//     the deletion, and the start side then steps one base back;
+//   * a boundary that fails to map falls back to the read start/end.
+std::vector<std::uint8_t> known_site_read_mask(
+    const fastgatk::io::ReadBatch& batch, std::size_t record,
+    const std::vector<KnownSiteInterval>& sites) {
+    // GATK transforms the read first (hardClipSoftClippedBases), so the
+    // mapping walk spans only the aligned reference and the mask is indexed
+    // over the aligned read span.  The quirks of
+    // ReadUtils.getReadIndexForReferenceCoordinate + calculateKnownSites are
+    // preserved for byte parity:
+    //   * a site boundary inside a deletion maps to the first read index
+    //     after the deletion, and the start side then steps one base back;
+    //   * a boundary that fails to map falls back to the read start/end;
+    //   * fills are clamped to [0, readLength) with an inclusive end.
+    std::size_t left_clip = 0, right_clip = 0;
+    if (record >= batch.records() || batch.cigar_offsets.size() != batch.records() + 1)
+        return {};
+    {
+        bool seen_alignment = false;
+        for (std::size_t index = batch.cigar_offsets[record];
+             index < batch.cigar_offsets[record + 1]; ++index) {
+            const auto operation = fastgatk::io::CigarOp::unpack(batch.cigar_ops[index]);
+            if (!operation.valid()) break;
+            if (!seen_alignment && operation.code == fastgatk::io::CigarOpCode::SoftClip)
+                left_clip += operation.length;
+            else if (operation.consumes_read() || operation.consumes_reference())
+                seen_alignment = true;
+        }
+        seen_alignment = false;
+        for (std::size_t index = batch.cigar_offsets[record + 1];
+             index > batch.cigar_offsets[record]; ) {
+            --index;
+            const auto operation = fastgatk::io::CigarOp::unpack(batch.cigar_ops[index]);
+            if (!operation.valid()) break;
+            if (!seen_alignment && operation.code == fastgatk::io::CigarOpCode::SoftClip)
+                right_clip += operation.length;
+            else if (operation.consumes_read() || operation.consumes_reference())
+                seen_alignment = true;
+        }
+    }
+    const std::size_t length = batch.offsets[record + 1] - batch.offsets[record];
+    std::vector<std::uint8_t> mask;
+    if (length <= left_clip + right_clip) return mask;
+    mask.assign(length - left_clip - right_clip, 0);
+    if (record >= batch.positions.size() || batch.positions[record] < 0 ||
+        batch.tids[record] < 0) return mask;
+
+    // Effective (post-hard-clip) cigar: leading/trailing soft clips dropped,
+    // and a soft clip after the first aligned element truncates the read
+    // there, matching ReadClipper::hardClipSoftClippedBases.
+    std::vector<fastgatk::io::CigarOp> operations;
+    bool seen_alignment = false;
+    for (std::size_t index = batch.cigar_offsets[record];
+         index < batch.cigar_offsets[record + 1]; ++index) {
+        const auto operation = fastgatk::io::CigarOp::unpack(batch.cigar_ops[index]);
+        if (!operation.valid()) break;
+        if (operation.code == fastgatk::io::CigarOpCode::SoftClip) {
+            if (!seen_alignment) continue;
+            break;
+        }
+        if (operation.consumes_read() || operation.consumes_reference())
+            seen_alignment = true;
+        operations.push_back(operation);
+    }
+    const std::int64_t soft_start = batch.positions[record];
+    std::int64_t reference_total = 0;
+    for (const auto& operation : operations)
+        if (operation.consumes_reference()) reference_total += operation.length;
+    const std::int64_t soft_end = soft_start + reference_total - 1;
+
+    const auto map_reference = [&](std::int64_t reference0) -> std::pair<std::int64_t, int> {
+        if (reference0 < soft_start) return {-1, -1};
+        std::int64_t first_read = 0, first_reference = soft_start;
+        std::int64_t last_read = 0, last_reference = soft_start;
+        for (const auto& operation : operations) {
+            first_read = last_read;
+            first_reference = last_reference;
+            if (operation.consumes_read()) last_read += operation.length;
+            if (operation.consumes_reference()) last_reference += operation.length;
+            if (first_reference <= reference0 && reference0 < last_reference) {
+                const auto read_index = first_read +
+                    (operation.consumes_read() ? reference0 - first_reference : 0);
+                return {read_index, static_cast<int>(operation.code)};
+            }
+        }
+        return {-1, -1};
+    };
+
+    const auto tid = batch.tids[record];
+    auto iterator = std::lower_bound(sites.begin(), sites.end(), KnownSiteInterval{
+        tid, std::numeric_limits<std::int32_t>::min(), 0},
+        [](const KnownSiteInterval& left, const KnownSiteInterval& right) {
+            return std::tie(left.tid, left.start) < std::tie(right.tid, right.start);
+        });
+    const std::int64_t read_length = static_cast<std::int64_t>(mask.size());
+    for (; iterator != sites.end() && iterator->tid == tid &&
+           iterator->start <= soft_end; ++iterator) {
+        if (iterator->end < soft_start) continue;
+        const auto start_mapping = map_reference(iterator->start);
+        auto start_index = start_mapping.first;
+        if (start_mapping.second ==
+            static_cast<int>(fastgatk::io::CigarOpCode::Deletion)) --start_index;
+        const auto end_mapping = map_reference(iterator->end);
+        std::int64_t start = start_mapping.first < 0 ? 0 : start_index;
+        std::int64_t end = end_mapping.first < 0 ? read_length : end_mapping.first;
+        if (start > read_length) start = end = read_length;
+        const auto from = std::max<std::int64_t>(0, start);
+        const auto to = std::min<std::int64_t>(read_length, end + 1);
+        for (std::int64_t index = from; index < to; ++index)
+            mask[static_cast<std::size_t>(index)] = 1;
+    }
+    return mask;
+}
 
 std::string known_sites_signature(const Options& options) {
     std::ostringstream value;
@@ -1844,6 +1966,31 @@ std::array<int, 94> construct_dynamic_quantized_mapping(
     return mapping;
 }
 
+// QualityUtils.qualToErrorProb's analogue: the solver probes every quality
+// bin per row, so the error probabilities are tabulated once instead of
+// recomputed through powl for each of the ~700k report rows.
+const std::array<long double, 61> error_probability_table = [] {
+    std::array<long double, 61> table{};
+    for (int quality = 0; quality <= 60; ++quality)
+        table[quality] = std::pow(10.0L, -static_cast<long double>(quality) / 10.0L);
+    return table;
+}();
+
+// The per-quality logarithms of the table above; identical values to
+// std::log/std::log1pl applied to the table entries, computed once.
+const std::array<long double, 61> log_error_probability_table = [] {
+    std::array<long double, 61> table{};
+    for (int quality = 0; quality <= 60; ++quality)
+        table[quality] = std::log(error_probability_table[quality]);
+    return table;
+}();
+const std::array<long double, 61> log_complement_probability_table = [] {
+    std::array<long double, 61> table{};
+    for (int quality = 0; quality <= 60; ++quality)
+        table[quality] = std::log1pl(-error_probability_table[quality]);
+    return table;
+}();
+
 int bayesian_empirical_quality(const QualityBin& bin, double prior_quality) {
     // RecalDatum uses one pseudo-error and two pseudo-observations, then a
     // Gaussian prior N(prior, 0.5) and a binomial likelihood.  The search is
@@ -1859,6 +2006,12 @@ int bayesian_empirical_quality(const QualityBin& bin, double prior_quality) {
         observations = static_cast<long double>(std::numeric_limits<std::int32_t>::max() - 1);
     }
     errors = std::clamp(errors, 0.0L, observations);
+    // The log-binomial coefficient does not depend on the quality bin; the
+    // per-quality terms come from the precomputed log tables.  The arithmetic
+    // is term-for-term identical to the direct lgammal/log evaluation.
+    const auto log_binomial_coefficient = std::lgammal(observations + 1.0L)
+        - std::lgammal(errors + 1.0L)
+        - std::lgammal(observations - errors + 1.0L);
     int best_quality = 0;
     long double best_posterior = -std::numeric_limits<long double>::max();
     for (int quality = 0; quality <= 60; ++quality) {
@@ -1871,7 +2024,7 @@ int bayesian_empirical_quality(const QualityBin& bin, double prior_quality) {
             std::abs(static_cast<int>(static_cast<long double>(quality) - prior_quality)), 40);
         const auto log_prior = -0.5L * (static_cast<long double>(difference) / 0.5L) *
                                (static_cast<long double>(difference) / 0.5L);
-        const auto probability = std::pow(10.0L, -static_cast<long double>(quality) / 10.0L);
+        const auto probability = error_probability_table[quality];
         long double log_likelihood = 0.0L;
         if (probability <= 0.0L || probability >= 1.0L) {
             if (probability >= 1.0L && errors < observations) log_likelihood =
@@ -1879,11 +2032,9 @@ int bayesian_empirical_quality(const QualityBin& bin, double prior_quality) {
             else if (probability <= 0.0L && errors > 0.0L) log_likelihood =
                 -std::numeric_limits<long double>::max();
         } else {
-            log_likelihood = std::lgammal(observations + 1.0L)
-                - std::lgammal(errors + 1.0L)
-                - std::lgammal(observations - errors + 1.0L)
-                + errors * std::log(probability)
-                + (observations - errors) * std::log1pl(-probability);
+            log_likelihood = log_binomial_coefficient
+                + errors * log_error_probability_table[quality]
+                + (observations - errors) * log_complement_probability_table[quality];
         }
         const auto posterior = log_prior + log_likelihood;
         if (posterior > best_posterior) {
@@ -2112,6 +2263,24 @@ void rewrite_gatk_report_fixed_width(const std::string& path) {
             data.push_back(std::move(fields));
         }
         if (data.size() != rows) continue;
+        // GATKReportTable writes SORT_BY_COLUMN tables: a stable sort with a
+        // lexicographic comparator over all columns, comparing values by their
+        // STORAGE CLASS (numeric columns numerically, everything else - the
+        // CovariateValue column included - as strings).
+        std::stable_sort(data.begin(), data.end(),
+            [&](const std::vector<std::string>& left, const std::vector<std::string>& right) {
+                for (std::size_t column = 0; column < columns; ++column) {
+                    if (report_numeric_column(table, column)) {
+                        const double a = std::strtod(left[column].c_str(), nullptr);
+                        const double b = std::strtod(right[column].c_str(), nullptr);
+                        if (a < b) return true;
+                        if (b < a) return false;
+                    } else if (left[column] != right[column]) {
+                        return left[column] < right[column];
+                    }
+                }
+                return false;
+            });
         output << definition << '\n' << lines[index + 1] << '\n';
         for (std::size_t column = 0; column < columns; ++column) {
             if (column != 0) output << "  ";
@@ -2297,7 +2466,7 @@ void write_gatk_report(const std::string& path,
                << static_cast<double>(bin.mismatches) << '\n';
     }
     output << "\n#:GATKTable:6:" << table1_rows
-           << ":%s:%s:%s:%.4f:%d:%.2f:;\n"
+           << ":%s:%d:%s:%.4f:%d:%.2f:;\n"
            << "#:GATKTable:RecalTable1:\n"
            << "ReadGroup\tQualityScore\tEventType\tEmpiricalQuality\tObservations\tErrors\n";
     for (const auto& [read_group, group] : groups) {
@@ -2321,7 +2490,7 @@ void write_gatk_report(const std::string& path,
                << static_cast<double>(bin.mismatches) << '\n';
     }
     output << "\n#:GATKTable:8:" << table2_rows
-           << ":%s:%s:%s:%s:%s:%.4f:%d:%.2f:;\n"
+           << ":%s:%d:%s:%s:%s:%.4f:%d:%.2f:;\n"
            << "#:GATKTable:RecalTable2:\n"
            << "ReadGroup\tQualityScore\tCovariateValue\tCovariateName\tEventType\tEmpiricalQuality\tObservations\tErrors\n";
     for (const auto& [key, bin] : context_table) {
@@ -2875,6 +3044,11 @@ int covariate_delta(const QualityBin& bin, int quality) {
             if (!bqsr_default_read_filter(batch, record, header_summary, options)) continue;
             const auto begin = batch.offsets[record];
             const auto end = batch.offsets[record + 1];
+            // GATK's BaseRecalibrationEngine transforms each read with
+            // ReadClipper::hardClipSoftClippedBases first, so only the aligned
+            // span is counted and the cycle covariate runs over the shortened
+            // read.  skip[] then excludes non-regular bases, qualities below
+            // PRESERVE_QSCORES_LESS_THAN and known sites.
             const auto [clip_left, clip_end] = bqsr_soft_clip_bounds(batch, record);
             if (clip_end <= clip_left) continue;
             ++result.records;
@@ -2887,6 +3061,8 @@ int covariate_delta(const QualityBin& bin, int quality) {
             const auto indel_masks = options.compute_indel_bqsr_tables
                 ? indel_masks_at(batch, record)
                 : IndelMasks{};
+            const std::size_t full_length = end - begin;
+            const auto known_mask = known_site_read_mask(batch, record, known_sites);
             for (std::size_t offset = begin + clip_left; offset < begin + clip_end; ++offset) {
                 const auto quality = std::min<std::size_t>(batch.qualities[offset], 93);
                 if (quality < 6 || encode_base(batch.bases[offset]) > 3) continue;
@@ -2900,14 +3076,15 @@ int covariate_delta(const QualityBin& bin, int quality) {
                     static_cast<std::size_t>(batch.tids[record]) < reference.size() &&
                     static_cast<std::size_t>(projection.reference_position) <
                         reference[static_cast<std::size_t>(batch.tids[record])].size();
-                const bool known = projected && known_site_contains(
-                    known_sites, batch.tids[record], projection.reference_position);
+                const auto clipped_offset = offset - begin - clip_left;
+                const auto full_read_offset = offset - begin;
+                const bool known = clipped_offset < known_mask.size() &&
+                    known_mask[clipped_offset] != 0;
                 const auto read_group = read_group_identifier(
                     read_group_at(batch, record), platform_units);
-                const auto clipped_offset = offset - begin - clip_left;
-                const auto cycle = checked_cycle(flags, clipped_offset, clip_end - clip_left,
+                const auto cycle = checked_cycle(flags, clipped_offset,
+                                                 clip_end - clip_left,
                                                  options.maximum_cycle_value);
-                const auto full_read_offset = offset - begin;
                 const auto add_event = [&](char event, int event_quality,
                                            std::size_t context_size, bool error) {
                     std::size_t indel_offset = 0;
@@ -2947,12 +3124,11 @@ int covariate_delta(const QualityBin& bin, int quality) {
                 // read bases. They are therefore valid substitution
                 // observations (unless masked by a known site), even though
                 // no reference base is consumed by the insertion.
-                const bool insertion_observation = projected &&
-                    projection.operation == fastgatk::io::CigarOpCode::Insertion;
-                if (!known && (insertion_observation || has_reference) &&
-                    (!has_reference || encode_base(static_cast<std::uint8_t>(
-                        reference[static_cast<std::size_t>(batch.tids[record])]
-                        [static_cast<std::size_t>(projection.reference_position)])) <= 3)) {
+                if (!known) {
+                    // GATK compares base indexes outright - a non-ACGT
+                    // reference base (N is the common case in assembly gaps)
+                    // is still an observation and mismatches every regular
+                    // read base.
                     const bool mismatch = has_reference &&
                         encode_base(batch.bases[offset]) != encode_base(
                             static_cast<std::uint8_t>(reference[static_cast<std::size_t>(batch.tids[record])]
@@ -3200,7 +3376,14 @@ int covariate_delta(const QualityBin& bin, int quality) {
         bam_hdr_destroy(header); hts_close(input);
         throw std::runtime_error("BAD_INPUT: cannot configure output reference");
     }
-    if (sam_hdr_write(output, header) < 0) {
+    // htsjdk SAMTextHeaderCodec write semantics: @HD VN 1.6 and DT/PT
+    // timestamps re-emitted in the process time zone; sort order preserved.
+    bam_hdr_t* output_header = fastgatk::io::htsjdk_header(header, nullptr);
+    if (output_header == nullptr)
+        throw std::runtime_error("INTERNAL_ERROR: cannot normalize ApplyBQSR header");
+    const int header_status = sam_hdr_write(output, output_header);
+    sam_hdr_destroy(output_header);
+    if (header_status < 0) {
         hts_close(output); if (prefix_header) bam_hdr_destroy(prefix_header);
         if (prefix_input) hts_close(prefix_input);
         bam_hdr_destroy(header); hts_close(input);
@@ -3386,6 +3569,8 @@ int covariate_delta(const QualityBin& bin, int quality) {
     };
     auto sink = [&](ApplyEncodedBatch batch) {
         for (auto& owned : batch.records) {
+            // ApplyBQSR rewrites only the core qualities; attributes are
+            // untouched and htsjdk preserves their binary encoding.
             if (owned.value == nullptr || sam_write1(output, header, owned.value) < 0)
                 throw std::runtime_error("cannot write ApplyBQSR output record");
             ++records;

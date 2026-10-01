@@ -541,12 +541,15 @@ KOKKOS_INLINE_FUNCTION void variational_biallelic_evidence(
             const double denominator = 1.0 + Kokkos::exp(
                 (ref_log > alt_log ? alt_log : ref_log) - high);
             if (!(denominator > 0.0)) continue;
-            const double log_sum = high +
+            const auto log_sum = high +
                 (denominator != 1.0 ? Kokkos::log(denominator) : 0.0);
-            const double alternate_responsibility = Kokkos::exp(
-                alt_log - log_sum);
-            alternate_count += alternate_responsibility;
-            reference_count += 1.0 - alternate_responsibility;
+            // NaturalLogUtils.posteriors() exponentiates *every* allele
+            // against the shared logSumExp value.  Deriving the REF
+            // responsibility as 1 - ALT is algebraically equal but rounds
+            // differently on every fragment, and the 0.001 convergence gate
+            // amplifies the drift into visible FORMAT/AF digits.
+            reference_count += Kokkos::exp(ref_log - log_sum);
+            alternate_count += Kokkos::exp(alt_log - log_sum);
         }
         const double next_reference_alpha = reference_pseudocount + reference_count;
         const double next_alternate_alpha = alternate_pseudocount + alternate_count;

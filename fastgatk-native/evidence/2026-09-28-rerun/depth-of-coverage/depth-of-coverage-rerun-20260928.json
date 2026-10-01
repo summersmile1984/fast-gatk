@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "tool": "DepthOfCoverage",
+  "native_binary": "fastgatk-depth-of-coverage",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 87.494,
+  "scripts": [
+    {
+      "name": "verify_depth_of_coverage.py",
+      "exit_code": 0,
+      "elapsed_seconds": 58.446,
+      "wall_clock_seconds": 58.446,
+      "peak_rss_bytes": 389042176,
+      "peak_vm_hwm_bytes": 389042176,
+      "cpu_time_seconds": 1008.348,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 21,
+      "native": {
+        "peak_rss_bytes": 7335936,
+        "peak_vm_hwm_bytes": 7335936,
+        "wall_clock_seconds_sum": 0.079,
+        "process_count": 12,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /hom",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /tmp/fastgatk-depth-of-coverage-dyo79s60/n-reference.fasta -I /tmp/fastgatk-depth-of-coverage-dyo79s60/n-ref",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /tmp/fastgatk-depth-of-coverage-dyo79s60/n-reference.fasta -I /tmp/fastgatk-depth-of-coverage-dyo79s60/n-ref",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /tmp/fastgatk-depth-of-coverage-dyo79s60/n-reference.fasta -I /tmp/fastgatk-depth-of-coverage-dyo79s60/n-ref",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /tmp/fastgatk-depth-of-coverage-dyo79s60/n-reference.fasta -I /tmp/fastgatk-depth-of-coverage-dyo79s60/n-ref",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /tmp/fastgatk-depth-of-coverage-dyo79s60/n-reference.fasta -I /tmp/fastgatk-depth-of-coverage-dyo79s60/n-ref",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /tmp/fastgatk-depth-of-coverage-dyo79s60/n-reference.fasta -I /tmp/fastgatk-depth-of-coverage-dyo79s60/n-ref",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /tmp/fastgatk-depth-of-coverage-dyo79s60/n-reference.fasta -I /tmp/fastgatk-depth-of-coverage-dyo79s60/n-ref"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 389042176,
+        "peak_vm_hwm_bytes": 389042176,
+        "wall_clock_seconds_sum": 58.321,
+        "process_count": 9,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /tmp/fas"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "_peak_decoded_bytes\": 1477, \"pipeline_peak_encoded_bytes\": 192, \"reads_filtered\": 0, \"reads_seen\": 5, \"reads_used\": 5, \"requested_interval_files\": 0, \"requested_interval_records\": 0, \"resources\": {\"backend\": \"HTSlib 1.22.1\"}, \"targets\": 1, \"wall_seconds\": 0.005121623}, \"tool\": \"DepthOfCoverage\"}, \"records\": 6, \"reference_n_oracle\": true, \"sidecars\": 6, \"status\": \"pass\", \"tool\": \"DepthOfCoverage\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_depth_of_coverage_ignore_deletion_sites_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 20.571,
+      "wall_clock_seconds": 20.571,
+      "peak_rss_bytes": 418369536,
+      "peak_vm_hwm_bytes": 418369536,
+      "cpu_time_seconds": 977.385,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 418369536,
+        "peak_vm_hwm_bytes": 418369536,
+        "wall_clock_seconds_sum": 20.538,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R "
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "k_version\": \"4.6.2.0\", \"ignore_deletion_sites\": {\"deletion_rows\": [\"chrD:5,0,0.00,0\", \"chrD:6,0,0.00,0\"], \"effective_include_deletions\": false, \"java_native_locus_table_exact\": true}, \"include_deletions_without_ignore\": {\"deletion_rows\": [\"chrD:5,1,1.00,1\", \"chrD:6,1,1.00,1\"], \"effective_include_deletions\": true, \"java_native_locus_table_exact\": true}, \"status\": \"pass\", \"tool\": \"DepthOfCoverage\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_depth_of_coverage_multisample.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.046,
+      "wall_clock_seconds": 0.046,
+      "peak_rss_bytes": 6844416,
+      "peak_vm_hwm_bytes": 6844416,
+      "cpu_time_seconds": 959.124,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 6844416,
+        "peak_vm_hwm_bytes": 6844416,
+        "wall_clock_seconds_sum": 0.018,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /tmp",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /tmp"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"partition\": \"@RG-to-SM\", \"samples\": [\"S1\", \"S2\"], \"selected_sample\": \"S2\", \"status\": \"pass\", \"tool\": \"DepthOfCoverage\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_depth_of_coverage_read_filter_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 8.431,
+      "wall_clock_seconds": 8.431,
+      "peak_rss_bytes": 383721472,
+      "peak_vm_hwm_bytes": 383721472,
+      "cpu_time_seconds": 966.358,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.015,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 383721472,
+        "peak_vm_hwm_bytes": 383721472,
+        "wall_clock_seconds_sum": 8.382,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DepthOfCoverage -R "
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"cigar_reference_skip_read_rejected\": true, \"gatk_version\": \"4.6.2.0\", \"native_java_locus_table_exact\": true, \"qcfail_retained\": true, \"reads_filtered\": 1, \"reads_seen\": 2, \"reads_used\": 1, \"status\": \"pass\", \"tool\": \"DepthOfCoverage\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

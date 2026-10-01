@@ -1,0 +1,32 @@
+16:30:51.224 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_compression.so
+16:30:54.276 INFO  GenotypeGVCFs - ------------------------------------------------------------
+16:30:54.278 INFO  GenotypeGVCFs - The Genome Analysis Toolkit (GATK) v4.6.2.0
+16:30:54.278 INFO  GenotypeGVCFs - For support and documentation go to https://software.broadinstitute.org/gatk/
+16:30:54.278 INFO  GenotypeGVCFs - Executing as turing-agents@turing-agents-MotherBoard-Series on Linux v7.0.0-31-generic amd64
+16:30:54.278 INFO  GenotypeGVCFs - Java runtime: OpenJDK 64-Bit Server VM v17.0.20+8
+16:30:54.278 INFO  GenotypeGVCFs - Start Date/Time: 2026年9月18日 CST 下午4:30:51
+16:30:54.278 INFO  GenotypeGVCFs - ------------------------------------------------------------
+16:30:54.279 INFO  GenotypeGVCFs - ------------------------------------------------------------
+16:30:54.279 INFO  GenotypeGVCFs - HTSJDK Version: 4.2.0
+16:30:54.279 INFO  GenotypeGVCFs - Picard Version: 3.4.0
+16:30:54.279 INFO  GenotypeGVCFs - Built for Spark Version: 3.5.0
+16:30:54.280 INFO  GenotypeGVCFs - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+16:30:54.281 INFO  GenotypeGVCFs - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+16:30:54.281 INFO  GenotypeGVCFs - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+16:30:54.281 INFO  GenotypeGVCFs - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+16:30:54.281 INFO  GenotypeGVCFs - Deflater: IntelDeflater
+16:30:54.281 INFO  GenotypeGVCFs - Inflater: IntelInflater
+16:30:54.281 INFO  GenotypeGVCFs - GCS max retries/reopens: 20
+16:30:54.281 INFO  GenotypeGVCFs - Requester pays: disabled
+16:30:54.281 INFO  GenotypeGVCFs - Initializing engine
+16:30:54.371 INFO  FeatureManager - Using codec VCFCodec to read file file:///home/turing-agents/Documents/fast-gatk/public_pipeline/pipeline_v4/gatk/full.g.vcf.gz
+16:30:55.167 INFO  GenotypeGVCFs - Done initializing engine
+16:30:55.195 INFO  ProgressMeter - Starting traversal
+16:30:55.195 INFO  ProgressMeter -        Current Locus  Elapsed Minutes    Variants Processed  Variants/Minute
+16:30:55.233 WARN  ReferenceConfidenceVariantContextMerger - Detected invalid annotations: When trying to merge variant contexts at location 20:10000117 the annotation MLEAC=[1, 0] was not a numerical value and was ignored
+16:30:55.269 WARN  InbreedingCoeff - InbreedingCoeff will not be calculated at position 20:10000117 and possibly subsequent; at least 10 samples must have called genotypes
+16:30:56.191 INFO  ProgressMeter -          20:10996627              0.0                105412        6356502.5
+16:30:56.191 INFO  ProgressMeter - Traversal complete. Processed 105412 total variants in 0.0 minutes.
+16:30:56.193 INFO  GenotypeGVCFs - Shutting down engine
+[2026年9月18日 CST 下午4:30:56] org.broadinstitute.hellbender.tools.walkers.GenotypeGVCFs done. Elapsed time: 0.08 minutes.
+Runtime.totalMemory()=813694976

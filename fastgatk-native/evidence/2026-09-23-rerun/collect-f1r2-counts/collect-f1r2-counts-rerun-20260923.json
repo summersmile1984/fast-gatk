@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "tool": "CollectF1R2Counts",
+  "native_binary": "fastgatk-collect-f1r2-counts",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 12.183,
+  "scripts": [
+    {
+      "name": "verify_collect_f1r2_counts.py",
+      "exit_code": 0,
+      "elapsed_seconds": 12.183,
+      "wall_clock_seconds": 12.183,
+      "peak_rss_bytes": 355217408,
+      "peak_vm_hwm_bytes": 355217408,
+      "cpu_time_seconds": 639.093,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 9,
+      "native": {
+        "peak_rss_bytes": 11550720,
+        "peak_vm_hwm_bytes": 12255232,
+        "wall_clock_seconds_sum": 0.108,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-f1r2-counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /h",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-f1r2-counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta --I /",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-f1r2-counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /t",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-f1r2-counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /h",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-f1r2-counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta --I /"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 355217408,
+        "peak_vm_hwm_bytes": 355217408,
+        "wall_clock_seconds_sum": 11.916,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx2g -jar /home/turing-agents/Document",
+          "java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx2g -jar /home/turing-agents/Document"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 19152896,
+        "peak_vm_hwm_bytes": 19152896,
+        "wall_clock_seconds_sum": 11.958,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk --java-options -Xmx2g CollectF1R2Counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/t",
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk --java-options -Xmx2g CollectF1R2Counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/t"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"records_seen\": 493, \"observations\": 22425, \"loci\": 943, \"accepted_loci\": 683, \"archive_members\": 3, \"gatk_oracle\": {\"status\": \"pass\", \"ref_histogram_labels\": 64, \"alt_histogram_labels\": 384, \"alt_table_rows\": 3, \"exclude_interval_archive_boundary\": true}}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

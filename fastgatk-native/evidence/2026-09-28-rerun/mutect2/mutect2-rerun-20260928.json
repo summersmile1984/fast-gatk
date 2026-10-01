@@ -1,0 +1,1768 @@
+{
+  "schema_version": 1,
+  "tool": "Mutect2",
+  "native_binary": "fastgatk-mutect2",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 40,
+  "scripts_passed": 40,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 1512.051,
+  "scripts": [
+    {
+      "name": "verify_cnv_somatic_e2e_hcc1143_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.334,
+      "wall_clock_seconds": 0.334,
+      "peak_rss_bytes": 46723072,
+      "peak_vm_hwm_bytes": 46723072,
+      "cpu_time_seconds": 3.76,
+      "max_rss_kb_children_rusage": 45352,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 17092608,
+        "peak_vm_hwm_bytes": 17092608,
+        "wall_clock_seconds_sum": 0.027,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-b5-e2e-13c3i2xl/tumor.counts.hdf5 --count-panel-of-normals /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-b5-e2e-13c3i2xl/tumor.denoised.tsv --output-prefix /tmp/fastgatk-b5-e2e-13c3i"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 46723072,
+        "peak_vm_hwm_bytes": 46723072,
+        "wall_clock_seconds_sum": 0.198,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_cnv_somatic_e2e_hcc1143_oracle.py"
+        ]
+      },
+      "stdout_tail": "testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta\",\n  \"tumor_bam\": \"testdata/real/cnv_somatic/HCC1143-t1-chr20-downsampled.deduplicated.bam\",\n  \"panel_of_normals\": \"testdata/real/cnv_somatic/wes-no-gc.pon.hdf5\",\n  \"pon_intervals_extracted\": 100,\n  \"denoised_rows\": 91,\n  \"modeled_segments\": 77,\n  \"called_segments\": 77,\n  \"igv_seg_sidecar_emitted\": true,\n  \"b5_cnv_e2e_recorded\": true\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_fragment_aggregation_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 1.106,
+      "wall_clock_seconds": 1.106,
+      "peak_rss_bytes": 313434112,
+      "peak_vm_hwm_bytes": 313434112,
+      "cpu_time_seconds": 6.962,
+      "max_rss_kb_children_rusage": 299864,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 6316032,
+        "peak_vm_hwm_bytes": 6316032,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fragment-aggregation-gatk-oracle"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 114941952,
+        "peak_vm_hwm_bytes": 114941952,
+        "wall_clock_seconds_sum": 0.284,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -cp /tmp/fastgatk-fragment-oracle-fhbynl0q:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 313434112,
+        "peak_vm_hwm_bytes": 313434112,
+        "wall_clock_seconds_sum": 0.787,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/javac -cp /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar -d /tmp/fastgatk-fr"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"oracle\": \"GATK 4.6.2.0 AlleleLikelihoods.groupEvidence().marginalize()\", \"execution_space\": \"OpenMP\", \"fragment_cells\": 6, \"bit_different\": 0}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2.py",
+      "exit_code": 0,
+      "elapsed_seconds": 29.562,
+      "wall_clock_seconds": 29.562,
+      "peak_rss_bytes": 426672128,
+      "peak_vm_hwm_bytes": 426672128,
+      "cpu_time_seconds": 64.043,
+      "max_rss_kb_children_rusage": 411364,
+      "processes_seen": 35,
+      "native": {
+        "peak_rss_bytes": 36937728,
+        "peak_vm_hwm_bytes": 36937728,
+        "wall_clock_seconds_sum": 19.148,
+        "process_count": 33,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 426672128,
+        "peak_vm_hwm_bytes": 426672128,
+        "wall_clock_seconds_sum": 10.366,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVarian",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"tumor_calls\": 5, \"normal_calls\": 7, \"indexed\": true, \"standard_f1r2_members\": 3, \"learned_orientation_contexts\": 64, \"synthetic_multiallelic_records\": 1, \"softclip_records\": 0, \"softclip_disabled_records\": 0, \"low_bq_records\": 0}\n",
+      "stderr_tail": "x_find_and_load] Could not retrieve index file for '/tmp/fastgatk-mutect2-w_nca3mw/softclip.sam'\n[E::idx_find_and_load] Could not retrieve index file for '/tmp/fastgatk-mutect2-w_nca3mw/low-bq.sam'\n[E::idx_find_and_load] Could not retrieve index file for '/tmp/fastgatk-mutect2-w_nca3mw/low-bq.sam'\n[E::idx_find_and_load] Could not retrieve index file for '/tmp/fastgatk-mutect2-w_nca3mw/low-bq.sam'\n",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_as_annotation_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 97.942,
+      "wall_clock_seconds": 97.942,
+      "peak_rss_bytes": 965160960,
+      "peak_vm_hwm_bytes": 965160960,
+      "cpu_time_seconds": 182.887,
+      "max_rss_kb_children_rusage": 936836,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 749297664,
+        "peak_vm_hwm_bytes": 749297664,
+        "wall_clock_seconds_sum": 72.733,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 --input /home/turing-agents/Documents/fast-gatk/testdata/real/dream_synthetic/chr20/tumor.bam --input /home/turing-agents"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 965160960,
+        "peak_vm_hwm_bytes": 965160960,
+        "wall_clock_seconds_sum": 25.169,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": ", \"diagnostics_truncated\": false, \"fixture\": \"dream_synthetic_chr20_mutect2\", \"note\": \"Native must emit every AS_* key GATK 4.6.2.0 emits on the same record (set-equality, native \\u2287 gatk). Native emitting additional AS_* keys beyond GATK is allowed (GATK gates some on minimum read count / multi-sample denominator).\", \"records_gatk\": 5, \"records_native\": 5, \"status\": \"pass\", \"tier\": \"Tier-1a\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_as_value_byte_equality_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 93.851,
+      "wall_clock_seconds": 93.851,
+      "peak_rss_bytes": 986714112,
+      "peak_vm_hwm_bytes": 986714112,
+      "cpu_time_seconds": 300.615,
+      "max_rss_kb_children_rusage": 958008,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 750813184,
+        "peak_vm_hwm_bytes": 750813184,
+        "wall_clock_seconds_sum": 69.789,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 --input /home/turing-agents/Documents/fast-gatk/testdata/real/dream_synthetic/chr20/tumor.bam --input /home/turing-agents"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 986714112,
+        "peak_vm_hwm_bytes": 986714112,
+        "wall_clock_seconds_sum": 24.032,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "am_synthetic_chr20_mutect2\", \"note\": \"Value-level byte-equal gate.  Compares the value of each AS_* key that both backends emit on the same record.  On dream_synthetic chr20 only AS_SB_TABLE is shared, so this oracle pins that field's value; richer fixtures (hcc1143, NA12878 trio) would extend the comparison to the remaining AS_* keys.\", \"records_compared\": 5, \"status\": \"pass\", \"tier\": \"Tier-1a\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_bp_resolution_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 3.866,
+      "wall_clock_seconds": 3.866,
+      "peak_rss_bytes": 284745728,
+      "peak_vm_hwm_bytes": 284745728,
+      "cpu_time_seconds": 186.478,
+      "max_rss_kb_children_rusage": 936836,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 7946240,
+        "peak_vm_hwm_bytes": 7946240,
+        "wall_clock_seconds_sum": 0.01,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 284745728,
+        "peak_vm_hwm_bytes": 284745728,
+        "wall_clock_seconds_sum": 3.828,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"mode\": \"Mutect2 -ERC BP_RESOLUTION\", \"oracle\": \"GATK-4.6.2.0\", \"records\": 67, \"status\": \"pass\", \"vcf_exact_without_execution_provenance\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_dream_low_bq_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 37.471,
+      "wall_clock_seconds": 37.471,
+      "peak_rss_bytes": 475475968,
+      "peak_vm_hwm_bytes": 475475968,
+      "cpu_time_seconds": 346.051,
+      "max_rss_kb_children_rusage": 958008,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 313376768,
+        "peak_vm_hwm_bytes": 313376768,
+        "wall_clock_seconds_sum": 19.456,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 475475968,
+        "peak_vm_hwm_bytes": 475475968,
+        "wall_clock_seconds_sum": 17.978,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\":\"pass\",\"fixture\":\"dream_low_bq_compound_haplotype\",\"target\":\"20:10004241:G>A\",\"gatk_target\":true,\"native_target\":true,\"called_alleles_match\":true,\"coverage_window_dp_match\":true,\"pruning_window_vcf_row_match\":true,\"pairhmm_haplotype_set_exact\":true,\"target_vcf_row_exact\":true,\"filter_and_format_contract\":true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_dream_synthetic_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 52.414,
+      "wall_clock_seconds": 52.414,
+      "peak_rss_bytes": 1908203520,
+      "peak_vm_hwm_bytes": 1908203520,
+      "cpu_time_seconds": 436.579,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 750731264,
+        "peak_vm_hwm_bytes": 750731264,
+        "wall_clock_seconds_sum": 35.21,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 1908203520,
+        "peak_vm_hwm_bytes": 1908203520,
+        "wall_clock_seconds_sum": 16.956,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "ative_tumor_reads\": 30536,\n  \"native_normal_reads\": null,\n  \"native_tumor_candidate_sites\": 107,\n  \"native_pairhmm_pairs\": 10337,\n  \"native_pairhmm_haplotypes\": 172,\n  \"native_somatic_likelihood_model\": null,\n  \"native_somatic_posterior_model\": \"somatic-germline-artifact-orientation-v1\",\n  \"native_status\": \"prototype\",\n  \"activity_range\": [\n    0,\n    63025520\n  ],\n  \"native_only_positions\": []\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_feature_resource_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 43.497,
+      "wall_clock_seconds": 43.497,
+      "peak_rss_bytes": 549588992,
+      "peak_vm_hwm_bytes": 549588992,
+      "cpu_time_seconds": 466.345,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 14,
+      "native": {
+        "peak_rss_bytes": 16642048,
+        "peak_vm_hwm_bytes": 16642048,
+        "wall_clock_seconds_sum": 0.709,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reference.fa -I /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reads.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reference.fa -I /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reads.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reference.fa -I /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reads.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reference.fa -I /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reads.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reference.fa -I /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reads.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reference.fa -I /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reads.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reference.fa -I /tmp/fastgatk-mutect2-feature-resource-vmwmyv1s/reads."
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 549588992,
+        "peak_vm_hwm_bytes": 549588992,
+        "wall_clock_seconds_sum": 42.745,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"baseline_records\": 1, \"germline_default_records\": 0, \"germline_genotyped_records\": 1, \"pon_default_records\": 0, \"pon_force_active_records\": 1, \"pon_genotyped_records\": 1, \"status\": \"pass\", \"streamed_germline_default_records\": 0, \"streamed_pon_genotyped_records\": 1}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_force_active_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 30.744,
+      "wall_clock_seconds": 30.744,
+      "peak_rss_bytes": 463376384,
+      "peak_vm_hwm_bytes": 463376384,
+      "cpu_time_seconds": 551.539,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 10,
+      "native": {
+        "peak_rss_bytes": 30003200,
+        "peak_vm_hwm_bytes": 30003200,
+        "wall_clock_seconds_sum": 10.983,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 463376384,
+        "peak_vm_hwm_bytes": 463376384,
+        "wall_clock_seconds_sum": 19.724,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"force_active_profile_state_exact\": true, \"full_contig_zero_coverage_profile_exact\": true, \"gatk_profile_rows\": 22, \"gatk_vcf_unchanged_by_force_active\": true, \"native_profile_rows\": 22, \"native_vcf_site_set_stable\": true, \"profile_boundaries_exact\": true, \"status\": \"pass\", \"zero_coverage_profile_boundaries_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 13.75,
+      "wall_clock_seconds": 13.75,
+      "peak_rss_bytes": 461590528,
+      "peak_vm_hwm_bytes": 461590528,
+      "cpu_time_seconds": 483.914,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 29904896,
+        "peak_vm_hwm_bytes": 29904896,
+        "wall_clock_seconds_sum": 0.844,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 461590528,
+        "peak_vm_hwm_bytes": 461590528,
+        "wall_clock_seconds_sum": 12.682,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "tract_exact\": true, \"schema_header_bit_identical\": true, \"shared_af_max_abs_delta\": null, \"shared_af_records\": 0, \"shared_sites\": 6, \"shared_tlod_max_abs_delta\": 0.0, \"shared_tlod_mean_abs_delta\": 0.0, \"shared_tlod_records\": 6, \"site_precision\": 1.0, \"site_recall\": 1.0, \"site_set_exact\": true, \"sites_only_data_records_bit_identical\": true, \"status\": \"pass\", \"vcf_data_records_bit_identical\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_gvcf_eventmap_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.652,
+      "wall_clock_seconds": 5.652,
+      "peak_rss_bytes": 458866688,
+      "peak_vm_hwm_bytes": 458866688,
+      "cpu_time_seconds": 491.151,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 85626880,
+        "peak_vm_hwm_bytes": 85626880,
+        "wall_clock_seconds_sum": 0.797,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 458866688,
+        "peak_vm_hwm_bytes": 458866688,
+        "wall_clock_seconds_sum": 4.827,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\":\"pass\",\"mode\":\"Mutect2 -ERC GVCF\",\"oracle\":\"GATK-4.6.2.0\",\"concrete_eventmap_alleles\":9,\"concrete_data_rows\":\"exact\",\"non_reference_tlod\":\"exact\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_gvcf_matched_normal_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 12.561,
+      "wall_clock_seconds": 12.561,
+      "peak_rss_bytes": 357679104,
+      "peak_vm_hwm_bytes": 357679104,
+      "cpu_time_seconds": 567.435,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 2097152,
+        "peak_vm_hwm_bytes": 2097152,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta -I /home/turing"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 357679104,
+        "peak_vm_hwm_bytes": 357679104,
+        "wall_clock_seconds_sum": 12.529,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"modes\": [\"GVCF\", \"BP_RESOLUTION\"], \"oracle\": \"GATK-4.6.2.0\", \"rejection\": \"exactly_one_sample_reference_confidence\", \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_gvcf_multitumor_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 7.877,
+      "wall_clock_seconds": 7.877,
+      "peak_rss_bytes": 419823616,
+      "peak_vm_hwm_bytes": 419823616,
+      "cpu_time_seconds": 559.941,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 8081408,
+        "peak_vm_hwm_bytes": 8081408,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 419823616,
+        "peak_vm_hwm_bytes": 419823616,
+        "wall_clock_seconds_sum": 7.835,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 15450112,
+        "peak_vm_hwm_bytes": 15450112,
+        "wall_clock_seconds_sum": 0.01,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_mutect2_gvcf_multitumor_gatk_contract.py"
+        ]
+      },
+      "stdout_tail": "{\"modes\": [\"GVCF\", \"BP_RESOLUTION\"], \"oracle\": \"GATK-4.6.2.0\", \"rejection\": \"exactly_one_sample_reference_confidence\", \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_gvcf_reference_blocks_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 24.004,
+      "wall_clock_seconds": 24.004,
+      "peak_rss_bytes": 418873344,
+      "peak_vm_hwm_bytes": 418873344,
+      "cpu_time_seconds": 575.6,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 12500992,
+        "peak_vm_hwm_bytes": 12500992,
+        "wall_clock_seconds_sum": 0.031,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 418873344,
+        "peak_vm_hwm_bytes": 418873344,
+        "wall_clock_seconds_sum": 23.946,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\":\"pass\",\"mode\":\"Mutect2 -ERC GVCF\",\"oracle\":\"GATK-4.6.2.0\",\"windows\":2}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_hcc1143_chr20_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 130.227,
+      "wall_clock_seconds": 130.227,
+      "peak_rss_bytes": 3203940352,
+      "peak_vm_hwm_bytes": 3203940352,
+      "cpu_time_seconds": 983.873,
+      "max_rss_kb_children_rusage": 3128148,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 3203940352,
+        "peak_vm_hwm_bytes": 3203940352,
+        "wall_clock_seconds_sum": 110.6,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta -I /home/turing"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 1138225152,
+        "peak_vm_hwm_bytes": 1138225152,
+        "wall_clock_seconds_sum": 19.595,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "vcf_schema_header_exact_excluding_execution_provenance\": true,\n  \"native_tumor_reads\": 176536,\n  \"native_tumor_candidate_sites\": 1215,\n  \"native_pairhmm_pairs\": 46713,\n  \"native_pairhmm_haplotypes\": 1627,\n  \"native_somatic_posterior_model\": \"somatic-germline-artifact-orientation-v1\",\n  \"native_status\": \"prototype\",\n  \"activity_range\": [\n    0,\n    1000000\n  ],\n  \"a1_assembly_gap_recorded\": true\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_hcc1143_reference_boundary_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.223,
+      "wall_clock_seconds": 4.223,
+      "peak_rss_bytes": 415981568,
+      "peak_vm_hwm_bytes": 415981568,
+      "cpu_time_seconds": 579.326,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 12759040,
+        "peak_vm_hwm_bytes": 12759040,
+        "wall_clock_seconds_sum": 0.041,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta -I /home/turing"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 415981568,
+        "peak_vm_hwm_bytes": 415981568,
+        "wall_clock_seconds_sum": 4.155,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\":\"pass\",\"fixture\":\"hcc1143_reference_end\",\"vcf_rows\":0}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_hcc1143_spot_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 10.68,
+      "wall_clock_seconds": 10.68,
+      "peak_rss_bytes": 437846016,
+      "peak_vm_hwm_bytes": 437846016,
+      "cpu_time_seconds": 590.492,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 36061184,
+        "peak_vm_hwm_bytes": 36061184,
+        "wall_clock_seconds_sum": 1.702,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta -I /home/turing",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta -I /home/turing"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 437846016,
+        "peak_vm_hwm_bytes": 437846016,
+        "wall_clock_seconds_sum": 8.939,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"fixture\": \"hcc1143_tumor_normal_real_data\", \"oracles\": [\"singleton\", \"phased_event_cluster\"], \"pairhmm_haplotype_oracle\": \"phased_event_cluster\", \"pairhmm_haplotype_set_exact\": true, \"record_count\": 6, \"sample_order\": [\"HCC1143\", \"HCC1143 BL\"], \"status\": \"pass\", \"vcf_header_exact\": true, \"vcf_row_exact\": true, \"vcf_schema_header_exact_excluding_execution_provenance\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_independent_mates_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 1.159,
+      "wall_clock_seconds": 1.159,
+      "peak_rss_bytes": 25882624,
+      "peak_vm_hwm_bytes": 25882624,
+      "cpu_time_seconds": 592.998,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 25882624,
+        "peak_vm_hwm_bytes": 25882624,
+        "wall_clock_seconds_sum": 1.128,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"default_fragment_groups\": 119, \"independent_read_groups\": 121, \"pairhmm_pairs\": 436, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_issue3845_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 12.777,
+      "wall_clock_seconds": 12.777,
+      "peak_rss_bytes": 444145664,
+      "peak_vm_hwm_bytes": 444145664,
+      "cpu_time_seconds": 608.121,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 19550208,
+        "peak_vm_hwm_bytes": 19550208,
+        "wall_clock_seconds_sum": 0.269,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/Homo_sapiens_assembly38_chrM_only.fasta -I /hom",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/Homo_sapiens_assembly38_chrM_only.fasta -I /hom",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/Homo_sapiens_assembly38_chrM_only.fasta -I /hom"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 444145664,
+        "peak_vm_hwm_bytes": 444145664,
+        "wall_clock_seconds_sum": 12.477,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"downsampled_reads\": 651, \"downsampling\": \"MutectDownsampler MAPQ>50 reservoir, stride, suspicious limit\", \"fixture\": \"Mutect2 issue3845\", \"release\": \"GATK 4.6.2.0\", \"status\": \"pass\", \"vcf_byte_identical\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_itr_artifact_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.222,
+      "wall_clock_seconds": 0.222,
+      "peak_rss_bytes": 12759040,
+      "peak_vm_hwm_bytes": 12759040,
+      "cpu_time_seconds": 608.672,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 12759040,
+        "peak_vm_hwm_bytes": 12759040,
+        "wall_clock_seconds_sum": 0.191,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reference.fa -I /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reads.sam --tu",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reference.fa -I /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reads.sam --tu",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reference.fa -I /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reads.bam --tu",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reference.fa -I /tmp/fastgatk-mutect2-itr-artifact-i91qby0_/reads.bam --tu"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"default_itr_artifact_clipped_reads\": 1, \"gatk_matching_fraction\": 0.9, \"gatk_min_palindrome_size\": 5, \"ignore_itr_artifacts_clipped_reads\": 0, \"status\": \"pass\", \"stream_default_itr_artifact_clipped_reads\": 1}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_kmer_list_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 15.794,
+      "wall_clock_seconds": 15.794,
+      "peak_rss_bytes": 467906560,
+      "peak_vm_hwm_bytes": 467906560,
+      "cpu_time_seconds": 628.065,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 166305792,
+        "peak_vm_hwm_bytes": 168316928,
+        "wall_clock_seconds_sum": 1.952,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 467906560,
+        "peak_vm_hwm_bytes": 467906560,
+        "wall_clock_seconds_sum": 12.89,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 162279424,
+        "peak_vm_hwm_bytes": 168173568,
+        "wall_clock_seconds_sum": 0.921,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"default_kmer_sizes\": [10, 25], \"gatk_default_repeated_records_exact\": true, \"long_kmer\": 35, \"native_default_gatk_records_exact\": true, \"native_long_kmer_gatk_alleles_exact\": true, \"native_repeated_gatk_records_exact\": true, \"normalized_kmer_sizes\": [10, 25], \"region\": \"20:10022000-10023500\", \"release\": \"GATK 4.6.2.0\", \"reordered_explicit_kmer_sizes\": [25, 10], \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_mismapping_rate_boundary.py",
+      "exit_code": 0,
+      "elapsed_seconds": 16.578,
+      "wall_clock_seconds": 16.578,
+      "peak_rss_bytes": 524480512,
+      "peak_vm_hwm_bytes": 524480512,
+      "cpu_time_seconds": 644.724,
+      "max_rss_kb_children_rusage": 1858244,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 30011392,
+        "peak_vm_hwm_bytes": 30011392,
+        "wall_clock_seconds_sum": 0.58,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 431706112,
+        "peak_vm_hwm_bytes": 431706112,
+        "wall_clock_seconds_sum": 13.242,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 524480512,
+        "peak_vm_hwm_bytes": 524480512,
+        "wall_clock_seconds_sum": 2.725,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/jshell -J-Djava.util.prefs.userRoot=/tmp/fastgatk-jshell-prefs-xiija88p --class-path /home/turing-agents/Documents/fast-gatk/third_party/g"
+        ]
+      },
+      "stdout_tail": "{\"gatk_disabled_inf_probe\": \"[0.0, -Infinity, -3.0]\", \"gatk_rejected\": true, \"gatk_version\": \"4.6.2.0\", \"native_rejected\": true, \"negative_cap\": \"gatk_java_and_native_accepted\", \"phred_scaled_global_read_mismapping_rate\": 0, \"semantic\": \"zero-invalid-negative-disables-positive-caps-and-preserves-inf\", \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_mito_interval_halo_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 173.623,
+      "wall_clock_seconds": 173.623,
+      "peak_rss_bytes": 3319472128,
+      "peak_vm_hwm_bytes": 3319472128,
+      "cpu_time_seconds": 1082.217,
+      "max_rss_kb_children_rusage": 3240964,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 3319472128,
+        "peak_vm_hwm_bytes": 3319472128,
+        "wall_clock_seconds_sum": 157.062,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/mitomode/mito_shifted_8000.fasta -I /home/turing-agents/Document"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 963371008,
+        "peak_vm_hwm_bytes": 963371008,
+        "wall_clock_seconds_sum": 16.53,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"fixture\": \"mitochondrial_interval_halo\", \"core\": \"chrM:8860-8890\", \"gatk_reads\": 6506, \"native_reads\": 6506}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_mito_realign_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 170.649,
+      "wall_clock_seconds": 170.649,
+      "peak_rss_bytes": 3319431168,
+      "peak_vm_hwm_bytes": 3319431168,
+      "cpu_time_seconds": 1178.241,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 3319431168,
+        "peak_vm_hwm_bytes": 3319431168,
+        "wall_clock_seconds_sum": 154.75,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/mitomode/mito_shifted_8000.fasta -I /home/turing-agents/Document"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 891904000,
+        "peak_vm_hwm_bytes": 891904000,
+        "wall_clock_seconds_sum": 15.877,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"f2r1\": \"6,184,415\", \"fields_exact\": [\"AD\", \"DP\", \"F1R2\", \"F2R1\", \"FAD\", \"SB\", \"TLOD\"], \"fixture\": \"mito_shifted_8000_high_depth_realign\", \"status\": \"pass\", \"target\": \"chrM:8877\", \"tlod\": \"1.02\", \"tlod_target\": \"chrM:8868\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_mitochondria_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 319.974,
+      "wall_clock_seconds": 319.974,
+      "peak_rss_bytes": 3193589760,
+      "peak_vm_hwm_bytes": 3193589760,
+      "cpu_time_seconds": 1656.602,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 3193589760,
+        "peak_vm_hwm_bytes": 3193589760,
+        "wall_clock_seconds_sum": 309.36,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/mitomode/mito_shifted_8000.fasta -I /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/mitomode/mito_shifted_8000.fasta -I /home/turing-agents/Document"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 719917056,
+        "peak_vm_hwm_bytes": 719917056,
+        "wall_clock_seconds_sum": 10.583,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx512m -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "], \"mismatched_shared_sites\": [[\"chrM\", \"8864\"], [\"chrM\", \"8868\"], [\"chrM\", \"8869\"], [\"chrM\", \"8877\"], [\"chrM\", \"9031\"], [\"chrM\", \"9037\"], [\"chrM\", \"9066\"], [\"chrM\", \"9070\"]], \"missing_sites\": [], \"native_row_count\": 11, \"newly_closed_divergences\": [], \"rows_compared\": \"data rows byte-identical except documented open fields\", \"shared_row_count\": 11, \"status\": \"pass\", \"unexpected_divergences\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_multinormal_rg_namespace_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 6.237,
+      "wall_clock_seconds": 6.237,
+      "peak_rss_bytes": 438431744,
+      "peak_vm_hwm_bytes": 438431744,
+      "cpu_time_seconds": 1183.895,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 167608320,
+        "peak_vm_hwm_bytes": 167759872,
+        "wall_clock_seconds_sum": 2.066,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 438431744,
+        "peak_vm_hwm_bytes": 438431744,
+        "wall_clock_seconds_sum": 4.14,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"empty_normal_genotype_exact\": true, \"fixture\": \"dream_multinormal_colliding_rg\", \"normal_samples\": [\"synthetic.challenge.set1.normal\", \"tumor sample\"], \"rg_namespace_per_input\": true, \"status\": \"pass\", \"streaming_vcf_exact\": true, \"vcf_header_exact\": true, \"vcf_row_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_multitumor_format_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 24.168,
+      "wall_clock_seconds": 24.168,
+      "peak_rss_bytes": 477638656,
+      "peak_vm_hwm_bytes": 477638656,
+      "cpu_time_seconds": 1207.496,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 9,
+      "native": {
+        "peak_rss_bytes": 167178240,
+        "peak_vm_hwm_bytes": 168886272,
+        "wall_clock_seconds_sum": 10.655,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 477638656,
+        "peak_vm_hwm_bytes": 477638656,
+        "wall_clock_seconds_sum": 13.475,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"aggregate_stream_vcf_exact\": true, \"empty_tumor_matrix_exact\": true, \"fixture\": \"dream_multitumor_role_and_format\", \"gatk_per_sample_format_exact\": true, \"gatk_sample_header_exact\": true, \"gatk_vcf_exact\": true, \"matched_normal_multitumor_vcf_exact\": true, \"repeated_normal_multi_input_vcf_exact\": true, \"second_tumor_real_evidence_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_normal_lod_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 16.494,
+      "wall_clock_seconds": 16.494,
+      "peak_rss_bytes": 369270784,
+      "peak_vm_hwm_bytes": 369270784,
+      "cpu_time_seconds": 1221.532,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 14299136,
+        "peak_vm_hwm_bytes": 14299136,
+        "wall_clock_seconds_sum": 0.123,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /tmp/fastgatk-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /tmp/fastgatk-"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 369270784,
+        "peak_vm_hwm_bytes": 369270784,
+        "wall_clock_seconds_sum": 16.334,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_neg100_sites\": [[\"17\", 69005, \"T\", \"C\"]], \"gatk_zero_sites\": [], \"native_neg100_sites\": [[\"17\", 69005, \"T\", \"C\"]], \"native_zero_sites\": [], \"normal_lod_boundary_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_pcr_overlap_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.047,
+      "wall_clock_seconds": 0.047,
+      "peak_rss_bytes": 7524352,
+      "peak_vm_hwm_bytes": 7524352,
+      "cpu_time_seconds": 1221.621,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 7524352,
+        "peak_vm_hwm_bytes": 7524352,
+        "wall_clock_seconds_sum": 0.022,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-pcr-overlap-7s5aw978/reference.fa -I /tmp/fastgatk-mutect2-pcr-overlap-7s5aw978/reads.sam --tumo",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-pcr-overlap-7s5aw978/reference.fa -I /tmp/fastgatk-mutect2-pcr-overlap-7s5aw978/reads.sam --tumo"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"base_quality_caps\": 40, \"gatk_pcr_indel_half_quality\": 7, \"gatk_pcr_snv_half_quality\": 4, \"indel_quality_caps\": 80, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_recheck_assembly_resultset_joint.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.521,
+      "wall_clock_seconds": 14.521,
+      "peak_rss_bytes": 397099008,
+      "peak_vm_hwm_bytes": 397099008,
+      "cpu_time_seconds": 1237.866,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 32624640,
+        "peak_vm_hwm_bytes": 32624640,
+        "wall_clock_seconds_sum": 1.01,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta -I /home/turing"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 397099008,
+        "peak_vm_hwm_bytes": 397099008,
+        "wall_clock_seconds_sum": 13.466,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "rences\": [],\n    \"gatk_allele_count\": 1,\n    \"gatk_alleles\": [\n      [\n        \"20\",\n        68037,\n        \"G\",\n        \"T\"\n      ]\n    ],\n    \"gatk_rc\": 0,\n    \"interval\": \"20:67000-69000\",\n    \"native_allele_count\": 1,\n    \"native_alleles\": [\n      [\n        \"20\",\n        68037,\n        \"G\",\n        \"T\"\n      ]\n    ],\n    \"native_rc\": 0\n  },\n  \"status\": \"pass\",\n  \"tumor_only_allele_count\": 6\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_recheck_normal_replay.py",
+      "exit_code": 0,
+      "elapsed_seconds": 82.74,
+      "wall_clock_seconds": 82.74,
+      "peak_rss_bytes": 891629568,
+      "peak_vm_hwm_bytes": 891629568,
+      "cpu_time_seconds": 1333.374,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 726118400,
+        "peak_vm_hwm_bytes": 726118400,
+        "wall_clock_seconds_sum": 66.379,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/testdata/downloads/reference/hs37d5.fa.gz -I /home/turing-agents/Documents/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 891629568,
+        "peak_vm_hwm_bytes": 891629568,
+        "wall_clock_seconds_sum": 16.333,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2\",\n  \"native_call_count\": 5,\n  \"row_difference_count\": 0,\n  \"row_differences\": [],\n  \"schema_gatk_line_count\": 47,\n  \"schema_header_lines_first_diff\": null,\n  \"schema_header_lines_match\": true,\n  \"schema_native_line_count\": 47,\n  \"status\": \"pass\",\n  \"tbi_present\": true,\n  \"tlod_drift_count\": 0,\n  \"tlod_drift_rows\": []\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_reference_confidence_eventmap_full_gatk_contract.py",
+      "exit_code": 0,
+      "elapsed_seconds": 36.771,
+      "wall_clock_seconds": 36.771,
+      "peak_rss_bytes": 444043264,
+      "peak_vm_hwm_bytes": 444043264,
+      "cpu_time_seconds": 1374.603,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 12,
+      "native": {
+        "peak_rss_bytes": 352505856,
+        "peak_vm_hwm_bytes": 354418688,
+        "wall_clock_seconds_sum": 9.718,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 444043264,
+        "peak_vm_hwm_bytes": 444043264,
+        "wall_clock_seconds_sum": 27.019,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx2g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"data_rows\": {\"full:BP_RESOLUTION\": 1001, \"full:GVCF\": 115, \"single-eventmap:BP_RESOLUTION\": 31, \"single-eventmap:GVCF\": 15, \"streamed-full:BP_RESOLUTION\": 1001, \"streamed-full:GVCF\": 115}, \"modes\": [\"GVCF\", \"BP_RESOLUTION\"], \"oracle\": \"GATK-4.6.2.0\", \"regions\": [\"17:69000-70000\", \"17:69460-69490\"], \"status\": \"pass\", \"streamed_core_size\": 400, \"vcf_exact_without_execution_provenance\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_tlod_formula.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.236,
+      "wall_clock_seconds": 0.236,
+      "peak_rss_bytes": 28442624,
+      "peak_vm_hwm_bytes": 28954624,
+      "cpu_time_seconds": 1375.218,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 28442624,
+        "peak_vm_hwm_bytes": 28954624,
+        "wall_clock_seconds_sum": 0.208,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "n-transcribed SomaticLikelihoodsEngine on native fragment matrix\", \"loci_checked\": 6, \"maximum_tlod_formula_delta\": 4.689582056016661e-13, \"mean_tlod_formula_delta\": 8.37108160567368e-14, \"multiallelic_loci_skipped\": 0, \"per_locus_deltas\": [1.7763568394002505e-15, 1.3322676295501878e-15, 2.842170943040401e-14, 4.689582056016661e-13, 8.881784197001252e-16, 8.881784197001252e-16], \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mutect2_zero_lod_indel_activity_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 11.204,
+      "wall_clock_seconds": 11.204,
+      "peak_rss_bytes": 464990208,
+      "peak_vm_hwm_bytes": 464990208,
+      "cpu_time_seconds": 1384.905,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 17289216,
+        "peak_vm_hwm_bytes": 17289216,
+        "wall_clock_seconds_sum": 0.211,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-zero-lod-indel-uexglkoa/reference.fa -I /tmp/fastgatk-mutect2-zero-lod-indel-uexglkoa/reads.bam ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /tmp/fastgatk-mutect2-zero-lod-indel-uexglkoa/reference.fa -I /tmp/fastgatk-mutect2-zero-lod-indel-uexglkoa/reads.bam "
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 464990208,
+        "peak_vm_hwm_bytes": 464990208,
+        "wall_clock_seconds_sum": 5.61,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /tmp/fas"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 452976640,
+        "peak_vm_hwm_bytes": 452976640,
+        "wall_clock_seconds_sum": 5.348,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"force_active_records_exact\": 2, \"status\": \"pass\", \"zero_lod_default_records\": 0, \"zero_lod_reference_profile_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_pairhmm_default_indel_quality_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.661,
+      "wall_clock_seconds": 4.661,
+      "peak_rss_bytes": 445358080,
+      "peak_vm_hwm_bytes": 445358080,
+      "cpu_time_seconds": 1390.763,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 29958144,
+        "peak_vm_hwm_bytes": 29958144,
+        "wall_clock_seconds_sum": 0.414,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2 -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /home/turing-a"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 445358080,
+        "peak_vm_hwm_bytes": 445358080,
+        "wall_clock_seconds_sum": 4.215,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"explicit_bi_bd_path_unchanged\": true, \"gatk_version\": \"4.6.2.0\", \"java_pairhmm_rows\": 706, \"java_terminal_indel_quality\": [20, 45], \"native_conservative_effective_quality\": 40, \"native_conservative_terminal_quality\": 45, \"native_none_effective_quality\": 45, \"native_none_terminal_quality\": 45, \"native_pairhmm_pairs\": 706, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_pairhmm_results_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.348,
+      "wall_clock_seconds": 4.348,
+      "peak_rss_bytes": 445079552,
+      "peak_vm_hwm_bytes": 445079552,
+      "cpu_time_seconds": 1397.592,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 8720384,
+        "peak_vm_hwm_bytes": 8720384,
+        "wall_clock_seconds_sum": 0.096,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-pairhmm-results-oracle /tmp/fastgatk-pairhmm-results-oracle-9z3tbe_6/gatk.pairhmm.txt"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 445079552,
+        "peak_vm_hwm_bytes": 445079552,
+        "wall_clock_seconds_sum": 4.225,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar Mutect2 -R /home/tu"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"assembly_boundary\": \"debug-request-set-isolated\", \"decimal_bound\": 5e-06, \"float32_max_abs_delta\": 3.79394531258e-06, \"float32_mean_abs_delta\": 3.84344257623e-07, \"float32_within_decimal_bound\": 706, \"gatk_version\": \"4.6.2.0\", \"max_abs_delta\": 4.22216764839e-06, \"mean_abs_delta\": 8.91043100333e-07, \"pairhmm_results_rows\": 706, \"rows\": 706, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_somatic_likelihood_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.037,
+      "wall_clock_seconds": 0.037,
+      "peak_rss_bytes": 0,
+      "peak_vm_hwm_bytes": 0,
+      "cpu_time_seconds": 1397.641,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"cases\": [\"biallelic\", \"multiallelic\", \"one-sided-zero-probability\", \"minimum-allele-fraction\"], \"execution_space\": \"OpenMP\", \"max_abs_error\": 2e-10, \"reference\": \"GATK-4.6.2.0-SomaticLikelihoodsEngine-equations\", \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_somatic_normal_lod_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.026,
+      "wall_clock_seconds": 0.026,
+      "peak_rss_bytes": 0,
+      "peak_vm_hwm_bytes": 0,
+      "cpu_time_seconds": 1397.686,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"execution_space\": \"OpenMP\", \"finite_nlod\": -2.925125420722503, \"one_sided_nlod\": 0.3010299956639812, \"reference\": \"GATK-4.6.2.0-SomaticGenotypingEngine-diploidAltLogOdds\", \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_somatic_posterior_normal_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.024,
+      "wall_clock_seconds": 0.024,
+      "peak_rss_bytes": 0,
+      "peak_vm_hwm_bytes": 0,
+      "cpu_time_seconds": 1397.731,
+      "max_rss_kb_children_rusage": 3241064,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"execution_space\": \"OpenMP\", \"normal_count_independent\": true, \"normal_evidence_units\": 2, \"reference\": \"GATK-4.6.2.0-SomaticGenotypingEngine-independent-normal-evidence\", \"somatic_evidence_with_normal\": -2.02, \"somatic_evidence_without_normal\": -0.04, \"status\": \"pass\", \"tumor_evidence_units\": 4}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

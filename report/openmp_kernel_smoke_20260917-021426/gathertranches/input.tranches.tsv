@@ -1,0 +1,5 @@
+# Variant quality score tranches file
+# Version number 6
+requestedVQSLOD,numKnown,numNovel,knownTiTv,novelTiTv,minVQSLod,filterName,model,accessibleTruthSites,callsAtTruthSites,truthSensitivity
+100.0,10,20,2.0000,1.5000,5.0,VQSRTrancheSNP0.00to100.00,SNP,100,100,1.0000
+99.0,5,10,1.0000,1.0000,3.0,VQSRTrancheSNP0.00to99.00,SNP,100,90,0.9000

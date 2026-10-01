@@ -1,0 +1,736 @@
+{
+  "summary": {
+    "openmp_verified": [
+      "HaplotypeCaller",
+      "ApplyBQSR",
+      "Mutect2",
+      "FilterMutectCalls",
+      "CollectAllelicCounts",
+      "CollectF1R2Counts",
+      "CollectReadCounts",
+      "GenotypeGVCFs",
+      "ReblockGVCF",
+      "SelectVariants",
+      "VariantFiltration",
+      "LeftAlignAndTrimVariants",
+      "ValidateVariants",
+      "VariantsToTable",
+      "VariantEval",
+      "GatherVcfs",
+      "GatherTranches",
+      "SortSam",
+      "MarkDuplicates",
+      "GatherBQSRReports",
+      "AnalyzeCovariates",
+      "CountReads",
+      "FlagStat",
+      "SplitIntervals",
+      "CountBasesInReference",
+      "CompareReferences",
+      "CheckReferenceCompatibility",
+      "FastaReferenceMaker",
+      "FastaAlternateReferenceMaker",
+      "ShiftFasta",
+      "IndexFeatureFile",
+      "DepthOfCoverage"
+    ],
+    "serial_or_host_only": [],
+    "skipped": [
+      "BaseRecalibrator",
+      "GetPileupSummaries",
+      "CalculateContamination",
+      "ApplyVQSR",
+      "VariantRecalibrator",
+      "GenomicsDBImport",
+      "GatherPileupSummaries",
+      "CallCopyRatioSegments",
+      "ModelSegments",
+      "DenoiseReadCounts",
+      "CreateReadCountPanelOfNormals"
+    ],
+    "failed": [
+      "CombineGVCFs",
+      "FilterIntervals",
+      "PreprocessIntervals",
+      "AnnotateIntervals",
+      "LearnReadOrientationModel"
+    ]
+  },
+  "details": [
+    {
+      "tool": "HaplotypeCaller",
+      "rc": 0,
+      "wall_s": 0.020207932000630535,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-hc-call",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-69100",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/haplotypecaller/out.vcf",
+        "--output-manifest",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/haplotypecaller/out.json",
+        "--add-output-vcf-command-line",
+        "false"
+      ],
+      "execution_space": "OpenMP",
+      "kernel_spaces": {
+        "execution_space": "OpenMP",
+        "pairhmm_normalization_execution_space": "OpenMP",
+        "pairhmm_marginalization_execution_space": "OpenMP",
+        "pairhmm_uncertainty_execution_space": "OpenMP",
+        "pairhmm_execution_space": "OpenMP",
+        "sw_execution_space": "OpenMP",
+        "graph_haplotype_sw_execution_space": "OpenMP",
+        "graph_execution_space": "OpenMP",
+        "activity_execution_space": "OpenMP",
+        "read_filter_execution_space": "OpenMP",
+        "error_correction_execution_space": "",
+        "reference_confidence_execution_space": "OpenMP",
+        "genotype_prior_execution_space": "",
+        "call_confidence_execution_space": "OpenMP"
+      },
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "BaseRecalibrator",
+      "error": "builder: name 'KNOWN_GRCH37' is not defined"
+    },
+    {
+      "tool": "ApplyBQSR",
+      "rc": 0,
+      "wall_s": 0.021460714997374453,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-bqsr",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-bqsr",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/bqsr_ceutrio_chr20/native_recal.txt",
+        "--allow-missing-read-group",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/applybqsr/out.bam"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "Mutect2",
+      "rc": 0,
+      "wall_s": 0.08323826300329529,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mutect2",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-69500",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/mutect2/out.vcf.gz",
+        "--output-manifest",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/mutect2/out.json"
+      ],
+      "execution_space": null,
+      "kernel_spaces": {
+        "somatic_likelihood_execution_space": "OpenMP",
+        "somatic_posterior_execution_space": "OpenMP",
+        "error_correction_execution_space": ""
+      },
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "FilterMutectCalls",
+      "rc": 0,
+      "wall_s": 0.009614761998818722,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-mutect-calls",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/mutect2_chr17_69k_70k/native.vcf.gz",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/filtermutectcalls/out.vcf.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "CollectAllelicCounts",
+      "rc": 0,
+      "wall_s": 0.003816463999100961,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-allelic-counts",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-69500",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/collectalleliccounts/out.tsv"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "CollectF1R2Counts",
+      "rc": 0,
+      "wall_s": 0.011093065000750357,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-f1r2-counts",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-69500",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/collectf1r2counts/out.tar.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "CollectReadCounts",
+      "rc": 0,
+      "wall_s": 0.01141223699960392,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-read-counts",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-69500",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/collectreadcounts/out.tsv"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "CombineGVCFs",
+      "rc": 2,
+      "wall_s": 0.003400833000341663,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample2.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/combinegvcfs/out.g.vcf.gz",
+        "--output-manifest",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/combinegvcfs/out.json"
+      ],
+      "manifest_missing": true,
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "fastgatk-combine-gvcfs: BAD_INPUT: duplicate or invalid sample name across CombineGVCFs inputs\n"
+    },
+    {
+      "tool": "GenotypeGVCFs",
+      "rc": 0,
+      "wall_s": 0.014769776000321144,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample2.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/genotypegvcfs/out.vcf.gz",
+        "--output-manifest",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/genotypegvcfs/out.json"
+      ],
+      "execution_space": null,
+      "kernel_spaces": {
+        "genotype_kernel_execution_space": "OpenMP",
+        "pl_remap_kernel_execution_space": "OpenMP",
+        "allele_count_kernel_execution_space": "OpenMP",
+        "posterior_kernel_execution_space": "",
+        "cross_sample_reference_execution_space": "OpenMP",
+        "allele_field_remap_kernel_execution_space": "OpenMP",
+        "cohort_af_kernel_execution_space": "OpenMP",
+        "max_alt_score_kernel_execution_space": "",
+        "posterior_assignment_execution_space": "",
+        "posterior_annotation_assignment_execution_space": "",
+        "genotype_prior_kernel_execution_space": "OpenMP"
+      },
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "ReblockGVCF",
+      "rc": 0,
+      "wall_s": 0.008933463002904318,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/reblockgvcf/out.g.vcf.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "SelectVariants",
+      "rc": 0,
+      "wall_s": 0.008863636998285074,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-select-variants",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/selectvariants/out.vcf.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "VariantFiltration",
+      "rc": 0,
+      "wall_s": 0.008376767997106072,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-filtration",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "--filter-expression",
+        "QUAL > 0",
+        "--filter-name",
+        "SmokeFilter",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/variantfiltration/out.vcf.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "LeftAlignAndTrimVariants",
+      "rc": 0,
+      "wall_s": 0.009127261000685394,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/leftalignandtrimvariants/out.vcf.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "ValidateVariants",
+      "rc": 0,
+      "wall_s": 0.00290133900125511,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "VariantsToTable",
+      "rc": 0,
+      "wall_s": 0.002517479999369243,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/variantstotable/out.table"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "VariantEval",
+      "rc": 0,
+      "wall_s": 0.0028648779989453033,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval",
+        "--eval",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "--output",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/varianteval/out.eval"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "GatherVcfs",
+      "rc": 0,
+      "wall_s": 0.006685559001198271,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/gathervcfs/out.vcf.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "GatherTranches",
+      "rc": 0,
+      "wall_s": 0.0014411099982680753,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-tranches",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/gathertranches/input.tranches.tsv",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/gathertranches/out.tranches.tsv",
+        "--mode",
+        "SNP"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "SortSam",
+      "rc": 0,
+      "wall_s": 0.01176133799890522,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-sort-sam",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/sortsam/out.bam",
+        "-SO",
+        "coordinate"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "MarkDuplicates",
+      "rc": 0,
+      "wall_s": 0.01052667999829282,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mark-duplicates",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/markduplicates/out.bam",
+        "--metrics-file",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/markduplicates/out.metrics.txt"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "GatherBQSRReports",
+      "rc": 0,
+      "wall_s": 0.005812306000734679,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-bqsr-reports",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/bqsr_ceutrio_chr20/native_recal.txt",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/gatherbqsrreports/out.txt"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "AnalyzeCovariates",
+      "rc": 0,
+      "wall_s": 0.01026213499790174,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-analyze-covariates",
+        "-bqsr",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/bqsr_ceutrio_chr20/native_recal.txt",
+        "-csv",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/analyzecovariates/out.csv"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "CountReads",
+      "rc": 0,
+      "wall_s": 0.0028985729986743536,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/countreads/out.counts.txt"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "{\"tool\":\"CountReads\",\"status\":\"contract-compatible\",\"records\":493,\"batches\":1,\"requested_threads\":1,\"effective_threads\":1,\"batch_records\":65536,\"kernel_execution_space\":\"OpenMP\",\"kernel_execute_second"
+    },
+    {
+      "tool": "FlagStat",
+      "rc": 0,
+      "wall_s": 0.00403177299813251,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-flag-stat",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/flagstat/out.flagstat.txt"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "{\"tool\":\"FlagStat\",\"status\":\"contract-compatible\",\"records\":493,\"batches\":1,\"requested_threads\":1,\"effective_threads\":1,\"batch_records\":65536,\"kernel_execution_space\":\"OpenMP\",\"kernel_execute_seconds\""
+    },
+    {
+      "tool": "SplitIntervals",
+      "rc": 0,
+      "wall_s": 0.002016463000472868,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-split-intervals",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-70000",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/splitintervals/out_dir",
+        "--scatter-count",
+        "2"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "FilterIntervals",
+      "rc": 2,
+      "wall_s": 0.007281872000021394,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-70000",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/filterintervals/out.interval_list"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "unknown option: -R\n"
+    },
+    {
+      "tool": "PreprocessIntervals",
+      "rc": 2,
+      "wall_s": 0.002784541000437457,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-preprocess-intervals",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-70000",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/preprocessintervals/out.interval_list"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "Interval merging rule must be set to OVERLAPPING_ONLY.\n"
+    },
+    {
+      "tool": "AnnotateIntervals",
+      "rc": 2,
+      "wall_s": 0.0017745609984558541,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-annotate-intervals",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-L",
+        "17:69000-70000",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/annotateintervals/out.tsv"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "Interval merging rule must be set to OVERLAPPING_ONLY.\n"
+    },
+    {
+      "tool": "CountBasesInReference",
+      "rc": 0,
+      "wall_s": 0.00599534300272353,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-bases-in-reference",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/countbasesinreference/out.txt"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "{\"tool\":\"CountBasesInReference\",\"status\":\"contract-compatible\",\"regions\":1,\"bases\":1000000,\"kernel_execution_space\":\"OpenMP\",\"kernel_records\":1000000,\"kernel_execute_seconds\":0.00223045}\n"
+    },
+    {
+      "tool": "CompareReferences",
+      "rc": 0,
+      "wall_s": 0.0020464209992496762,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-compare-references",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-refcomp",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/comparereferences/out.txt"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "{\"tool\":\"CompareReferences\",\"status\":\"contract-compatible\",\"references\":2,\"rows\":1,\"base_comparison\":\"NO_BASE_COMPARISON\"}\n"
+    },
+    {
+      "tool": "CheckReferenceCompatibility",
+      "rc": 0,
+      "wall_s": 0.0018256800030940212,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-check-reference-compatibility",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-refcomp",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/checkreferencecompatibility/out.txt"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "{\"tool\":\"CheckReferenceCompatibility\",\"status\":\"contract-compatible\",\"references\":1,\"query_md5s_present\":true}\n"
+    },
+    {
+      "tool": "FastaReferenceMaker",
+      "rc": 0,
+      "wall_s": 0.01617479700144031,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fasta-reference-maker",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/fastareferencemaker/out.fa"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "FastaAlternateReferenceMaker",
+      "rc": 0,
+      "wall_s": 0.018651997997949366,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fasta-alternate-reference-maker",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-V",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/fastaalternatereferencemaker/out.fa"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "ShiftFasta",
+      "rc": 0,
+      "wall_s": 0.018137433999072528,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-shift-fasta",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/shiftfasta/out.fa",
+        "--shift-back-output",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/shiftfasta/shift.chain"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "IndexFeatureFile",
+      "rc": 0,
+      "wall_s": 0.004681070000515319,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-index-feature-file",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/genotype_gvcfs_chr17_69k_70k/sample1.g.vcf.gz",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/indexfeaturefile/out.tbi"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "{\"tool\":\"IndexFeatureFile\",\"status\":\"contract-compatible\",\"format\":\"VCF\",\"compression\":\"BGZF\",\"index\":\"/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/indexfeaturefi"
+    },
+    {
+      "tool": "GetPileupSummaries",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "CalculateContamination",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "LearnReadOrientationModel",
+      "rc": 2,
+      "wall_s": 0.002187546997447498,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-learn-read-orientation-model",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/mutect2_dream_real/native.vcf.gz.f1r2.tsv",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/learnreadorientationmodel/out.tar.gz"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": "error: BAD_INPUT: ALT must be A/C/G/T at /home/turing-agents/Documents/fast-gatk/report/headline_comparison_20260917-004555/mutect2_dream_real/native.vcf.gz.f1r2.tsv:7\n"
+    },
+    {
+      "tool": "DepthOfCoverage",
+      "rc": 0,
+      "wall_s": 0.003245769999921322,
+      "cmd": [
+        "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-depth-of-coverage",
+        "-I",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam",
+        "-R",
+        "/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta",
+        "-O",
+        "/home/turing-agents/Documents/fast-gatk/report/openmp_kernel_smoke_20260917-020436/depthofcoverage/out",
+        "-L",
+        "17:69000-69100"
+      ],
+      "kokkos_openmp_init_warn": false,
+      "stderr_head": ""
+    },
+    {
+      "tool": "ApplyVQSR",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "VariantRecalibrator",
+      "error": "builder: name 'KNOWN_GRCH37' is not defined"
+    },
+    {
+      "tool": "GenomicsDBImport",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "GatherPileupSummaries",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "CallCopyRatioSegments",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "ModelSegments",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "DenoiseReadCounts",
+      "skipped": "missing fixture dependency"
+    },
+    {
+      "tool": "CreateReadCountPanelOfNormals",
+      "skipped": "missing fixture dependency"
+    }
+  ]
+}

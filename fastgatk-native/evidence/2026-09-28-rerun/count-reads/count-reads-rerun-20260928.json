@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "tool": "CountReads",
+  "native_binary": "fastgatk-count-reads",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 110.991,
+  "scripts": [
+    {
+      "name": "verify_cli_parity_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 10.245,
+      "wall_clock_seconds": 10.245,
+      "peak_rss_bytes": 375590912,
+      "peak_vm_hwm_bytes": 375590912,
+      "cpu_time_seconds": 13.632,
+      "max_rss_kb_children_rusage": 360732,
+      "processes_seen": 274,
+      "native": {
+        "peak_rss_bytes": 6066176,
+        "peak_vm_hwm_bytes": 6066176,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 375590912,
+        "peak_vm_hwm_bytes": 375590912,
+        "wall_clock_seconds_sum": 1.883,
+        "process_count": 2,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 27656192,
+        "peak_vm_hwm_bytes": 27721728,
+        "wall_clock_seconds_sum": 8.945,
+        "process_count": 271,
+        "sample_cmdlines": [
+          "/usr/bin/env bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk --dry-run HaplotypeCaller -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA1287",
+          "bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk --dry-run HaplotypeCaller -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_7",
+          "dirname /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk",
+          "/usr/bin/env bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk HaplotypeCaller -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69",
+          "bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk HaplotypeCaller -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix",
+          "/usr/bin/env bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk HaplotypeCaller -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69",
+          "/usr/bin/env bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk --dry-run BaseRecalibrator -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA128",
+          "bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk BaseRecalibrator -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFi"
+        ]
+      },
+      "stdout_tail": "{\"must-implement\": 0, \"runtime_java\": false, \"status\": \"pass\", \"tools\": 50}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_count_reads.py",
+      "exit_code": 0,
+      "elapsed_seconds": 100.746,
+      "wall_clock_seconds": 100.746,
+      "peak_rss_bytes": 384782336,
+      "peak_vm_hwm_bytes": 384782336,
+      "cpu_time_seconds": 97.088,
+      "max_rss_kb_children_rusage": 371064,
+      "processes_seen": 63,
+      "native": {
+        "peak_rss_bytes": 6905856,
+        "peak_vm_hwm_bytes": 6905856,
+        "wall_clock_seconds_sum": 0.266,
+        "process_count": 37,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -O /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -L 17:699",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -L 17:699",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -L 17:690",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -L /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -L /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -L /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-count-reads -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -L /tmp/f"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 384782336,
+        "peak_vm_hwm_bytes": 384782336,
+        "wall_clock_seconds_sum": 96.895,
+        "process_count": 25,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CountReads -I /home"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 373395456,
+        "peak_vm_hwm_bytes": 373395456,
+        "wall_clock_seconds_sum": 3.549,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"java_oracle\": true, \"records\": 493, \"status\": \"pass\", \"suite\": \"count-reads\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

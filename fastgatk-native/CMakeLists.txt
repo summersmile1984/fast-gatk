@@ -490,6 +490,31 @@ if (FAST_GATK_HAS_HTSLIB)
 endif()
 
 if (FAST_GATK_HAS_HTSLIB)
+    add_executable(fastgatk-funcotator src/funcotator_tool.cpp)
+    target_compile_definitions(fastgatk-funcotator PRIVATE FASTGATK_HAS_HTSLIB=1)
+    target_include_directories(fastgatk-funcotator PRIVATE
+        "${FAST_GATK_HTS_INCLUDE_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    target_link_libraries(fastgatk-funcotator PRIVATE fastgatk-runtime fastgatk-hts)
+    target_compile_features(fastgatk-funcotator PRIVATE cxx_std_20)
+    target_compile_options(fastgatk-funcotator PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-O3;-Wall;-Wextra;-Wpedantic;-ffp-contract=off;-fno-fast-math>)
+endif()
+
+if (FAST_GATK_HAS_HTSLIB)
+    add_executable(fastgatk-variant-annotator src/variant_annotator_tool.cpp)
+    target_compile_definitions(fastgatk-variant-annotator PRIVATE FASTGATK_HAS_HTSLIB=1)
+    target_include_directories(fastgatk-variant-annotator PRIVATE
+        "${FAST_GATK_HTS_INCLUDE_DIR}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../fastgatk-kernels/include")
+    target_link_libraries(fastgatk-variant-annotator PRIVATE fastgatk-runtime fastgatk-hts fastgatk-kernels)
+    target_compile_features(fastgatk-variant-annotator PRIVATE cxx_std_20)
+    target_compile_options(fastgatk-variant-annotator PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-O0;-g;-Wall;-Wextra;-Wpedantic;-ffp-contract=off;-fno-fast-math>)
+endif()
+
+if (FAST_GATK_HAS_HTSLIB)
     add_executable(fastgatk-variant-filtration src/variant_filtration_tool.cpp)
     target_compile_definitions(fastgatk-variant-filtration PRIVATE FASTGATK_HAS_HTSLIB=1)
     target_include_directories(fastgatk-variant-filtration PRIVATE
@@ -2331,6 +2356,35 @@ if (FAST_GATK_HAS_HTSLIB AND Python3_Interpreter_FOUND)
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_mutect2_mito_realign_gatk_oracle.py")
     set_tests_properties(fastgatk-mutect2-mito-realign-gatk-oracle PROPERTIES
         ENVIRONMENT "FASTGATK_MUTECT2_BINARY=$<TARGET_FILE:fastgatk-mutect2>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # Full --mitochondria-mode byte parity on the real chrM high-coverage
+    # fixture: every GATK data row present and byte-identical (no carve-outs),
+    # plus the shared-row byte comparison hardened in the gap-closure session.
+    # The former chrM:8372 divergence is closed; the oracle is the regression
+    # gate for candidate-budget/graph-emission changes on this path.
+    add_test(NAME fastgatk-mutect2-mitochondria-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_mutect2_mitochondria_gatk_oracle.py")
+    set_tests_properties(fastgatk-mutect2-mitochondria-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_MUTECT2_BINARY=$<TARGET_FILE:fastgatk-mutect2>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    # VariantAnnotator deterministic annotation-carryover surface: comp
+    # membership flags, dbSNP rsID merge, --resource/-E transfers with
+    # A/R-counted allele mapping, and htsjdk header rendering.  Byte-equal
+    # against the bundled GATK 4.6.2.0 on self-contained fixtures.
+    add_test(NAME fastgatk-variant-annotator-resource-expression-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_variant_annotator_resource_expression_gatk_oracle.py")
+    set_tests_properties(fastgatk-variant-annotator-resource-expression-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_VARIANT_ANNOTATOR_BINARY=$<TARGET_FILE:fastgatk-variant-annotator>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    add_test(NAME fastgatk-funcotator-vcf-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_funcotator_vcf_gatk_oracle.py")
+    set_tests_properties(fastgatk-funcotator-vcf-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_FUNCOTATOR_BINARY=$<TARGET_FILE:fastgatk-funcotator>;FASTGATK_REQUIRE_GATK_ORACLE=1")
+    add_test(NAME fastgatk-variant-annotator-coverage-gatk-oracle
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/verify_variant_annotator_coverage_gatk_oracle.py")
+    set_tests_properties(fastgatk-variant-annotator-coverage-gatk-oracle PROPERTIES
+        ENVIRONMENT "FASTGATK_VARIANT_ANNOTATOR_BINARY=$<TARGET_FILE:fastgatk-variant-annotator>;FASTGATK_REQUIRE_GATK_ORACLE=1")
     # GATK's zero global-mismapping-rate value is invalid: negative values map
     # to the Double.NEGATIVE_INFINITY disabled-cap sentinel and positive values
     # enable the cap. Keep this release-pinned option boundary separate because

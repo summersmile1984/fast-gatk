@@ -209,6 +209,98 @@ struct Options {
     // GATK's partial-mode restoration stops a deleted run at the first
     // reference base that no longer matches the restored homopolymer.
     bool flow_assembly_collapse_partial_mode = false;
+    // GATK --flow-mode selects the flow-calling inference strategy.  "NONE"
+    // disables flow-based assembly (legacy path); "STANDARD" / "GVCF"
+    // produces flow-aware GVCF bands; "FAST" / "BP_RESOLUTION" emits
+    // base-precision resolution.  Default is NONE to match the historical
+    // non-flow caller.
+    std::string flow_mode = "NONE";
+    // GATK --flow-probability-threshold is the minimum flow-probability
+    // delta for an alternate flow-key to be promoted to a candidate.
+    // Default (-1.0) leaves the historical threshold in effect.
+    double flow_probability_threshold = -1.0;
+    // GATK --flow-ligation is the per-base ligation probability for
+    // flow-based haplotype construction.  Default (-1.0) leaves the
+    // historical threshold in effect.
+    double flow_ligation = -1.0;
+    // GATK --flow-quality is the per-base flow-quality probability
+    // threshold.  Default (-1.0) leaves the historical value in effect.
+    double flow_quality = -1.0;
+    // GATK --flow-disallow-soft-clipped reads from contributing flow-key
+    // candidates.  Default (false) preserves the historical behavior.
+    bool flow_disallow_soft_clipped = false;
+    // GATK --flow-fill-from-read-orientations enables orientational
+    // gap-fill during flow-haplotype construction.  Default (false)
+    // preserves the historical behavior.
+    bool flow_fill_from_read_orientations = false;
+    // GATK --flow-use-t0-tag uses the read's t0 tag (when present) to
+    // construct the flow matrix.  Default (false) preserves the
+    // historical behavior.
+    bool flow_use_t0_tag = false;
+    // GATK --flow-lump-probs combines insertion/deletion probabilities
+    // within the flow.  Default (false) preserves the historical
+    // per-probability emission path.
+    bool flow_lump_probs = false;
+    // GATK --flow-symmetric-indel-probs symmetrizes indel probability
+    // emissions.  Default (false) preserves the historical path.
+    bool flow_symmetric_indel_probs = false;
+    // GATK --flow-fill-empty-bins-value is the substitute value for
+    // empty flow-bin counts during probability matrix construction.
+    // Default (NaN, serialized as "NaN") preserves the historical path.
+    double flow_fill_empty_bins_value = std::numeric_limits<double>::quiet_NaN();
+    // GATK --flow-filter-alleles-qual-threshold is the QUAL filter
+    // threshold for the flow allele-filter pipeline.  Default
+    // (-INFINITY, serialized as -inf) preserves the historical path.
+    double flow_filter_alleles_qual_threshold =
+        -std::numeric_limits<double>::infinity();
+    // GATK --flow-filter-alleles-sor-threshold is the SOR filter
+    // threshold for the flow allele-filter pipeline.  Default
+    // (-INFINITY, serialized as -inf) preserves the historical path.
+    double flow_filter_alleles_sor_threshold =
+        -std::numeric_limits<double>::infinity();
+    // GATK --flow-filter-alleles enables the post-call flow allele
+    // filtering pass.  Default (false) preserves the historical
+    // single-pass path.
+    bool flow_filter_alleles = false;
+    // GATK --flow-filter-lone-alleles drops alleles supported only by
+    // a single read.  Default (false) preserves the historical path.
+    bool flow_filter_lone_alleles = false;
+    // GATK --flow-disallow-probs-larger-than-call caps per-base error
+    // probabilities to 1.0 relative to the base call.  Default
+    // (false) preserves the historical path.
+    bool flow_disallow_probs_larger_than_call = false;
+    // GATK --flow-probability-scaling-factor scales flow-probability
+    // values during matrix construction.  Default (-1) leaves the
+    // historical path in effect.
+    int flow_probability_scaling_factor = -1;
+    // GATK --flow-quantization-bins is the number of bins used to
+    // quantize per-base flow probabilities.  Default (-1) leaves the
+    // historical path in effect.
+    int flow_quantization_bins = -1;
+    // GATK --flow-matrix-mods is the read flow-matrix modification
+    // string (format: src,dst{,src,dst}+).  Default ("") preserves the
+    // historical path.
+    std::string flow_matrix_mods = "";
+    // GATK --flow-order-for-annotations selects the read flow-order
+    // emission strategy in the INFO column.  Default ("") preserves
+    // the historical path.
+    std::string flow_order_for_annotations = "";
+    // GATK --flow-remove-non-single-base-pair-indels removes indels
+    // that are not single-base-pair.  Default (false) preserves the
+    // historical path.
+    bool flow_remove_non_single_base_pair_indels = false;
+    // GATK --flow-remove-one-zero-probs removes 0.0 / 1.0 probability
+    // entries from the flow matrix.  Default (false) preserves the
+    // historical path.
+    bool flow_remove_one_zero_probs = false;
+    // GATK --flow-report-insertion-or-deletion emits insertion /
+    // deletion flow events to the INFO column.  Default (false)
+    // preserves the historical path.
+    bool flow_report_insertion_or_deletion = false;
+    // GATK --flow-retain-max-n-probs-base-format retains the max-N
+    // base format for flow probabilities.  Default (false)
+    // preserves the historical path.
+    bool flow_retain_max_n_probs_base_format = false;
     // AssemblyRegionTrimmer's default genotyping padding.  The Host chooses
     // the indel padding when a local candidate changes reference span.
     std::uint32_t snp_padding_for_genotyping = 20;
@@ -1009,6 +1101,9 @@ struct Result {
     bool graph_reference_kmer_rejected = false;
     std::uint32_t graph_kmer_size_selected = 0;
     std::size_t graph_kmer_iterations = 1;
+    // k-mer sizes whose graph attempt was accepted (GATK's
+    // "Using kmer size of N in read threading assembler" set).
+    std::vector<std::uint32_t> graph_kmer_sizes_used;
     bool graph_has_non_reference_cycles = false;
     std::size_t graph_reference_paths = 0;
     std::size_t graph_haplotype_paths = 0;

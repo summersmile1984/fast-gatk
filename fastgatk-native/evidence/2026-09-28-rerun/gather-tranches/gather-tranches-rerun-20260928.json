@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "tool": "GatherTranches",
+  "native_binary": "fastgatk-gather-tranches",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 8.023,
+  "scripts": [
+    {
+      "name": "verify_gather_tranches.py",
+      "exit_code": 0,
+      "elapsed_seconds": 8.023,
+      "wall_clock_seconds": 8.023,
+      "peak_rss_bytes": 346771456,
+      "peak_vm_hwm_bytes": 346771456,
+      "cpu_time_seconds": 2138.227,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 4071424,
+        "peak_vm_hwm_bytes": 4071424,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-tranches -I /tmp/fastgatk-gather-tranches-wc56mvv1/bad-version.tranches --mode SNP -O /tmp/fastgatk-gather-tranches-wc56mv"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 346771456,
+        "peak_vm_hwm_bytes": 346771456,
+        "wall_clock_seconds_sum": 7.989,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherTranches -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherTranches -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherTranches -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16646144,
+        "peak_vm_hwm_bytes": 16646144,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_gather_tranches.py"
+        ]
+      },
+      "stdout_tail": "{\"empty_scatter_slice_oracle_exact\": true, \"gatk_oracle_exact\": true, \"input_shards\": 2, \"merged_tranches\": 3, \"mode_required\": true, \"mode_validation\": true, \"selected_tranches\": 2, \"short_tranche_alias\": true, \"status\": \"pass\", \"version_validation\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

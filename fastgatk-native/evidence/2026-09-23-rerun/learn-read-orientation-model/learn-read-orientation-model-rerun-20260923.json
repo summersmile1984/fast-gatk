@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "tool": "LearnReadOrientationModel",
+  "native_binary": "fastgatk-learn-read-orientation-model",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 30.775,
+  "scripts": [
+    {
+      "name": "verify_learn_read_orientation_model.py",
+      "exit_code": 0,
+      "elapsed_seconds": 12.829,
+      "wall_clock_seconds": 12.829,
+      "peak_rss_bytes": 609763328,
+      "peak_vm_hwm_bytes": 609763328,
+      "cpu_time_seconds": 4289.258,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 7286784,
+        "peak_vm_hwm_bytes": 7286784,
+        "wall_clock_seconds_sum": 0.047,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-learn-read-orientation-model -I /tmp/fastgatk-orientation-7jnbgniu/shard-1.f1r2.tsv -I /tmp/fastgatk-orientation-7jnbgniu/shard-2",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-learn-read-orientation-model -I /tmp/fastgatk-orientation-7jnbgniu/shard-1.f1r2.tsv.gz -I /tmp/fastgatk-orientation-7jnbgniu/shar",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-learn-read-orientation-model -I /tmp/fastgatk-orientation-7jnbgniu/collect-f1r2.tar.gz -O /tmp/fastgatk-orientation-7jnbgniu/arti",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-learn-read-orientation-model -I /tmp/fastgatk-orientation-7jnbgniu/gatk-collect-f1r2.tar.gz -O /tmp/fastgatk-orientation-7jnbgniu"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 609763328,
+        "peak_vm_hwm_bytes": 609763328,
+        "wall_clock_seconds_sum": 12.699,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx2g -jar /home/turing-agents/Document",
+          "java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx2g -jar /home/turing-agents/Document"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 19116032,
+        "peak_vm_hwm_bytes": 19116032,
+        "wall_clock_seconds_sum": 12.74,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk --java-options -Xmx2g CollectF1R2Counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/t",
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk --java-options -Xmx2g LearnReadOrientationModel -I /tmp/fastgatk-orientation-7jnbgniu/gatk-collect-f"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"records\": 4, \"contexts\": 64, \"archive_members\": 1, \"f1r2_alt_support\": 13, \"r1f2_alt_support\": 12, \"tar_input\": true, \"standard_gatk_oracle\": {\"status\": \"pass\", \"contexts\": 64, \"contexts_with_data\": 3, \"max_probability_delta\": 4.463096558993129e-14, \"count_mismatches\": 0}}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_learn_read_orientation_model_multisample_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 17.946,
+      "wall_clock_seconds": 17.946,
+      "peak_rss_bytes": 428859392,
+      "peak_vm_hwm_bytes": 428859392,
+      "cpu_time_seconds": 4302.22,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 8179712,
+        "peak_vm_hwm_bytes": 8179712,
+        "wall_clock_seconds_sum": 0.015,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-learn-read-orientation-model -I /tmp/fastgatk-orientation-multisample-4xd_groq/collect.tar.gz -O /tmp/fastgatk-orientation-multis",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-learn-read-orientation-model -I /tmp/fastgatk-orientation-multisample-4xd_groq/collect.tar.gz -O /tmp/fastgatk-orientation-multis"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 428859392,
+        "peak_vm_hwm_bytes": 428859392,
+        "wall_clock_seconds_sum": 17.804,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx2g -jar /home/turing-agents/Document",
+          "java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx2g -jar /home/turing-agents/Document",
+          "java -Dsamjdk.use_async_io_read_samtools=false -Dsamjdk.use_async_io_write_samtools=true -Dsamjdk.use_async_io_write_tribble=false -Dsamjdk.compression_level=2 -Xmx2g -jar /home/turing-agents/Document"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 19177472,
+        "peak_vm_hwm_bytes": 19177472,
+        "wall_clock_seconds_sum": 17.876,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk --java-options -Xmx2g CollectF1R2Counts -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/t",
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk --java-options -Xmx2g LearnReadOrientationModel -I /tmp/fastgatk-orientation-multisample-4xd_groq/co",
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk --java-options -Xmx2g LearnReadOrientationModel -I /tmp/fastgatk-orientation-multisample-4xd_groq/co"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"samples\": 2, \"members\": [\"SAMPLE1.orientation_priors\", \"SAMPLE2.orientation_priors\"], \"member_content_exact\": true, \"max_depth_em_boundary\": true, \"max_depth\": 2, \"max_depth_max_probability_delta\": 1.8774148902167553e-12, \"gatk_oracle\": {\"status\": \"pass\", \"gatk_members\": [\"SAMPLE1.orientation_priors\", \"SAMPLE2.orientation_priors\"]}}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "tool": "GatherPileupSummaries",
+  "native_binary": "fastgatk-gather-pileup-summaries",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 11.147,
+  "scripts": [
+    {
+      "name": "verify_gather_pileup_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 11.107,
+      "wall_clock_seconds": 11.107,
+      "peak_rss_bytes": 351576064,
+      "peak_vm_hwm_bytes": 351576064,
+      "cpu_time_seconds": 2129.988,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 4571136,
+        "peak_vm_hwm_bytes": 4571136,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-pileup-summaries -I /tmp/fastgatk-gather-pileup-gatk-oracle-5g_tfnci/empty-a.table -I /tmp/fastgatk-gather-pileup-gatk-ora"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 351576064,
+        "peak_vm_hwm_bytes": 351576064,
+        "wall_clock_seconds_sum": 11.074,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherPileupSummari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherPileupSummari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherPileupSummari"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"all_empty_header_exact\": true, \"empty_inputs\": 1, \"empty_sample_conflict_ignored\": true, \"file_order_exact\": true, \"gatk_version\": \"4.6.2.0\", \"input_files\": 3, \"mixed_empty_sample_ignored\": true, \"status\": \"pass\", \"table_bytes_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_gather_pileup_summaries.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.04,
+      "wall_clock_seconds": 0.04,
+      "peak_rss_bytes": 2174976,
+      "peak_vm_hwm_bytes": 2174976,
+      "cpu_time_seconds": 2121.112,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 2174976,
+        "peak_vm_hwm_bytes": 2174976,
+        "wall_clock_seconds_sum": 0.01,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-pileup-summaries -I /tmp/fastgatk-gather-pileup-summaries-l202bl14/shard-1.table -I /tmp/fastgatk-gather-pileup-summaries-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-pileup-summaries -I /tmp/fastgatk-gather-pileup-summaries-l202bl14/shard-1.table -I /tmp/fastgatk-gather-pileup-summaries-"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"output_sites\": 3, \"empty_inputs\": 1}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

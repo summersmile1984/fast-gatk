@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "tool": "VariantAnnotator",
+  "native_binary": "fastgatk-variant-annotator",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 22.795,
+  "scripts": [
+    {
+      "name": "verify_variant_annotator_coverage_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 9.656,
+      "wall_clock_seconds": 9.656,
+      "peak_rss_bytes": 286216192,
+      "peak_vm_hwm_bytes": 286216192,
+      "cpu_time_seconds": 7801.223,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 6864896,
+        "peak_vm_hwm_bytes": 6864896,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-annotator -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -I /hom"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 286216192,
+        "peak_vm_hwm_bytes": 286216192,
+        "wall_clock_seconds_sum": 9.622,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx512m -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantAnn"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"covered\": [\"coverage-evidence-count\", \"reference-header-contract\"], \"info_dp\": [\"DP=5\", \"DP=3\", \"DP=4\"], \"mismatches\": [], \"oracle\": \"GATK-4.6.2.0\", \"rows\": 3, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_variant_annotator_resource_expression_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 13.139,
+      "wall_clock_seconds": 13.139,
+      "peak_rss_bytes": 333406208,
+      "peak_vm_hwm_bytes": 333406208,
+      "cpu_time_seconds": 7807.538,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 2297856,
+        "peak_vm_hwm_bytes": 2297856,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-annotator -V /tmp/fastgatk-variant-annotator-pyvedjk8/input.vcf -O /tmp/fastgatk-variant-annotator-pyvedjk8/native.vcf --"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 333406208,
+        "peak_vm_hwm_bytes": 333406208,
+        "wall_clock_seconds_sum": 13.099,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx512m -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatu",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx512m -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantAnn"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"covered\": [\"comp\", \"dbsnp\", \"resource-expression\", \"expression-allele-mapping\", \"canonical-header-lines\"], \"header_lines\": 13, \"mismatches\": [], \"oracle\": \"GATK-4.6.2.0\", \"rows\": 8, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

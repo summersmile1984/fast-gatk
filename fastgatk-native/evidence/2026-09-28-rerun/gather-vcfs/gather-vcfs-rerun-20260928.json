@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "tool": "GatherVcfs",
+  "native_binary": "fastgatk-gather-vcfs",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 21.317,
+  "scripts": [
+    {
+      "name": "verify_gather_vcfs.py",
+      "exit_code": 0,
+      "elapsed_seconds": 18.378,
+      "wall_clock_seconds": 18.378,
+      "peak_rss_bytes": 391020544,
+      "peak_vm_hwm_bytes": 391020544,
+      "cpu_time_seconds": 2154.99,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 13,
+      "native": {
+        "peak_rss_bytes": 6012928,
+        "peak_vm_hwm_bytes": 6012928,
+        "wall_clock_seconds_sum": 0.042,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-1.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-2.vcf.gz --REFERENCE",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-2.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-1.vcf.gz --reorder-i",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-2.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-1.vcf.gz -O /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-1.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/dictionary-mismatch.vcf.gz",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-1.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-2.vcf.gz -L /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-1.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-2.vcf.gz -L /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-1.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/shard-2.vcf.gz -L /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-vcfs -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/block-1.vcf.gz -I /tmp/fastgatk-gather-vcfs-_y2u2v8q/block-2.vcf.gz --allow-ove"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 391020544,
+        "peak_vm_hwm_bytes": 391020544,
+        "wall_clock_seconds_sum": 18.3,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVariants -V /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherVcfs -I /tmp/",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherVcfs -I /tmp/",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherVcfs -I /tmp/"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16711680,
+        "peak_vm_hwm_bytes": 16711680,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_gather_vcfs.py"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"records\": 2, \"indexed\": true, \"gatk_oracle_exact\": true, \"reference_sequence_alias\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_gather_vcfs_cli_boundary_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 2.939,
+      "wall_clock_seconds": 2.939,
+      "peak_rss_bytes": 298381312,
+      "peak_vm_hwm_bytes": 298381312,
+      "cpu_time_seconds": 2141.838,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 298381312,
+        "peak_vm_hwm_bytes": 298381312,
+        "wall_clock_seconds_sum": 2.91,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherVcfs -"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"comment_exact\": true, \"compression_level\": 0, \"create_index_false\": true, \"gatk_version\": \"4.6.2.0\", \"quiet_verbosity_accepted\": true, \"records\": 2, \"status\": \"pass\", \"uppercase_input_output\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "sample": "HG002",
+  "reference": "GRCh38_no_alt",
+  "assets": {
+    "stratification_manifest": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/genome-stratifications-md5s.txt",
+      "filename": "genome-stratifications-md5s.txt",
+      "md5": null,
+      "checksum_policy": "freeze_sha256_at_first_fetch",
+      "role": "official_stratification_checksums",
+      "large": false
+    },
+    "truth_manifest": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/checksum.md5",
+      "filename": "HG002_v5.0q_checksum.md5",
+      "md5": null,
+      "checksum_policy": "freeze_sha256_at_first_fetch",
+      "role": "official_truth_checksums",
+      "large": false
+    },
+    "stratification_member_manifest": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/GRCh38@all/GRCh38-genome-stratifications-md5s.txt",
+      "filename": "GRCh38-genome-stratifications-md5s.txt",
+      "md5": "4d4c3a41e0668998e847ecdc7f9a2d34",
+      "checksum_manifest": "stratification_manifest",
+      "manifest_entry": "GRCh38@all/GRCh38-genome-stratifications-md5s.txt",
+      "role": "official_GRCh38_BED_checksums",
+      "large": false
+    },
+    "bam": {
+      "url": "https://storage.googleapis.com/deepvariant/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam",
+      "filename": "HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam",
+      "md5": "c9e975a20fd6740af3db18271d75fe2b",
+      "size_bytes": 46033519192,
+      "generation": "1594940262604684",
+      "role": "common_HG002_Illumina_input",
+      "large": true
+    },
+    "bam_index": {
+      "url": "https://storage.googleapis.com/deepvariant/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam.bai",
+      "filename": "HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam.bai",
+      "md5": "562f8c8a20b3748666e776f81bd75586",
+      "size_bytes": 9028736,
+      "generation": "1594940262931273",
+      "role": "source_BAM_index",
+      "large": false
+    },
+    "reference": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta.gz",
+      "filename": "GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta.gz",
+      "md5": "3a3347eae0893f96ecf495d1c39e2284",
+      "role": "original_alignment_reference_BGZF_to_plain_FASTA",
+      "large": true
+    },
+    "truth": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/HG002_GRCh38_v5.0q_smvar.vcf.gz",
+      "filename": "HG002_GRCh38_v5.0q_smvar.vcf.gz",
+      "md5": "c71acc71069bf7cd7f51eb8fb0c1a1ab",
+      "size_bytes": 42067644,
+      "checksum_manifest": "truth_manifest",
+      "manifest_entry": "HG002_GRCh38_v5.0q_smvar.vcf.gz",
+      "role": "independent_biological_truth_not_training_input",
+      "large": false
+    },
+    "truth_index": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/HG002_GRCh38_v5.0q_smvar.vcf.gz.tbi",
+      "filename": "HG002_GRCh38_v5.0q_smvar.vcf.gz.tbi",
+      "md5": "58cab2a06e29b74a5bdc190ead079083",
+      "checksum_manifest": "truth_manifest",
+      "manifest_entry": "HG002_GRCh38_v5.0q_smvar.vcf.gz.tbi",
+      "role": "truth_VCF_index",
+      "large": false
+    },
+    "benchmark_bed": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/HG002_GRCh38_v5.0q_smvar.benchmark.bed",
+      "filename": "HG002_GRCh38_v5.0q_smvar.benchmark.bed",
+      "md5": "3366858af85875cbb3c579412ffa4c56",
+      "checksum_manifest": "truth_manifest",
+      "manifest_entry": "HG002_GRCh38_v5.0q_smvar.benchmark.bed",
+      "role": "unaltered_smvar_confident_regions",
+      "large": false
+    },
+    "dbsnp": {
+      "url": "https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.dbsnp138.vcf.gz",
+      "filename": "Homo_sapiens_assembly38.dbsnp138.vcf.gz",
+      "md5": "110aaeb8130bf4edb544a72d2c7829f7",
+      "generation": "1617810757945897",
+      "role": "independent_BQSR_known_sites",
+      "large": true
+    },
+    "dbsnp_index": {
+      "url": "https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.dbsnp138.vcf.gz.tbi",
+      "filename": "Homo_sapiens_assembly38.dbsnp138.vcf.gz.tbi",
+      "md5": "d77e60d4520f27493a1a2c13c88b7626",
+      "generation": "1617810757925801",
+      "role": "source_dbsnp_index",
+      "large": false
+    },
+    "mills": {
+      "url": "https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz",
+      "filename": "Mills_and_1000G_gold_standard.indels.hg38.vcf.gz",
+      "md5": "2e02696032dcfe95ff0324f4a13508e3",
+      "generation": "1575676516636581",
+      "role": "independent_BQSR_known_sites",
+      "large": false
+    },
+    "mills_index": {
+      "url": "https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi",
+      "filename": "Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi",
+      "md5": "4c807e2cbe0752c0c44ac82ff3b52025",
+      "generation": "1575676516706496",
+      "role": "source_Mills_index",
+      "large": false
+    },
+    "stratifications": {
+      "url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/genome-stratifications/v3.6/genome-stratifications-GRCh38@all.tar.gz",
+      "filename": "genome-stratifications-GRCh38@all.tar.gz",
+      "md5": "f6b0666987b01aec08e9f5fa17707b10",
+      "checksum_manifest": "stratification_manifest",
+      "manifest_entry": "genome-stratifications-GRCh38@all.tar.gz",
+      "role": "GIAB_v3.6_BED_archive_not_bigBed",
+      "large": true
+    }
+  },
+  "images": {
+    "samtools": "quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5",
+    "bcftools": "quay.io/biocontainers/bcftools@sha256:969314d56b9131683917cc5801734891a9af130daf7a0fb902b7707060b06027",
+    "happy": "jmcdani20/hap.py@sha256:0812d37e7210011e407914deb3da2094ec8258077b21d3211e694e5ca303b489"
+  },
+  "image_versions": {
+    "samtools": "1.21",
+    "bcftools": "1.21",
+    "happy": "0.3.12",
+    "platform": "linux/amd64",
+    "verification_boundary": "Registry digests observed; actual image/tool/RTG versions must be verified at runtime."
+  },
+  "stratification": {
+    "version": "3.6",
+    "archive_root": "GRCh38@all",
+    "entrypoint": "GRCh38@all/GRCh38-all-stratifications.tsv",
+    "entrypoint_md5": "05f4b5d0e945e9173a9eef39b8e5dbbe",
+    "member_manifest_entry": "GRCh38@all/GRCh38-genome-stratifications-md5s.txt",
+    "interpretation": "Layers overlap and cannot be added. HG001/HG003/other sample-specific layers are not HG002 biology; XY layers lie outside the calling/scoring domain."
+  },
+  "provenance": {
+    "bam": {
+      "source_url": "https://storage.googleapis.com/deepvariant/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam",
+      "alignment": "bwa",
+      "duplicate_marking": "MarkDuplicates",
+      "duplicates_removed": false,
+      "bqsr_applied": null,
+      "quality_processing": "unknown",
+      "evidence": ["https://storage.googleapis.com/deepvariant/case-study-testdata/HG002.novaseq.pcr-free.35x.dedup.grch38_no_alt.bam"],
+      "evidence_scope": "Previously inspected header contains BWA and MarkDuplicates, both REMOVE_DUPLICATES options false, no ApplyBQSR observed. Header alone does not establish full record integrity or historical QUAL processing.",
+      "prior_header": {"sort_order": "coordinate", "sample": "HG002", "contigs": 195, "RG_LB_PL_present": true},
+      "nominal_coverage": "35x is source-labelled coverage, not measured coverage"
+    },
+    "reference": {
+      "readme_url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/README_GIAB_Mapping_References.md",
+      "original_NCBI_gzip_md5": "a08035b6a6e31780e96a34008ff21bd6",
+      "relationship": "GIAB BGZF and original NCBI gzip contain the same no-alt FASTA; compressed MD5 differs. Decompress to plain prepared/reference.fa and regenerate FAI/dictionary with M5 and plain SHA-256.",
+      "eligibility": "pending",
+      "historical_M5_boundary": "Full BAM SN/LN and any available M5 must match the complete reference; absent historical M5 cannot prove every aligned reference base."
+    },
+    "truth": {
+      "version": "5.0q",
+      "readme_url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/NIST_HG002_v5.0q_variant-benchmarksets_README.md",
+      "configuration_url": "https://ftp.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/AshkenazimTrio/HG002_NA24385_son/v5.0q/defrabb_files/resources.yml",
+      "status": "Recommended replacement for v4.2.1, still draft/work-in-progress",
+      "generation_reference": "GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz",
+      "reference_caveat": "Truth generation reference has masking/additional decoys and must not replace the BAM caller reference. Different generation reference alone neither establishes incompatibility everywhere nor requires realignment. Full scoped primary dictionary/BED/REF checks gate scoring; no REF repair, truth filtering by variant length, implicit reference conversion, or v4.2.1 fallback.",
+      "smvar_caveat": "smvar includes SV. Use its paired smvar benchmark BED, retain complete alleles and spanning records, and do not import truvari-specific ALT=* deletion into hap.py.",
+      "prior_header": {"sample": "HG002", "chr20_length": 64444167, "bytes_inspected": 65536, "http_status": 206},
+      "assembly_source": "T2T-HG002 assembly truth source does not change the GRCh38 coordinate system"
+    },
+    "known_sites": {
+      "policy": "Derive common resources using only caller reference dictionary, LN and REF checks; record dropped non-reference contigs and rebuild accurate headers/indexes. Never use HG002 truth or repository HG001 truth copies for BQSR."
+    },
+    "manifest_bootstrap": "Official HTTPS manifest bytes are frozen with MD5/SHA-256 at first acquisition; this is a recorded trust-on-first-use boundary, not a publisher-provided signature. Later use rehashes against the frozen receipt and refuses changed content."
+  },
+  "scope": {"pilot": "chr20", "formal": "chr1-chr22", "sex": "male", "X_Y_in_scope": false},
+  "acquisition": {"disk_reservation_gib": 600, "small_asset_limit_bytes": 268435456, "default_full_download": false}
+}

@@ -1,0 +1,449 @@
+{
+  "schema_version": 1,
+  "tool": "ModelSegments",
+  "native_binary": "fastgatk-model-segments",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 10,
+  "scripts_passed": 10,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 67.903,
+  "scripts": [
+    {
+      "name": "verify_model_segments.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.903,
+      "wall_clock_seconds": 4.903,
+      "peak_rss_bytes": 387612672,
+      "peak_vm_hwm_bytes": 387612672,
+      "cpu_time_seconds": 5704.708,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 11,
+      "native": {
+        "peak_rss_bytes": 6279168,
+        "peak_vm_hwm_bytes": 6279168,
+        "wall_clock_seconds_sum": 0.161,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-w6ug41j7/denoised.tsv --allelic-counts /tmp/fastgatk-model-seg",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-w6ug41j7/flat.denoised.tsv --allelic-counts /tmp/fastgatk-model-segments-w6ug41j7/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-w6ug41j7/denoised.tsv --allelic-counts /tmp/fastgatk-model-segments-w6ug41j7/allel",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-w6ug41j7/denoised.tsv --output-prefix sample -O /tmp/fastgatk-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-w6ug41j7/denoised.tsv --allelic-counts /tmp/fastgatk-model-segments-w6ug41j7/allel",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-w6ug41j7/denoised.tsv --denoised-copy-ratios /tmp/fastgatk-mod",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-w6ug41j7/denoised.tsv --allelic-counts /tmp/fastgatk-model-segments-w6ug41j7/allel",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-w6ug41j7/denoised.tsv --allelic-counts /tmp/fastgatk-model-segments-w6ug41j7/allel"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 387612672,
+        "peak_vm_hwm_bytes": 387612672,
+        "wall_clock_seconds_sum": 4.664,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16191488,
+        "peak_vm_hwm_bytes": 16191488,
+        "wall_clock_seconds_sum": 0.046,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_model_segments.py"
+        ]
+      },
+      "stdout_tail": "{\"allelic_validation\": true, \"gatk_modeling_surface\": true, \"kernel_segmentation\": true, \"multisample_segmentation\": true, \"points\": 7, \"posterior_repeatable\": true, \"probabilistic_controls\": true, \"segments\": 3, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_allele_fraction_initialization_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.87,
+      "wall_clock_seconds": 4.87,
+      "peak_rss_bytes": 375480320,
+      "peak_vm_hwm_bytes": 375480320,
+      "cpu_time_seconds": 5688.45,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 5931008,
+        "peak_vm_hwm_bytes": 5931008,
+        "wall_clock_seconds_sum": 0.05,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-af-init-tjggqlyz/copy-ratios.tsv --output-prefix sample -O /tm"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 375480320,
+        "peak_vm_hwm_bytes": 375480320,
+        "wall_clock_seconds_sum": 4.787,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"alt_ref_fixture\": [[2, 1], [1, 2]], \"expected_initial_minor_fraction\": 0.453125, \"gatk_version\": \"4.6.2.0\", \"integrated_minor_responsibility\": 0.3125, \"java_partition_and_schema_exact\": true, \"native_initialization_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_allele_fraction_likelihood_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.683,
+      "wall_clock_seconds": 4.683,
+      "peak_rss_bytes": 364318720,
+      "peak_vm_hwm_bytes": 364318720,
+      "cpu_time_seconds": 5673.061,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 6414336,
+        "peak_vm_hwm_bytes": 6414336,
+        "wall_clock_seconds_sum": 0.033,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-af-likelihood-jor1n4_z/copy-ratios.tsv --output-prefix sample -O /tmp/fastgatk-mod"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 364318720,
+        "peak_vm_hwm_bytes": 364318720,
+        "wall_clock_seconds_sum": 4.624,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_model_segments_allele_fraction_likelihood_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"java_model_begin_mean_bias\": 0.792748, \"java_posterior_draws_bit_identical\": false, \"laplace_likelihood_conditional_exact\": true, \"mean_bias_abs_delta\": 0.411262, \"native_mean_bias_conditional\": 1.20401, \"partition_and_schema_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_copy_ratio_conditionals_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.834,
+      "wall_clock_seconds": 4.834,
+      "peak_rss_bytes": 379125760,
+      "peak_vm_hwm_bytes": 379125760,
+      "cpu_time_seconds": 5680.829,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 6488064,
+        "peak_vm_hwm_bytes": 6488064,
+        "wall_clock_seconds_sum": 0.056,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-conditionals-gcg1ht_f/copy-ratios.tsv --segments /tmp/fastgatk-model-segments-cond"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 379125760,
+        "peak_vm_hwm_bytes": 379125760,
+        "wall_clock_seconds_sum": 4.75,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "_iterations\": 13, \"conditional_model\": \"deterministic-gibbs-responsibility-v1\", \"gatk_version\": \"4.6.2.0\", \"java_variance_report_non_degenerate\": true, \"native_parameter_report_point_estimate\": true, \"outlier_probability_finite\": true, \"outlier_responsibility_active\": true, \"partition_and_schema_exact\": true, \"posterior_report_provenance_explicit\": true, \"status\": \"pass\", \"variance_finite\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_default_kernel_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 17.412,
+      "wall_clock_seconds": 17.412,
+      "peak_rss_bytes": 374857728,
+      "peak_vm_hwm_bytes": 374857728,
+      "cpu_time_seconds": 5735.795,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 5996544,
+        "peak_vm_hwm_bytes": 5996544,
+        "wall_clock_seconds_sum": 0.047,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-default-kernel-xed6zco5/step.tsv --output-prefix sample -O /tm"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 374857728,
+        "peak_vm_hwm_bytes": 374857728,
+        "wall_clock_seconds_sum": 17.327,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "lSegmenter\"}, \"gradient\": {\"boundaries_exact\": true, \"java_segments\": 1, \"native_segments\": 1, \"segmentation_method\": \"KernelSegmenter\"}, \"step\": {\"boundaries_exact\": true, \"java_segments\": 2, \"native_segments\": 2, \"segmentation_method\": \"KernelSegmenter\"}}, \"default_without_segments_uses_kernel_segmenter\": true, \"gatk_version\": \"4.6.2.0\", \"linear_rank_one_kernel_feature\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_first_alt_fraction_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.662,
+      "wall_clock_seconds": 4.662,
+      "peak_rss_bytes": 369250304,
+      "peak_vm_hwm_bytes": 369250304,
+      "cpu_time_seconds": 5666.175,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 5935104,
+        "peak_vm_hwm_bytes": 5935104,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-first-aaf-qrc549wz/copy-ratios.tsv --allelic-counts /tmp/fastg"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 369250304,
+        "peak_vm_hwm_bytes": 369250304,
+        "wall_clock_seconds_sum": 4.627,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "alt_fraction_per_interval\": 0.5, \"copy_ratio_intervals\": 32, \"expected_partition\": [[\"chr1\", \"1\", \"1600\", \"16\"], [\"chr1\", \"1601\", \"3200\", \"16\"]], \"first_oriented_alt_fraction_semantics\": true, \"full_per_locus_modeling_posterior_exact\": false, \"gatk_version\": \"4.6.2.0\", \"java_native_partition_exact\": true, \"minor_allele_fraction_per_site\": 0.1, \"modeling_maf_kept_separate\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_input_segments_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.885,
+      "wall_clock_seconds": 4.885,
+      "peak_rss_bytes": 368160768,
+      "peak_vm_hwm_bytes": 368160768,
+      "cpu_time_seconds": 5695.401,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 5939200,
+        "peak_vm_hwm_bytes": 5939200,
+        "wall_clock_seconds_sum": 0.033,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments -I /tmp/fastgatk-model-segments-input-saf6yz9z/copy-ratios.tsv --segments /tmp/fastgatk-model-segments-input-saf6y"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 368160768,
+        "peak_vm_hwm_bytes": 368160768,
+        "wall_clock_seconds_sum": 4.818,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"boundaries_exact\": true, \"copy_ratio_points_per_segment\": [3, 3], \"copy_ratio_rows_exact\": true, \"gatk_version\": \"4.6.2.0\", \"provided_segments\": 2, \"segmentation_skipped\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_mcmc_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.493,
+      "wall_clock_seconds": 0.493,
+      "peak_rss_bytes": 17821696,
+      "peak_vm_hwm_bytes": 17821696,
+      "cpu_time_seconds": 5659.125,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 17821696,
+        "peak_vm_hwm_bytes": 17821696,
+        "wall_clock_seconds_sum": 0.326,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-read-counts -R /home/turing-agents/Documents/fast-gatk/testdata/real/cnv_somatic/human_g1k_v37.chr-20.truncated.fasta -I ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-b3-mcmc-_ukx8xv4/tumor.counts.hdf5 --count-panel-of-normals /home/turing-agents/Documents/fa",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-b3-mcmc-_ukx8xv4/tumor.denoised.tsv --output-prefix /tmp/fastgatk-b3-mcmc-_uk",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-b3-mcmc-_ukx8xv4/tumor.denoised.tsv --output-prefix /tmp/fastgatk-b3-mcmc-_uk",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-b3-mcmc-_ukx8xv4/tumor.denoised.tsv --output-prefix /tmp/fastgatk-b3-mcmc-_uk",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-b3-mcmc-_ukx8xv4/tumor.denoised.tsv --output-prefix /tmp/fastgatk-b3-mcmc-_uk"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 6905856,
+        "peak_vm_hwm_bytes": 6905856,
+        "wall_clock_seconds_sum": 0.007,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "uname -p"
+        ]
+      },
+      "stdout_tail": "{\n  \"status\": \"pass\",\n  \"fixture\": \"model_segments_mcmc_determinism_and_convergence\",\n  \"deterministic_byte_equal\": true,\n  \"converged_segment_count\": 77,\n  \"num_samples_25_segments\": 77,\n  \"num_samples_100_segments\": 77,\n  \"num_burn_in_5_segments\": 77,\n  \"four_run_byte_stable\": true,\n  \"b3_mcmc_determinism_recorded\": true\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_multisample_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 8.448,
+      "wall_clock_seconds": 8.448,
+      "peak_rss_bytes": 356126720,
+      "peak_vm_hwm_bytes": 356126720,
+      "cpu_time_seconds": 5713.436,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.011,
+        "process_count": 2,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 356126720,
+        "peak_vm_hwm_bytes": 356126720,
+        "wall_clock_seconds_sum": 8.395,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": ", \"boundaries_exact\": true, \"joint_feature_observations\": 64, \"segments\": 2}, \"concordant\": {\"boundaries\": [[\"chr1\", \"1\", \"1600\"], [\"chr1\", \"1601\", \"3200\"]], \"boundaries_exact\": true, \"joint_feature_observations\": 64, \"segments\": 2}}, \"concordant_vector_boundary_exact\": true, \"gatk_version\": \"4.6.2.0\", \"mean_reduction_would_cancel_anti_correlated_event\": true, \"sample_count\": 2, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_model_segments_smoothing_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 12.713,
+      "wall_clock_seconds": 12.713,
+      "peak_rss_bytes": 363081728,
+      "peak_vm_hwm_bytes": 363081728,
+      "cpu_time_seconds": 5720.98,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 5931008,
+        "peak_vm_hwm_bytes": 5931008,
+        "wall_clock_seconds_sum": 0.016,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-smoothing-_wc9sjgb/copy-ratios.tsv --segments /tmp/fastgatk-mo",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-model-segments --denoised-copy-ratios /tmp/fastgatk-model-segments-smoothing-_wc9sjgb/copy-ratios.tsv --segments /tmp/fastgatk-mo"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 363081728,
+        "peak_vm_hwm_bytes": 363081728,
+        "wall_clock_seconds_sum": 12.665,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ModelSegments --den"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "_wc9sjgb/native-separate/sample.modelFinal.segments.tsv\", \"output_bytes\": 467, \"segmentation_method\": \"provided\", \"segments\": 2, \"segments_input\": \"/tmp/fastgatk-model-segments-smoothing-_wc9sjgb/segments.interval_list\", \"smoothing_applied\": false, \"smoothing_iterations\": 0, \"status\": \"prototype\", \"tool\": \"ModelSegments\"}, \"smoothing_applied\": false}, \"non_merge_threshold\": 0.0, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

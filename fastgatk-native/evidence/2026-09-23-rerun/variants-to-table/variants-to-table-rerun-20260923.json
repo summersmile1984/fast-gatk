@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "tool": "VariantsToTable",
+  "native_binary": "fastgatk-variants-to-table",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 3,
+  "scripts_passed": 3,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 125.516,
+  "scripts": [
+    {
+      "name": "verify_malformed_input_fail_loud_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 2.228,
+      "wall_clock_seconds": 2.228,
+      "peak_rss_bytes": 20238336,
+      "peak_vm_hwm_bytes": 20238336,
+      "cpu_time_seconds": 7426.547,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 38,
+      "native": {
+        "peak_rss_bytes": 9949184,
+        "peak_vm_hwm_bytes": 9949184,
+        "wall_clock_seconds_sum": 2.133,
+        "process_count": 35,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/variants-to-table-malformed-record-first.vcf -O /tmp/fastgatk-fail-l",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/variants-to-table-truncated-gzip.vcf.gz -O /tmp/fastgatk-fail-loud-o",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-select-variants -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/select-variants-control-gzip.vcf.gz -O /tmp/fastgatk-fail-loud-oracle-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-select-variants -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/select-variants-malformed-record-last.vcf -O /tmp/fastgatk-fail-loud-o",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-select-variants -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/select-variants-truncated-gzip.vcf.gz -O /tmp/fastgatk-fail-loud-oracl",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/left-align-trim-control-plain.vcf -R /tmp/fastgatk-fail-loud-oracle-2u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/left-align-trim-control-gzip.vcf.gz -R /tmp/fastgatk-fail-loud-oracle-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-fail-loud-oracle-2uiizl8_/left-align-trim-malformed-record-first.vcf -R /tmp/fastgatk-fail-loud-"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 20238336,
+        "peak_vm_hwm_bytes": 20238336,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 3,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "ence-maker/control-plain] exit=0 records=10000\n[fasta-alternate-reference-maker/control-gzip] exit=0 records=10000\n[fasta-alternate-reference-maker/malformed-record-first] exit=2 records=None\n[fasta-alternate-reference-maker/malformed-record-last] exit=2 records=None\n[fasta-alternate-reference-maker/truncated-gzip] exit=2 records=None\n{\"cases\": 50, \"status\": \"pass\", \"tools\": 10, \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_variants_to_table.py",
+      "exit_code": 0,
+      "elapsed_seconds": 91.429,
+      "wall_clock_seconds": 91.429,
+      "peak_rss_bytes": 325500928,
+      "peak_vm_hwm_bytes": 325500928,
+      "cpu_time_seconds": 7478.814,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 20,
+      "native": {
+        "peak_rss_bytes": 5611520,
+        "peak_vm_hwm_bytes": 5611520,
+        "wall_clock_seconds_sum": 0.041,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-variants-to-table-yr5a7846/input.vcf -O /tmp/fastgatk-variants-to-table-yr5a7846/float.tsv -F ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-variants-to-table-yr5a7846/info-edge.vcf -O /tmp/fastgatk-variants-to-table-yr5a7846/info-edge",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-variants-to-table-yr5a7846/input.vcf -O /tmp/fastgatk-variants-to-table-yr5a7846/intersection.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-variants-to-table-yr5a7846/input.vcf -O /tmp/fastgatk-variants-to-table-yr5a7846/variant-outpu",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-variants-to-table-yr5a7846/input.vcf -O /tmp/fastgatk-variants-to-table-yr5a7846/padded.tsv -F",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-variants-to-table-yr5a7846/standard-fields.vcf -O /tmp/fastgatk-variants-to-table-yr5a7846/sta",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variants-to-table -V /tmp/fastgatk-variants-to-table-yr5a7846/input.vcf -O /tmp/fastgatk-variants-to-table-yr5a7846/molten.tsv -F"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 325500928,
+        "peak_vm_hwm_bytes": 325500928,
+        "wall_clock_seconds_sum": 91.346,
+        "process_count": 12,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"records\": 1, \"split_rows\": 2, \"gatk_oracle\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_variants_to_table_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 31.859,
+      "wall_clock_seconds": 31.859,
+      "peak_rss_bytes": 328343552,
+      "peak_vm_hwm_bytes": 328343552,
+      "cpu_time_seconds": 7440.354,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 328343552,
+        "peak_vm_hwm_bytes": 328343552,
+        "wall_clock_seconds_sum": 31.824,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantsToTa"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"error_if_missing_absent_field_fail_closed\": true, \"error_if_missing_literal_na_exact\": true, \"moltenize_exact\": true, \"moltenize_excludes_as_fields\": true, \"release\": \"GATK 4.6.2.0\", \"split_multi_allelic_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "tool": "CallCopyRatioSegments",
+  "native_binary": "fastgatk-call-copy-ratio-segments",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 5,
+  "scripts_passed": 5,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 53.955,
+  "scripts": [
+    {
+      "name": "verify_call_copy_ratio_segments.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.07,
+      "wall_clock_seconds": 0.07,
+      "peak_rss_bytes": 0,
+      "peak_vm_hwm_bytes": 0,
+      "cpu_time_seconds": 571.659,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"calls\": [\"0\", \"0\", \"0\", \"+\", \"+\", \"-\"], \"invalid_threshold_rejected\": true, \"legacy_output\": true, \"segments\": 6, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_call_copy_ratio_segments_compensated_sum_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.269,
+      "wall_clock_seconds": 5.269,
+      "peak_rss_bytes": 371339264,
+      "peak_vm_hwm_bytes": 371339264,
+      "cpu_time_seconds": 576.824,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 5918720,
+        "peak_vm_hwm_bytes": 5918720,
+        "wall_clock_seconds_sum": 0.042,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-call-copy-ratio-segments -I /tmp/fastgatk-call-copy-ratio-compensated-09bhhp5n/compensated.cr.seg -O /tmp/fastgatk-call-copy-rati"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 371339264,
+        "peak_vm_hwm_bytes": 371339264,
+        "wall_clock_seconds_sum": 5.19,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"calling_z_boundary_call\": \"0\", \"gatk_version\": \"4.6.2.0\", \"java_double_stream_compensation_exact\": true, \"legacy_output_exact\": true, \"main_output_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_call_copy_ratio_segments_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 21.205,
+      "wall_clock_seconds": 21.205,
+      "peak_rss_bytes": 361975808,
+      "peak_vm_hwm_bytes": 361975808,
+      "cpu_time_seconds": 608.578,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 5816320,
+        "peak_vm_hwm_bytes": 5816320,
+        "wall_clock_seconds_sum": 0.055,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-call-copy-ratio-segments -I /tmp/fastgatk-call-copy-ratio-gatk-xbpzawku/one-neutral.cr.seg -O /tmp/fastgatk-call-copy-ratio-gatk-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-call-copy-ratio-segments -I /tmp/fastgatk-call-copy-ratio-gatk-xbpzawku/full-z-score-aliases.cr.seg -O /tmp/fastgatk-call-copy-ra"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 361975808,
+        "peak_vm_hwm_bytes": 361975808,
+        "wall_clock_seconds_sum": 21.11,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"all_calls_neutral_in_degenerate_cases\": true, \"derived_igv_sidecar_exact\": true, \"empty_neutral_nan_statistics_exact\": true, \"full_gatk_z_score_aliases\": true, \"gatk_version\": \"4.6.2.0\", \"singleton_neutral_nan_statistics_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_call_copy_ratio_segments_interval_validation_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 10.563,
+      "wall_clock_seconds": 10.563,
+      "peak_rss_bytes": 363720704,
+      "peak_vm_hwm_bytes": 363720704,
+      "cpu_time_seconds": 585.284,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 5971968,
+        "peak_vm_hwm_bytes": 5971968,
+        "wall_clock_seconds_sum": 0.042,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-call-copy-ratio-segments -I /tmp/fastgatk-call-copy-ratio-interval-6ovxfoqh/overlap.tsv -O /tmp/fastgatk-call-copy-ratio-interval"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 363720704,
+        "peak_vm_hwm_bytes": 363720704,
+        "wall_clock_seconds_sum": 10.482,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"overlapping_and_unsorted_partitions_rejected\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_call_copy_ratio_segments_nonfinite_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 16.848,
+      "wall_clock_seconds": 16.848,
+      "peak_rss_bytes": 388038656,
+      "peak_vm_hwm_bytes": 388038656,
+      "cpu_time_seconds": 597.07,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 5926912,
+        "peak_vm_hwm_bytes": 5926912,
+        "wall_clock_seconds_sum": 0.056,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-call-copy-ratio-segments -I /tmp/fastgatk-call-copy-ratio-nonfinite-ibs35xkw/case-0.cr.seg -O /tmp/fastgatk-call-copy-ratio-nonfi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-call-copy-ratio-segments -I /tmp/fastgatk-call-copy-ratio-nonfinite-ibs35xkw/case-1.cr.seg -O /tmp/fastgatk-call-copy-ratio-nonfi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-call-copy-ratio-segments -I /tmp/fastgatk-call-copy-ratio-nonfinite-ibs35xkw/case-2.cr.seg -O /tmp/fastgatk-call-copy-ratio-nonfi"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 388038656,
+        "peak_vm_hwm_bytes": 388038656,
+        "wall_clock_seconds_sum": 16.758,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CallCopyRatioSegmen"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"cases\": [\"NaN\", \"Infinity\", \"-Infinity\"], \"degenerate_calls_neutral\": true, \"gatk_version\": \"4.6.2.0\", \"ieee754_values_preserved\": true, \"legacy_output_exact\": true, \"main_output_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

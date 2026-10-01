@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "tool": "FastaReferenceMaker",
+  "native_binary": "fastgatk-fasta-reference-maker",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 49.216,
+  "scripts": [
+    {
+      "name": "verify_fasta_reference_tools.py",
+      "exit_code": 0,
+      "elapsed_seconds": 49.216,
+      "wall_clock_seconds": 49.216,
+      "peak_rss_bytes": 383045632,
+      "peak_vm_hwm_bytes": 383045632,
+      "cpu_time_seconds": 1048.502,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 16,
+      "native": {
+        "peak_rss_bytes": 6246400,
+        "peak_vm_hwm_bytes": 6246400,
+        "wall_clock_seconds_sum": 0.026,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fasta-reference-maker -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -L ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fasta-alternate-reference-maker -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fasta-alternate-reference-maker -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fasta-alternate-reference-maker -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 383045632,
+        "peak_vm_hwm_bytes": 383045632,
+        "wall_clock_seconds_sum": 49.159,
+        "process_count": 11,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FastaReferenceMaker",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FastaAlternateRefer",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FastaAlternateRefer",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FastaAlternateRefer",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"java_oracle\": true, \"status\": \"pass\", \"tools\": [\"FastaReferenceMaker\", \"FastaAlternateReferenceMaker\"]}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

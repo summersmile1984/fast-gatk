@@ -1,0 +1,5 @@
+# Reuse the Serial build's C++20, Kokkos, HTSlib and HDF5 compile flags.
+# Refresh after adding targets or changing build options:
+# third_party/toolchains/cmake-4.3.4-linux-x86_64/bin/cmake -S fastgatk-native -B fastgatk-native/build-serial -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+CompileFlags:
+  CompilationDatabase: fastgatk-native/build-serial

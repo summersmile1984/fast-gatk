@@ -1,0 +1,1251 @@
+{
+  "schema_version": 1,
+  "tool": "GenotypeGVCFs",
+  "native_binary": "fastgatk-genotype-gvcf",
+  "report_date": "2026-09-27",
+  "report_kind": "verify-rerun",
+  "scripts_total": 25,
+  "scripts_passed": 25,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 2091.244,
+  "scripts": [
+    {
+      "name": "verify_gatk_genotype_gvcf.py",
+      "exit_code": 0,
+      "elapsed_seconds": 36.692,
+      "wall_clock_seconds": 36.692,
+      "peak_rss_bytes": 367230976,
+      "peak_vm_hwm_bytes": 367230976,
+      "cpu_time_seconds": 179.853,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 12767232,
+        "peak_vm_hwm_bytes": 12767232,
+        "wall_clock_seconds_sum": 9.613,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 367230976,
+        "peak_vm_hwm_bytes": 367230976,
+        "wall_clock_seconds_sum": 26.412,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar HaplotypeCal",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16941056,
+        "peak_vm_hwm_bytes": 16941056,
+        "wall_clock_seconds_sum": 0.623,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_gatk_genotype_gvcf.py"
+        ]
+      },
+      "stdout_tail": "t\": 3,\n  \"cohort_iterations\": 7,\n  \"include_nonvariant_total_gatk_records\": 1001,\n  \"include_nonvariant_total_native_records\": 1001,\n  \"nonvariant_gatk_records\": 998,\n  \"nonvariant_native_records\": 998,\n  \"nonvariant_gt_dp_gq_exact\": 998,\n  \"nonvariant_mismatches\": [],\n  \"gp_qual_without_posteriors_exact\": true,\n  \"gp_qual_records\": 3,\n  \"gp_qual_exact\": 3,\n  \"gp_qual_posterior_kernel_calls\": 0\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_gatk_genotype_gvcf_inbreeding.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.886,
+      "wall_clock_seconds": 5.886,
+      "peak_rss_bytes": 296136704,
+      "peak_vm_hwm_bytes": 296136704,
+      "cpu_time_seconds": 17.759,
+      "max_rss_kb_children_rusage": 298332,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 8990720,
+        "peak_vm_hwm_bytes": 8990720,
+        "wall_clock_seconds_sum": 0.179,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 296136704,
+        "peak_vm_hwm_bytes": 296136704,
+        "wall_clock_seconds_sum": 5.626,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16232448,
+        "peak_vm_hwm_bytes": 16232448,
+        "wall_clock_seconds_sum": 0.049,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_gatk_genotype_gvcf_inbreeding.py"
+        ]
+      },
+      "stdout_tail": "{\n  \"status\": \"pass\",\n  \"records\": 1,\n  \"sample_count\": 20,\n  \"record_text_exact\": true,\n  \"inbreeding_coeff_exact\": \"0.0022\",\n  \"multiallelic_excess_het_exact\": \"1.5298\"\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_gatk_genotype_gvcf_legacy_qual.py",
+      "exit_code": 0,
+      "elapsed_seconds": 12.386,
+      "wall_clock_seconds": 12.386,
+      "peak_rss_bytes": 381431808,
+      "peak_vm_hwm_bytes": 381431808,
+      "cpu_time_seconds": 77.892,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 9109504,
+        "peak_vm_hwm_bytes": 9109504,
+        "wall_clock_seconds_sum": 0.506,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 380882944,
+        "peak_vm_hwm_bytes": 380882944,
+        "wall_clock_seconds_sum": 5.77,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar HaplotypeCal"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 381431808,
+        "peak_vm_hwm_bytes": 381431808,
+        "wall_clock_seconds_sum": 6.076,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_gatk_genotype_gvcf_legacy_qual.py"
+        ]
+      },
+      "stdout_tail": "{\n  \"status\": \"pass\",\n  \"gatk_records\": 3,\n  \"native_records\": 3,\n  \"record_text_exact\": 3,\n  \"header_semantic_exact\": true,\n  \"legacy_mle_projection_exact\": true,\n  \"cohort_af_kernel_calls\": 0\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_gatk_genotype_gvcf_multiallelic.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.802,
+      "wall_clock_seconds": 5.802,
+      "peak_rss_bytes": 311713792,
+      "peak_vm_hwm_bytes": 311713792,
+      "cpu_time_seconds": 8.99,
+      "max_rss_kb_children_rusage": 298332,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 8822784,
+        "peak_vm_hwm_bytes": 8822784,
+        "wall_clock_seconds_sum": 0.187,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-genotype-multiallelic-oracle-807l1viv/source.g.vcf -O /tmp/fastgatk-genotype-multiallelic-oracle-8",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 311713792,
+        "peak_vm_hwm_bytes": 311713792,
+        "wall_clock_seconds_sum": 5.566,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\n  \"status\": \"pass\",\n  \"records\": 1,\n  \"record_text_exact\": true,\n  \"header_required_ids_exact\": true,\n  \"concrete_alt_count\": 2,\n  \"number_g_pl_entries\": 6,\n  \"excess_het_exact\": true,\n  \"cohort_iterations\": 2\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_gatk_genotype_gvcf_multisample.py",
+      "exit_code": 0,
+      "elapsed_seconds": 22.587,
+      "wall_clock_seconds": 22.587,
+      "peak_rss_bytes": 347238400,
+      "peak_vm_hwm_bytes": 347238400,
+      "cpu_time_seconds": 134.689,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 8970240,
+        "peak_vm_hwm_bytes": 8970240,
+        "wall_clock_seconds_sum": 0.12,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 347238400,
+        "peak_vm_hwm_bytes": 347238400,
+        "wall_clock_seconds_sum": 22.427,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar HaplotypeCal",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar RenameSample",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\n  \"status\": \"pass\",\n  \"gatk_records\": 1,\n  \"native_records\": 1,\n  \"record_text_exact\": 1,\n  \"header_semantic_exact\": true,\n  \"sample_count\": 2,\n  \"cohort_iterations\": 3,\n  \"cohort_converged\": 1\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf.py",
+      "exit_code": 0,
+      "elapsed_seconds": 8.173,
+      "wall_clock_seconds": 8.173,
+      "peak_rss_bytes": 450322432,
+      "peak_vm_hwm_bytes": 450322432,
+      "cpu_time_seconds": 56.626,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 41,
+      "native": {
+        "peak_rss_bytes": 13877248,
+        "peak_vm_hwm_bytes": 13877248,
+        "wall_clock_seconds_sum": 2.388,
+        "process_count": 37,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-hc-call -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V /tmp/fastgatk-genotype-gvcf-vjh2f3_u/input.g.vcf.gz -O /tmp/fastgatk-genotype-gvcf-vjh2f3_u/output.vcf.gz --outp",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V /tmp/fastgatk-genotype-gvcf-vjh2f3_u/input.g.vcf.gz -O /tmp/fastgatk-genotype-gvcf-vjh2f3_u/output-plain.vcf --o",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V /tmp/fastgatk-genotype-gvcf-vjh2f3_u/input.g.vcf.gz -O /tmp/fastgatk-genotype-gvcf-vjh2f3_u/invalid-index.vcf.gz",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V /tmp/fastgatk-genotype-gvcf-vjh2f3_u/input.g.vcf.gz -L 17:69000-69100 -O /tmp/fastgatk-genotype-gvcf-vjh2f3_u/in",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V /tmp/fastgatk-genotype-gvcf-vjh2f3_u/input.g.vcf.gz -L 17:69000-69080 -L 17:69040-69100 --interval-set-rule INTE",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V /tmp/fastgatk-genotype-gvcf-vjh2f3_u/input.g.vcf.gz -O /tmp/fastgatk-genotype-gvcf-vjh2f3_u/stream-output.vcf.gz",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V /tmp/fastgatk-genotype-gvcf-vjh2f3_u/input.g.vcf.gz -L 17:69000-69100 -O /tmp/fastgatk-genotype-gvcf-vjh2f3_u/st"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 450322432,
+        "peak_vm_hwm_bytes": 450322432,
+        "wall_clock_seconds_sum": 5.397,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVariants -V /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 20107264,
+        "peak_vm_hwm_bytes": 20107264,
+        "wall_clock_seconds_sum": 0.333,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf.py"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"output_records\": 1}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_assignment_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 15.68,
+      "wall_clock_seconds": 15.68,
+      "peak_rss_bytes": 445366272,
+      "peak_vm_hwm_bytes": 445366272,
+      "cpu_time_seconds": 99.444,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 9072640,
+        "peak_vm_hwm_bytes": 9072640,
+        "wall_clock_seconds_sum": 0.362,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 445366272,
+        "peak_vm_hwm_bytes": 445366272,
+        "wall_clock_seconds_sum": 15.284,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /h",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /h"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"allele_count\": 4, \"gatk_assignment_method_aliases_exact\": true, \"gatk_version\": \"4.6.2.0\", \"java_native_rows_exact\": true, \"modes\": [\"PREFER_PLS/aggregate\", \"PREFER_PLS/stream-by-locus\", \"USE_PLS_TO_ASSIGN/aggregate\", \"USE_PLS_TO_ASSIGN/stream-by-locus\"], \"sample_count\": 2, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_confident_hom_alt_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 60.516,
+      "wall_clock_seconds": 60.516,
+      "peak_rss_bytes": 359292928,
+      "peak_vm_hwm_bytes": 359292928,
+      "cpu_time_seconds": 244.7,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 15,
+      "native": {
+        "peak_rss_bytes": 8691712,
+        "peak_vm_hwm_bytes": 8691712,
+        "wall_clock_seconds_sum": 0.18,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/reference.fa -V /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/conf",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/reference.fa -V /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/ill-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/reference.fa -V /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/mult",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/reference-qd.fa -V /tmp/fastgatk-genotype-homalt-oracle-483ozdmm/q"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 359292928,
+        "peak_vm_hwm_bytes": 359292928,
+        "wall_clock_seconds_sum": 55.794,
+        "process_count": 9,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 348168192,
+        "peak_vm_hwm_bytes": 348168192,
+        "wall_clock_seconds_sum": 4.497,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_confident_hom_alt_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "ame loci also shifted the QualByDepth.fixTooHighQD random sequence\", \"rule\": \"fastgatk-kernels calculate_allele_frequency_kokkos(): the final posterior evaluation must accumulate in log space (log-sum-exp) instead of materialising pow(10, term-maximum)/denominator, whose underflow to 0 turned log10(p0) into -inf and collided with the 'no likelihoods' sentinel\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_dense_materialize_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 187.602,
+      "wall_clock_seconds": 187.602,
+      "peak_rss_bytes": 347090944,
+      "peak_vm_hwm_bytes": 347090944,
+      "cpu_time_seconds": 585.347,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 39,
+      "native": {
+        "peak_rss_bytes": 8708096,
+        "peak_vm_hwm_bytes": 8708096,
+        "wall_clock_seconds_sum": 1.142,
+        "process_count": 11,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-dense-materialize-oracle-i6xljakf/reference.fa -V /tmp/fastgatk-genotype-dense-materializ"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 347090944,
+        "peak_vm_hwm_bytes": 347090944,
+        "wall_clock_seconds_sum": 182.358,
+        "process_count": 25,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 288755712,
+        "peak_vm_hwm_bytes": 288755712,
+        "wall_clock_seconds_sum": 3.985,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_dense_materialize_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "53-clipping/real-corpus-interval-clipping.md)\"}], \"control_modes\": {\"no-star\": \"GATK truth pinned; no native row may carry '*'; every native row must equal the GATK row at its position\", \"rows\": \"full byte-identical row comparison, count included\"}, \"gatk_version\": \"4.6.2.0\", \"mode\": \"strict\", \"rows_compared\": \"data rows byte-identical (CHROM..sample columns)\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_depth_gate_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 81.927,
+      "wall_clock_seconds": 81.927,
+      "peak_rss_bytes": 326078464,
+      "peak_vm_hwm_bytes": 326078464,
+      "cpu_time_seconds": 335.263,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 15,
+      "native": {
+        "peak_rss_bytes": 8577024,
+        "peak_vm_hwm_bytes": 8577024,
+        "wall_clock_seconds_sum": 0.264,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/reference.fa -V /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/info-d",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/reference.fa -V /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/info-d",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/reference.fa -V /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/info-d",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/reference.fa -V /tmp/fastgatk-genotype-depth-oracle-mj47m9cd/info-d"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 321171456,
+        "peak_vm_hwm_bytes": 321171456,
+        "wall_clock_seconds_sum": 75.364,
+        "process_count": 9,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 326078464,
+        "peak_vm_hwm_bytes": 326078464,
+        "wall_clock_seconds_sum": 6.238,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "lt = originalVC), :181-199 (the same depth test gates annotation and emission; otherwise null unless includeNonVariants), ReferenceConfidenceVariantContextMerger.java:352-360 (calculateVCDepth) and :382 (DP published only when depth > 0)\", \"scope\": \"default (non dense) arm only; the dense passthrough shape is tracked with the covered-locus materialization gap\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_exclude_intervals_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 9.828,
+      "wall_clock_seconds": 9.828,
+      "peak_rss_bytes": 308649984,
+      "peak_vm_hwm_bytes": 308649984,
+      "cpu_time_seconds": 109.759,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 9412608,
+        "peak_vm_hwm_bytes": 9412608,
+        "wall_clock_seconds_sum": 0.16,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 308649984,
+        "peak_vm_hwm_bytes": 308649984,
+        "wall_clock_seconds_sum": 9.632,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar HaplotypeCal",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"aggregate_rows\": 2, \"exclude_interval\": \"17:69300-69400\", \"excluded_variant_removed\": true, \"gatk_version\": \"4.6.2.0\", \"include_interval\": \"17:69000-70000\", \"java_native_rows_exact\": true, \"status\": \"pass\", \"stream_by_locus_rows\": 2}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_gp_input_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 25.439,
+      "wall_clock_seconds": 25.439,
+      "peak_rss_bytes": 369201152,
+      "peak_vm_hwm_bytes": 369201152,
+      "cpu_time_seconds": 196.76,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 8933376,
+        "peak_vm_hwm_bytes": 8933376,
+        "wall_clock_seconds_sum": 0.123,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 369201152,
+        "peak_vm_hwm_bytes": 369201152,
+        "wall_clock_seconds_sum": 25.28,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"aggregate_rows\": 1, \"gatk_gp_qual_gate_exact\": true, \"gatk_version\": \"4.6.2.0\", \"input_posterior_formats\": [\"GP\", \"PG\"], \"input_samples\": 2, \"java_native_rows_exact\": true, \"posterior_formats_removed_after_allele_subset\": true, \"status\": \"pass\", \"stream_by_locus_rows\": 1}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_header_order_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 71.186,
+      "wall_clock_seconds": 71.186,
+      "peak_rss_bytes": 345493504,
+      "peak_vm_hwm_bytes": 345493504,
+      "cpu_time_seconds": 290.073,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 12,
+      "native": {
+        "peak_rss_bytes": 8704000,
+        "peak_vm_hwm_bytes": 8704000,
+        "wall_clock_seconds_sum": 0.136,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-header-order-oracle-jk0s3ppk/reference.fa -V /tmp/fastgatk-genotype-header-order-oracle-j",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-header-order-oracle-jk0s3ppk/reference.fa -V /tmp/fastgatk-genotype-header-order-oracle-j",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-header-order-oracle-jk0s3ppk/reference.fa -V /tmp/fastgatk-genotype-header-order-oracle-j",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-header-order-oracle-jk0s3ppk/reference.fa -V /tmp/fastgatk-genotype-header-order-oracle-j"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 345493504,
+        "peak_vm_hwm_bytes": 345493504,
+        "wall_clock_seconds_sum": 70.992,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": " CommandLine=/Date= field); includes ##fileformat first and #CHROM last\", \"htsjdk_comparator\": \"VCFHeaderLine.compareTo = toString().compareTo(); VCFContigHeaderLine.compareTo = contigIndex order against another contig, text otherwise; VCFHeader.getMetaDataInSortedOrder() = TreeSet; VCFWriter.writeHeader writes ##fileformat first and skips isFormatString keys\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_include_non_variant_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 7.142,
+      "wall_clock_seconds": 7.142,
+      "peak_rss_bytes": 343126016,
+      "peak_vm_hwm_bytes": 343126016,
+      "cpu_time_seconds": 143.141,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 13807616,
+        "peak_vm_hwm_bytes": 13815808,
+        "wall_clock_seconds_sum": 1.992,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-hc-call -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/turi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 343126016,
+        "peak_vm_hwm_bytes": 343126016,
+        "wall_clock_seconds_sum": 5.116,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"aggregate_rows_exact\": true, \"min_dp_to_dp_rgq_cleanup_exact\": true, \"records\": 101, \"reference_cleanup_shape_exact\": true, \"release\": \"GATK 4.6.2.0\", \"status\": \"pass\", \"stream_rows_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_independent_corpus_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 236.014,
+      "wall_clock_seconds": 236.014,
+      "peak_rss_bytes": 920989696,
+      "peak_vm_hwm_bytes": 920989696,
+      "cpu_time_seconds": 1539.005,
+      "max_rss_kb_children_rusage": 894824,
+      "processes_seen": 27,
+      "native": {
+        "peak_rss_bytes": 277606400,
+        "peak_vm_hwm_bytes": 285069312,
+        "wall_clock_seconds_sum": 114.093,
+        "process_count": 13,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/testdata/chr20/reference/GRCh37.chr20.fa -V /home/turing-agents/Document"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 920989696,
+        "peak_vm_hwm_bytes": 920989696,
+        "wall_clock_seconds_sum": 121.773,
+        "process_count": 14,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "tion_minconf\": {\"differing\": 0, \"gatk_rows\": 252, \"native_rows\": 252}, \"option_multil\": {\"differing\": 0, \"gatk_rows\": 6, \"native_rows\": 6}, \"option_ploidy1\": {\"differing\": 0, \"gatk_rows\": 252, \"native_rows\": 252}, \"option_ploidy2\": {\"differing\": 0, \"gatk_rows\": 252, \"native_rows\": 252}, \"option_postqual\": {\"differing\": 0, \"gatk_rows\": 252, \"native_rows\": 252}}, \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_lowqual_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 215.846,
+      "wall_clock_seconds": 215.846,
+      "peak_rss_bytes": 344637440,
+      "peak_vm_hwm_bytes": 344637440,
+      "cpu_time_seconds": 823.457,
+      "max_rss_kb_children_rusage": 884080,
+      "processes_seen": 41,
+      "native": {
+        "peak_rss_bytes": 8851456,
+        "peak_vm_hwm_bytes": 8851456,
+        "wall_clock_seconds_sum": 0.291,
+        "process_count": 13,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/be",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/ab",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/ne",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/ne",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/th",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/th",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/su",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/reference.fa -V /tmp/fastgatk-genotype-lowqual-oracle-01zvtsu8/tw"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 344637440,
+        "peak_vm_hwm_bytes": 344637440,
+        "wall_clock_seconds_sum": 197.954,
+        "process_count": 26,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 284753920,
+        "peak_vm_hwm_bytes": 284753920,
+        "wall_clock_seconds_sum": 17.537,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_lowqual_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "ingEngine.java:158-163 (log10Confidence / phredScaledConfidence), :181-186 (VariantContextBuilder + builder.filter(LOW_QUAL_FILTER_NAME)), :430-432 (passesCallThreshold: conf >= standardConfidenceForCalling), GATKVCFConstants.java:179 (LOW_QUAL_FILTER_NAME = LowQual), GATKVCFHeaderLines.java:89 + GenotypeGVCFsEngine.java:416 (unconditional header declaration)\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_malformed_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 218.768,
+      "wall_clock_seconds": 218.768,
+      "peak_rss_bytes": 357593088,
+      "peak_vm_hwm_bytes": 357593088,
+      "cpu_time_seconds": 923.295,
+      "max_rss_kb_children_rusage": 884080,
+      "processes_seen": 42,
+      "native": {
+        "peak_rss_bytes": 8650752,
+        "peak_vm_hwm_bytes": 8650752,
+        "wall_clock_seconds_sum": 0.188,
+        "process_count": 14,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-malformed-oracle-b_4di7ub/reference.fa -V /tmp/fastgatk-genotype-malformed-oracle-b_4di7u"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 357593088,
+        "peak_vm_hwm_bytes": 357593088,
+        "wall_clock_seconds_sum": 212.036,
+        "process_count": 27,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 311132160,
+        "peak_vm_hwm_bytes": 311132160,
+        "wall_clock_seconds_sum": 6.502,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_malformed_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "ns\": [], \"why\": \"REPORTED ONLY -- FORMAT names an undeclared key 'ZZ' (htslib warns vcf_parse_format_dict2); GATK exits 3, native emits both rows\"}], \"contract\": \"on a malformed VCF record native must fail loudly (non-zero exit, diagnostic, no data row) or still emit every well-formed record; exit 0 with a lost record is a violation\", \"gatk_version\": \"4.6.2.0\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_max_alternate_alleles_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 23.994,
+      "wall_clock_seconds": 23.994,
+      "peak_rss_bytes": 423206912,
+      "peak_vm_hwm_bytes": 423206912,
+      "cpu_time_seconds": 254.762,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 8974336,
+        "peak_vm_hwm_bytes": 8974336,
+        "wall_clock_seconds_sum": 0.158,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 423206912,
+        "peak_vm_hwm_bytes": 423206912,
+        "wall_clock_seconds_sum": 23.801,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCFs -R /h"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"aggregate_rows_exact\": true, \"gatk_version\": \"4.6.2.0\", \"input_concrete_alt_count\": 7, \"java_native_rows_exact\": true, \"max_alternate_alleles\": 6, \"output_concrete_alt_count\": 6, \"status\": \"pass\", \"stream_rows_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_multisample_reference_confidence_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 38.127,
+      "wall_clock_seconds": 38.127,
+      "peak_rss_bytes": 346198016,
+      "peak_vm_hwm_bytes": 346198016,
+      "cpu_time_seconds": 357.28,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 9781248,
+        "peak_vm_hwm_bytes": 9781248,
+        "wall_clock_seconds_sum": 1.366,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 346198016,
+        "peak_vm_hwm_bytes": 346198016,
+        "wall_clock_seconds_sum": 36.724,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar HaplotypeCal",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar HaplotypeCal",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar RenameSample",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"aggregate_rows_exact\": true, \"cross_sample_reference_confidence\": true, \"gatk_version\": \"4.6.2.0\", \"records\": 101, \"sample_count\": 2, \"status\": \"pass\", \"stream_rows_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_reverse_trim_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 126.356,
+      "wall_clock_seconds": 126.356,
+      "peak_rss_bytes": 333299712,
+      "peak_vm_hwm_bytes": 333299712,
+      "cpu_time_seconds": 471.73,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 21,
+      "native": {
+        "peak_rss_bytes": 8679424,
+        "peak_vm_hwm_bytes": 8679424,
+        "wall_clock_seconds_sum": 0.405,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/reference-A.fa -V /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/reference-A.fa -V /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/reference-A.fa -V /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/reference-ACGT.fa -V /tmp/fastgatk-genotype-revtrim-oracle-pg8rqd",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/reference-A.fa -V /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/reference-A.fa -V /tmp/fastgatk-genotype-revtrim-oracle-pg8rqdt8/"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 316489728,
+        "peak_vm_hwm_bytes": 316489728,
+        "wall_clock_seconds_sum": 105.984,
+        "process_count": 11,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 333299712,
+        "peak_vm_hwm_bytes": 333299712,
+        "wall_clock_seconds_sum": 19.905,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_reverse_trim_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "s at :167, both traversal modes), GATKVariantContextUtils.java:1443-1445 (reverseTrimAlleles), :1458 (one-allele / one-base-allele guard), :1462-1467+AlignmentUtils.java:818-845 (normalizeAlleles endShift, capped by the shortest allele), :1469-1475 (restore one base), :1489-1521 (clip and rewrite at an unchanged start), :1497-1501 (symbolic and '*' untouched)\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_spandel_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 451.235,
+      "wall_clock_seconds": 451.235,
+      "peak_rss_bytes": 358334464,
+      "peak_vm_hwm_bytes": 358334464,
+      "cpu_time_seconds": 1827.6,
+      "max_rss_kb_children_rusage": 894824,
+      "processes_seen": 135,
+      "native": {
+        "peak_rss_bytes": 8826880,
+        "peak_vm_hwm_bytes": 8826880,
+        "wall_clock_seconds_sum": 0.904,
+        "process_count": 43,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/de",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/in",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/st",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/su",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/su",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/su",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/su",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/reference.fa -V /tmp/fastgatk-genotype-spandel-oracle-owa0cyo5/su"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 358334464,
+        "peak_vm_hwm_bytes": 358334464,
+        "wall_clock_seconds_sum": 429.594,
+        "process_count": 86,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 343166976,
+        "peak_vm_hwm_bytes": 343166976,
+        "wall_clock_seconds_sum": 20.642,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_spandel_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "nes byte-identical and in order; all other header content lines byte-identical as a set (order-only differences reported, not gated); ##GATKCommandLine and ##source excluded as producer identity\", \"header_observations\": \"order-only header differences are reported, not gated\", \"mode\": \"strict\", \"rows_compared\": \"data rows byte-identical (CHROM..sample columns)\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_spanning_deletion_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 24.402,
+      "wall_clock_seconds": 24.402,
+      "peak_rss_bytes": 377176064,
+      "peak_vm_hwm_bytes": 377176064,
+      "cpu_time_seconds": 375.396,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 8916992,
+        "peak_vm_hwm_bytes": 8916992,
+        "wall_clock_seconds_sum": 0.194,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 377176064,
+        "peak_vm_hwm_bytes": 377176064,
+        "wall_clock_seconds_sum": 24.169,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "tus\": \"pass\", \"gatk_version\": \"4.6.2.0\", \"orphan_star_removed_and_genotype_nocall\": true, \"supported_star_preserved\": true, \"aggregate_stream_exact\": true, \"cases\": {\"orphan\": {\"rows\": 1, \"aggregate_exact\": true, \"stream_by_locus_exact\": true, \"orphan_spanning_deletion_loci\": 1}, \"supported\": {\"rows\": 2, \"aggregate_exact\": true, \"stream_by_locus_exact\": true, \"orphan_spanning_deletion_loci\": 0}}}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_spanning_source_gq_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 113.931,
+      "wall_clock_seconds": 113.931,
+      "peak_rss_bytes": 910831616,
+      "peak_vm_hwm_bytes": 910831616,
+      "cpu_time_seconds": 725.036,
+      "max_rss_kb_children_rusage": 884080,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 910831616,
+        "peak_vm_hwm_bytes": 910831616,
+        "wall_clock_seconds_sum": 12.364,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx4g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 284880896,
+        "peak_vm_hwm_bytes": 284880896,
+        "wall_clock_seconds_sum": 101.46,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_spanning_source_gq_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "4\": \"0/0:34:99\", \"10008965\": \"0/0:34:99\", \"10062936\": \"0/0:23:16\", \"10062937\": \"0/0:23:16\", \"10062938\": \"0/0:23:16\", \"10076991\": \"0/0:31:41\", \"10087821\": \"0/0:53:99\", \"10087822\": \"0/0:53:99\", \"10098309\": \"0/0:2:6\", \"10098310\": \"0/0:2:6\"}, \"ref_only_excess_het\": {\"10041698\": \"0.00\", \"10077008\": \"0.00\", \"10077010\": \"0.00\", \"10098308\": \"0.00\", \"10099270\": \"0.00\"}, \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_star_only_locus_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 75.759,
+      "wall_clock_seconds": 75.759,
+      "peak_rss_bytes": 329289728,
+      "peak_vm_hwm_bytes": 329289728,
+      "cpu_time_seconds": 412.444,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 15,
+      "native": {
+        "peak_rss_bytes": 8785920,
+        "peak_vm_hwm_bytes": 8785920,
+        "wall_clock_seconds_sum": 0.225,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-star-oracle-17hh41l8/reference.fa -V /tmp/fastgatk-genotype-star-oracle-17hh41l8/owned-st",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-star-oracle-17hh41l8/reference.fa -V /tmp/fastgatk-genotype-star-oracle-17hh41l8/owned-st",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-star-oracle-17hh41l8/reference.fa -V /tmp/fastgatk-genotype-star-oracle-17hh41l8/star-onl",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-star-oracle-17hh41l8/reference.fa -V /tmp/fastgatk-genotype-star-oracle-17hh41l8/star-plu",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-star-oracle-17hh41l8/reference.fa -V /tmp/fastgatk-genotype-star-oracle-17hh41l8/orphan-s"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 329289728,
+        "peak_vm_hwm_bytes": 329289728,
+        "wall_clock_seconds_sum": 62.223,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 327708672,
+        "peak_vm_hwm_bytes": 327708672,
+        "wall_clock_seconds_sum": 13.27,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genotype_gvcf_star_only_locus_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "viving ALT is SPAN_DEL unless emitAllActiveSites()), :178-179 (recordDeletions runs only for a locus that survives the refusal), :314 (isSpuriousSpanningDeletion for an orphan '*'), QualByDepth.java:76-91 (QD = -10*getLog10PError()/depth, String.format(\\\"%.2f\\\")), GenotypingEngine.java:163+183 (the tested value adds +0.0 while the published double keeps -0.0)\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genotype_gvcf_starts_in_intervals_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 15.966,
+      "wall_clock_seconds": 15.966,
+      "peak_rss_bytes": 286449664,
+      "peak_vm_hwm_bytes": 286449664,
+      "cpu_time_seconds": 596.651,
+      "max_rss_kb_children_rusage": 432908,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 8978432,
+        "peak_vm_hwm_bytes": 8978432,
+        "wall_clock_seconds_sum": 0.119,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-starts-in-oracle-d5lqhnm5/reference.fasta -V /tmp/fastgatk-genotype-starts-in-oracle-d5lq",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /tmp/fastgatk-genotype-starts-in-oracle-d5lqhnm5/reference.fasta -V /tmp/fastgatk-genotype-starts-in-oracle-d5lq"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 286449664,
+        "peak_vm_hwm_bytes": 286449664,
+        "wall_clock_seconds_sum": 15.819,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"aggregate_and_stream\": true, \"default_positions\": [10, 12], \"gatk_version\": \"4.6.2.0\", \"interval\": \"chr1:11-12\", \"java_native_rows_exact\": true, \"starts_in_positions\": [12], \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

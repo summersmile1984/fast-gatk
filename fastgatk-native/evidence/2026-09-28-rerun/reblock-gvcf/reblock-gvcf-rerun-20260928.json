@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "tool": "ReblockGVCF",
+  "native_binary": "fastgatk-reblock-gvcf",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 6,
+  "scripts_passed": 5,
+  "scripts_failed": 1,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 124.169,
+  "scripts": [
+    {
+      "name": "verify_reblock_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 63.437,
+      "wall_clock_seconds": 63.437,
+      "peak_rss_bytes": 469557248,
+      "peak_vm_hwm_bytes": 469557248,
+      "cpu_time_seconds": 99.149,
+      "max_rss_kb_children_rusage": 452984,
+      "processes_seen": 19,
+      "native": {
+        "peak_rss_bytes": 7974912,
+        "peak_vm_hwm_bytes": 7974912,
+        "wall_clock_seconds_sum": 0.041,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fast"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 469557248,
+        "peak_vm_hwm_bytes": 469557248,
+        "wall_clock_seconds_sum": 63.344,
+        "process_count": 11,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar HaplotypeCaller -R ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF -R /hom"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 17113088,
+        "peak_vm_hwm_bytes": 17113088,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_reblock_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "{\"drop_low_qual_variant_exact\": true, \"drop_low_quals_exact\": true, \"drop_low_quals_records\": 33, \"floor_blocks_exact\": true, \"fractional_rgq_threshold_exact\": true, \"gatk_version\": \"4.6.2.0\", \"high_confidence_homref_exact\": true, \"normalized_info_order\": true, \"numeric_fields_exact\": true, \"overlapping_ref_block_split_exact\": true, \"qual_approx_exact\": true, \"records\": 15, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_reblock_gatk_shards.py",
+      "exit_code": 0,
+      "elapsed_seconds": 20.435,
+      "wall_clock_seconds": 20.435,
+      "peak_rss_bytes": 338604032,
+      "peak_vm_hwm_bytes": 338604032,
+      "cpu_time_seconds": 55.803,
+      "max_rss_kb_children_rusage": 413004,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 5505024,
+        "peak_vm_hwm_bytes": 5505024,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -GQB 20 -GQB"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 338604032,
+        "peak_vm_hwm_bytes": 338604032,
+        "wall_clock_seconds_sum": 15.904,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF "
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 327438336,
+        "peak_vm_hwm_bytes": 327438336,
+        "wall_clock_seconds_sum": 4.497,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_reblock_gatk_shards.py"
+        ]
+      },
+      "stdout_tail": "{\"gatk_multisample_rejected\": true, \"gatk_version\": \"4.6.2.0\", \"input_shards\": 2, \"record_fields_exact\": true, \"records\": 2, \"sample_count\": 1, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_reblock_gvcf.py",
+      "exit_code": 0,
+      "elapsed_seconds": 10.697,
+      "wall_clock_seconds": 10.697,
+      "peak_rss_bytes": 400351232,
+      "peak_vm_hwm_bytes": 400351232,
+      "cpu_time_seconds": 24.991,
+      "max_rss_kb_children_rusage": 413004,
+      "processes_seen": 21,
+      "native": {
+        "peak_rss_bytes": 7516160,
+        "peak_vm_hwm_bytes": 7516160,
+        "wall_clock_seconds_sum": 0.176,
+        "process_count": 20,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/input.g.vcf.gz --create-output-variant-index false -O /tmp/fastgatk-reblock-g",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/input.g.vcf.gz --create-output-variant-index -O /tmp/fastgatk-reblock-gvcf-hc",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/input.g.vcf.gz --tree-score-threshold-to-no-call 0.5 -O /tmp/fastgatk-reblock",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/input.g.vcf.gz --do-qual-score-approximation -O /tmp/fastgatk-reblock-gvcf-hc",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/input.g.vcf.gz -L /tmp/fastgatk-reblock-gvcf-hcottz4g/reblock.interval_list -",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/triploid.g.vcf.gz -O /tmp/fastgatk-reblock-gvcf-hcottz4g/triploid.reblocked.g",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/multisample.g.vcf.gz --do-qual-approx -O /tmp/fastgatk-reblock-gvcf-hcottz4g/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -V /tmp/fastgatk-reblock-gvcf-hcottz4g/deletion.g.vcf.gz --rgq-threshold 10 -O /tmp/fastgatk-reblock-gvcf-hcottz4g/d"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 400351232,
+        "peak_vm_hwm_bytes": 400351232,
+        "wall_clock_seconds_sum": 10.48,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVariants -V /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"output_records\": 2, \"merged_blocks\": 1}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_reblock_gvcf_droplowqual_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.858,
+      "wall_clock_seconds": 14.858,
+      "peak_rss_bytes": 300568576,
+      "peak_vm_hwm_bytes": 300568576,
+      "cpu_time_seconds": 37.91,
+      "max_rss_kb_children_rusage": 413004,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 5959680,
+        "peak_vm_hwm_bytes": 5959680,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /tmp/fastgatk-reblock-droplowqual-oracle-j4fyc6fh/reference.fa -V /tmp/fastgatk-reblock-droplowqual-oracle-j4fyc6"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 300568576,
+        "peak_vm_hwm_bytes": 300568576,
+        "wall_clock_seconds_sum": 14.791,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF "
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "rviving multiallelic row still differs from GATK in QUAL (native leaves '.', GATK writes the re-genotyped value) and in INFO/FORMAT ordering, which are unrelated open divergences; the record set (2 rows, no POS 20 row) is the part this gate pins\"}], \"gatk_version\": \"4.6.2.0\", \"mode\": \"strict\", \"rows_compared\": \"data rows byte-identical (CHROM..sample columns)\", \"status\": \"pass\", \"violations\": []}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_reblock_gvcf_triploid_gatk_oracle.py",
+      "exit_code": 1,
+      "elapsed_seconds": 9.593,
+      "wall_clock_seconds": 9.593,
+      "peak_rss_bytes": 331153408,
+      "peak_vm_hwm_bytes": 331153408,
+      "cpu_time_seconds": 16.084,
+      "max_rss_kb_children_rusage": 413004,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 7290880,
+        "peak_vm_hwm_bytes": 7290880,
+        "wall_clock_seconds_sum": 0.028,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /tmp/fastgatk-reblock-triploid-oracle-h8iwjvfe/reference.fa -V /tmp/fastgatk-reblock-triploid-oracle-h8iwjvfe/tri",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-reblock-gvcf -R /tmp/fastgatk-reblock-triploid-oracle-h8iwjvfe/reference.fa -V /tmp/fastgatk-reblock-triploid-oracle-h8iwjvfe/tri"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 331153408,
+        "peak_vm_hwm_bytes": 331153408,
+        "wall_clock_seconds_sum": 9.521,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF "
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "\\\\tGT:DP:AD:PL:GQ\\\\t0/1/1:17:12,5,0:0,10,20,30,100,110,120,160,170,190:10'\", \"[triploid-alone] row 0 is not byte-identical: GATK='chr1\\\\t30\\\\t.\\\\tA\\\\t<NON_REF>\\\\t.\\\\t.\\\\tEND=30\\\\tGT:DP:GQ:MIN_DP:PL\\\\t0/0/0:17:10:17:0,10,20,30' NATIVE='chr1\\\\t30\\\\t.\\\\tA\\\\tC,<NON_REF>\\\\t.\\\\t.\\\\tDP=17;RAW_MQandDP=61200,17;RAW_GT_COUNT=0,1,0\\\\tGT:DP:AD:PL:GQ\\\\t0/1/1:17:12,5,0:0,10,20,30,100,110,120,160,170,190:10'\"]}\n",
+      "stderr_tail": "",
+      "passed": false,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_reblock_overlap_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.149,
+      "wall_clock_seconds": 5.149,
+      "peak_rss_bytes": 429953024,
+      "peak_vm_hwm_bytes": 429953024,
+      "cpu_time_seconds": 6.048,
+      "max_rss_kb_children_rusage": 413004,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 429953024,
+        "peak_vm_hwm_bytes": 429953024,
+        "wall_clock_seconds_sum": 5.107,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ReblockGVCF -R /hom"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"coverage\": [\"69000-69004\", \"69005\", \"69006-69010\"], \"gatk_version\": \"4.6.2.0\", \"output_records\": 3, \"overlapping_ref_block_split_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

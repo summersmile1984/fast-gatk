@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "tool": "PreprocessIntervals",
+  "native_binary": "fastgatk-preprocess-intervals",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 18.099,
+  "scripts": [
+    {
+      "name": "verify_preprocess_intervals.py",
+      "exit_code": 0,
+      "elapsed_seconds": 18.099,
+      "wall_clock_seconds": 18.099,
+      "peak_rss_bytes": 378454016,
+      "peak_vm_hwm_bytes": 378454016,
+      "cpu_time_seconds": 7358.759,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 5971968,
+        "peak_vm_hwm_bytes": 5971968,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-preprocess-intervals -R /tmp/fastgatk-preprocess-intervals-n5zauuzd/reference.fasta -L /tmp/fastgatk-preprocess-intervals-n5zauuz",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-preprocess-intervals -R /tmp/fastgatk-preprocess-intervals-n5zauuzd/reference.fasta -L /tmp/fastgatk-preprocess-intervals-n5zauuz",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-preprocess-intervals -R /tmp/fastgatk-preprocess-intervals-n5zauuzd/reference.fasta -L /tmp/fastgatk-preprocess-intervals-n5zauuz"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 378454016,
+        "peak_vm_hwm_bytes": 378454016,
+        "wall_clock_seconds_sum": 13.652,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PreprocessIntervals",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PreprocessIntervals",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PreprocessIntervals"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 375418880,
+        "peak_vm_hwm_bytes": 375418880,
+        "wall_clock_seconds_sum": 4.398,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_preprocess_intervals.py"
+        ]
+      },
+      "stdout_tail": "{\"input_intervals\": 2, \"interval_merging_rule_rejection\": true, \"java_oracle\": true, \"output_intervals\": 4, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

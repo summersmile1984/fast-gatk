@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "tool": "GenomicsDBImport",
+  "native_binary": "fastgatk-genomicsdb-import",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 7,
+  "scripts_passed": 7,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 128.648,
+  "scripts": [
+    {
+      "name": "verify_genomicsdb_bridge.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.597,
+      "wall_clock_seconds": 14.597,
+      "peak_rss_bytes": 659320832,
+      "peak_vm_hwm_bytes": 659320832,
+      "cpu_time_seconds": 1405.246,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 332587008,
+        "peak_vm_hwm_bytes": 335384576,
+        "wall_clock_seconds_sum": 0.629,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-export /tmp/fastgatk-genomicsdb-bridge-oracle-scejzcnb/gatk-workspace /tmp/fastgatk-genomicsdb-bridge-oracle-scejzcnb/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-export /tmp/fastgatk-genomicsdb-bridge-oracle-scejzcnb/gatk-workspace /tmp/fastgatk-genomicsdb-bridge-oracle-scejzcnb/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-export /tmp/fastgatk-genomicsdb-bridge-oracle-scejzcnb/gatk-workspace /tmp/fastgatk-genomicsdb-export-742607-1.tsv --i",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/reference.fa -V gendb:///tmp/fastgatk-genomicsdb-bridge-oracle-scejzcnb/"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 659320832,
+        "peak_vm_hwm_bytes": 659320832,
+        "wall_clock_seconds_sum": 14.093,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"arrays\": 1, \"exported_records\": 11, \"genotyped_records\": 3}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genomicsdb_import.py",
+      "exit_code": 0,
+      "elapsed_seconds": 1.231,
+      "wall_clock_seconds": 1.231,
+      "peak_rss_bytes": 26984448,
+      "peak_vm_hwm_bytes": 26984448,
+      "cpu_time_seconds": 1368.928,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 17,
+      "native": {
+        "peak_rss_bytes": 8949760,
+        "peak_vm_hwm_bytes": 8949760,
+        "wall_clock_seconds_sum": 1.063,
+        "process_count": 11,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomic",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomic",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomic",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomic",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomic",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-2.g.vcf.gz -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sampl",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V gendb:///tmp/fastgatk-genomicsdb-import-10jvodz_/native-workspace-reversed -L chr1:1-1 -O /tmp/fastgatk-genomics",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -V gendb:///tmp/fastgatk-genomicsdb-import-10jvodz_/native-workspace -L chr1:1-1 -O /tmp/fastgatk-genomicsdb-import"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 26984448,
+        "peak_vm_hwm_bytes": 26984448,
+        "wall_clock_seconds_sum": 1.001,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "python3 /tmp/fastgatk-genomicsdb-import-10jvodz_/fake-gatk GenomicsDBImport -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomicsdb-import-10",
+          "/usr/bin/env python3 /tmp/fastgatk-genomicsdb-import-10jvodz_/fake-gatk GenomicsDBImport -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomic",
+          "/usr/bin/env python3 /tmp/fastgatk-genomicsdb-import-10jvodz_/slow-gatk GenomicsDBImport -V /tmp/fastgatk-genomicsdb-import-10jvodz_/sample-1.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomic",
+          "/usr/bin/env bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk --dry-run GenomicsDBImport -V sample.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomicsdb-import-",
+          "bash /home/turing-agents/Documents/fast-gatk/fastgatk-native/dispatcher/fastgatk --dry-run GenomicsDBImport -V sample.g.vcf.gz --genomicsdb-workspace-path /tmp/fastgatk-genomicsdb-import-10jvodz_/work"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"effective_batch\": 2, \"effective_reader_threads\": 4, \"native_input_order_preserved\": true, \"native_reversed_query_sample_order\": [\"S2\", \"S1\"]}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genomicsdb_import_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 12.893,
+      "wall_clock_seconds": 12.893,
+      "peak_rss_bytes": 646672384,
+      "peak_vm_hwm_bytes": 646672384,
+      "cpu_time_seconds": 1384.08,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 4997120,
+        "peak_vm_hwm_bytes": 4997120,
+        "wall_clock_seconds_sum": 7.039,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/engine/"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 646672384,
+        "peak_vm_hwm_bytes": 646672384,
+        "wall_clock_seconds_sum": 12.844,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 12775424,
+        "peak_vm_hwm_bytes": 12775424,
+        "wall_clock_seconds_sum": 7.034,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "python3 /tmp/fastgatk-genomicsdb-import-gatk-oracle-j5jkxy4y/gatk-wrapper GenomicsDBImport -V /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/engin"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"gatk_version\": \"4.6.2.0\", \"execution_mode\": \"external-genomicsdb\", \"workspace_reopen\": true, \"genotyped_records\": 3}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genomicsdb_import_native_interval_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.418,
+      "wall_clock_seconds": 14.418,
+      "peak_rss_bytes": 417333248,
+      "peak_vm_hwm_bytes": 417333248,
+      "cpu_time_seconds": 1394.822,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 329625600,
+        "peak_vm_hwm_bytes": 334315520,
+        "wall_clock_seconds_sum": 0.163,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/engine/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-export /tmp/fastgatk-genomicsdb-native-interval-oracle-9yix8m04/java-workspace-1 /tmp/fastgatk-genomicsdb-native-inter"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 417333248,
+        "peak_vm_hwm_bytes": 417333248,
+        "wall_clock_seconds_sum": 14.071,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 333979648,
+        "peak_vm_hwm_bytes": 335212544,
+        "wall_clock_seconds_sum": 0.157,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_genomicsdb_import_native_interval_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"gatk_version\": \"4.6.2.0\", \"native_workspace_interval_span_exact\": true, \"cases\": [{\"region\": \"20:69491-69500\", \"rows\": 1, \"rows_exact\": true, \"kept\": 1, \"skipped\": 10}, {\"region\": \"20:69511-69511\", \"rows\": 1, \"rows_exact\": true, \"kept\": 1, \"skipped\": 10}]}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genomicsdb_import_sample_map_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 18.083,
+      "wall_clock_seconds": 18.083,
+      "peak_rss_bytes": 666066944,
+      "peak_vm_hwm_bytes": 666066944,
+      "cpu_time_seconds": 1415.609,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 9363456,
+        "peak_vm_hwm_bytes": 9363456,
+        "wall_clock_seconds_sum": 0.01,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/reference.fa -V gendb:///tmp/fastgatk-genomicsdb-sample-map-oracle-0c_n8"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 666066944,
+        "peak_vm_hwm_bytes": 666066944,
+        "wall_clock_seconds_sum": 18.049,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"gatk_version\": \"4.6.2.0\", \"sample_name_map\": true, \"requested_sample\": \"FASTGATK_SAMPLE_MAP_RENAMED\", \"java_and_native_headers_match\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genomicsdb_import_update_workspace_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 61.966,
+      "wall_clock_seconds": 61.966,
+      "peak_rss_bytes": 670912512,
+      "peak_vm_hwm_bytes": 670912512,
+      "cpu_time_seconds": 1441.093,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 12,
+      "native": {
+        "peak_rss_bytes": 10027008,
+        "peak_vm_hwm_bytes": 10027008,
+        "wall_clock_seconds_sum": 18.347,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/engine/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-import -V /tmp/fastgatk-genomicsdb-update-oracle-whwk54zo/sample-2.g.vcf --genomicsdb-update-workspace-path /tmp/fastg",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genotype-gvcf -R /home/turing-agents/Documents/fast-gatk/reference.fa -V gendb:///tmp/fastgatk-genomicsdb-update-oracle-whwk54zo/"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 670912512,
+        "peak_vm_hwm_bytes": 670912512,
+        "wall_clock_seconds_sum": 61.875,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenomicsDBIm",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 12877824,
+        "peak_vm_hwm_bytes": 12877824,
+        "wall_clock_seconds_sum": 18.321,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/env python3 /tmp/fastgatk-genomicsdb-update-oracle-whwk54zo/gatk-wrapper GenomicsDBImport -V /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbend",
+          "/usr/bin/env python3 /tmp/fastgatk-genomicsdb-update-oracle-whwk54zo/gatk-wrapper GenomicsDBImport -V /tmp/fastgatk-genomicsdb-update-oracle-whwk54zo/sample-2.g.vcf --genomicsdb-update-workspace-path "
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"gatk_version\": \"4.6.2.0\", \"incremental_update\": true, \"initial_interval_reused\": true, \"adapter_callset_samples_exact\": true, \"input_index_preserved\": true, \"native_sparse_incremental_rebuild\": true, \"native_workspace_remains_non_tiledb\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_genomicsdb_native_storage_boundary.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.46,
+      "wall_clock_seconds": 5.46,
+      "peak_rss_bytes": 288935936,
+      "peak_vm_hwm_bytes": 288935936,
+      "cpu_time_seconds": 1373.954,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 6930432,
+        "peak_vm_hwm_bytes": 6930432,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-genomicsdb-export /tmp/fastgatk-genomicsdb-native-boundary-jyaqepxq/native-workspace /tmp/fastgatk-genomicsdb-native-boundary-jya"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 288935936,
+        "peak_vm_hwm_bytes": 288935936,
+        "wall_clock_seconds_sum": 5.423,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GenotypeGVCF"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"gatk_version\": \"4.6.2.0\", \"storage_format\": \"fastgatk-portable-sparse-v1\", \"bridge_rejected\": true, \"gatk_rejected\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

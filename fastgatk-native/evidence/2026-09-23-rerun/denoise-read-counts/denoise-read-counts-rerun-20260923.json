@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "tool": "DenoiseReadCounts",
+  "native_binary": "fastgatk-denoise-read-counts",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 61.985,
+  "scripts": [
+    {
+      "name": "verify_denoise_read_counts.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.162,
+      "wall_clock_seconds": 0.162,
+      "peak_rss_bytes": 18661376,
+      "peak_vm_hwm_bytes": 18661376,
+      "cpu_time_seconds": 856.494,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 9,
+      "native": {
+        "peak_rss_bytes": 18661376,
+        "peak_vm_hwm_bytes": 18661376,
+        "wall_clock_seconds_sum": 0.129,
+        "process_count": 9,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/plain.tsv -O /tmp/fastgatk-denoise-t6_rf2tg/plain.den.tsv --standardized-co",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/doubled.tsv -O /tmp/fastgatk-denoise-t6_rf2tg/doubled.den.tsv --standardize",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/plain.tsv -O /tmp/fastgatk-denoise-t6_rf2tg/pon.den.tsv --standardized-copy",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/plain.tsv -O /tmp/fastgatk-denoise-t6_rf2tg/pon.annotated.den.tsv --standar",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/plain.tsv -O /tmp/fastgatk-denoise-t6_rf2tg/matrix.den.tsv --standardized-c",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/zero.tsv -O /tmp/fastgatk-denoise-t6_rf2tg/zero.den.tsv --standardized-copy",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/hdf5.sam -L /tmp/fastgatk-denoise-t6_rf2tg/hdf5.interval_list -O /tmp/fastg",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-t6_rf2tg/counts.h5 -O /tmp/fastgatk-denoise-t6_rf2tg/hdf5.den.tsv --standardized-cop"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": ": 5, \"kernel_batches\": 1, \"kernel_execute_seconds\": 1.3837e-05, \"kernel_observations\": 5, \"kernel_prepare_seconds\": 4.128e-06, \"lifecycle\": \"HostBatch->KernelPlan.prepare->Kokkos Views->execute->collect\", \"panel_of_normals\": false, \"panel_samples\": 0, \"policy\": \"MDRangePolicy+RangePolicy\", \"status\": \"prototype\", \"svd\": false, \"svd_rank\": 0, \"tool\": \"DenoiseReadCounts\"}, \"zero_row_rejected\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_denoise_read_counts_hdf5_metadata_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.148,
+      "wall_clock_seconds": 5.148,
+      "peak_rss_bytes": 362188800,
+      "peak_vm_hwm_bytes": 362188800,
+      "cpu_time_seconds": 860.622,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 16490496,
+        "peak_vm_hwm_bytes": 16490496,
+        "wall_clock_seconds_sum": 0.048,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-read-counts -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/tools",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-hdf5-metadata-t4nn7m80/counts.hdf5 --standardized-copy-ratios /tmp/fastgatk-denoise-"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 362188800,
+        "peak_vm_hwm_bytes": 362188800,
+        "wall_clock_seconds_sum": 5.063,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"denoised_header_exact\": true, \"gatk_version\": \"4.6.2.0\", \"hdf5_input\": true, \"rows_exact\": true, \"sequence_dictionary_propagated\": true, \"standardized_header_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_denoise_read_counts_integer_input_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 28.769,
+      "wall_clock_seconds": 28.769,
+      "peak_rss_bytes": 351641600,
+      "peak_vm_hwm_bytes": 351641600,
+      "cpu_time_seconds": 892.119,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 12,
+      "native": {
+        "peak_rss_bytes": 13119488,
+        "peak_vm_hwm_bytes": 13119488,
+        "wall_clock_seconds_sum": 0.056,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-integer-44indbo6/valid.tsv -O /tmp/fastgatk-denoise-integer-44indbo6/missing.native.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-integer-44indbo6/valid.tsv -O /tmp/fastgatk-denoise-integer-44indbo6/valid.native.ts",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-integer-44indbo6/decimal.tsv -O /tmp/fastgatk-denoise-integer-44indbo6/decimal.nativ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-integer-44indbo6/scientific.tsv -O /tmp/fastgatk-denoise-integer-44indbo6/scientific",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-integer-44indbo6/int_overflow.tsv -O /tmp/fastgatk-denoise-integer-44indbo6/int_over",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-integer-44indbo6/negative.tsv -O /tmp/fastgatk-denoise-integer-44indbo6/negative.nat"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 351641600,
+        "peak_vm_hwm_bytes": 351641600,
+        "wall_clock_seconds_sum": 28.671,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "ut_files_required\": true, \"count_semantics\": \"signed-int-nonnegative\", \"gatk_version\": \"4.6.2.0\", \"invalid_count_rejection_exact\": {\"decimal\": {\"java\": true, \"native\": true}, \"int_overflow\": {\"java\": true, \"native\": true}, \"negative\": {\"java\": true, \"native\": true}, \"scientific\": {\"java\": true, \"native\": true}}, \"native_values_match_java\": true, \"status\": \"pass\", \"valid_integer_acceptance\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_denoise_read_counts_interval_identity_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 27.906,
+      "wall_clock_seconds": 27.906,
+      "peak_rss_bytes": 353738752,
+      "peak_vm_hwm_bytes": 353738752,
+      "cpu_time_seconds": 874.209,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 9,
+      "native": {
+        "peak_rss_bytes": 16875520,
+        "peak_vm_hwm_bytes": 16875520,
+        "wall_clock_seconds_sum": 0.046,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-create-read-count-panel-of-normals -I /tmp/fastgatk-denoise-interval-identity-n3pvrw8e/normal-1.tsv -I /tmp/fastgatk-denoise-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-interval-identity-n3pvrw8e/subset.tsv --count-panel-of-normals /tmp/fastgatk-denoise",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-interval-identity-n3pvrw8e/superset.tsv --count-panel-of-normals /tmp/fastgatk-denoi",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-denoise-interval-identity-n3pvrw8e/coordinate_mismatch.tsv --count-panel-of-normals /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 353738752,
+        "peak_vm_hwm_bytes": 353738752,
+        "wall_clock_seconds_sum": 21.942,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 340762624,
+        "peak_vm_hwm_bytes": 340762624,
+        "wall_clock_seconds_sum": 5.881,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_denoise_read_counts_interval_identity_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"interval_identity\": true, \"java_rejected\": {\"coordinate_mismatch\": true, \"subset\": true, \"superset\": true}, \"native_rejected\": {\"coordinate_mismatch\": true, \"subset\": true, \"superset\": true}, \"poN_schema\": \"HDF5-SVD-ReadCountPanelOfNormals-v7\", \"status\": \"pass\", \"valid_case_accepted\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

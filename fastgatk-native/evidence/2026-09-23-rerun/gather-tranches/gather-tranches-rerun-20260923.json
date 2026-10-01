@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "tool": "GatherTranches",
+  "native_binary": "fastgatk-gather-tranches",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 16.108,
+  "scripts": [
+    {
+      "name": "verify_gather_tranches.py",
+      "exit_code": 0,
+      "elapsed_seconds": 16.108,
+      "wall_clock_seconds": 16.108,
+      "peak_rss_bytes": 352645120,
+      "peak_vm_hwm_bytes": 352645120,
+      "cpu_time_seconds": 1347.93,
+      "max_rss_kb_children_rusage": 2062368,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 4591616,
+        "peak_vm_hwm_bytes": 4591616,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-tranches -I /tmp/fastgatk-gather-tranches-914xn0t0/a.tranches -I /tmp/fastgatk-gather-tranches-914xn0t0/b.tranches --truth",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-tranches -I /tmp/fastgatk-gather-tranches-914xn0t0/empty.tranches -I /tmp/fastgatk-gather-tranches-914xn0t0/a.tranches --m",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-tranches -I /tmp/fastgatk-gather-tranches-914xn0t0/a.tranches -O /tmp/fastgatk-gather-tranches-914xn0t0/no-mode-native.tra",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-gather-tranches -I /tmp/fastgatk-gather-tranches-914xn0t0/bad-version.tranches --mode SNP -O /tmp/fastgatk-gather-tranches-914xn0"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 352645120,
+        "peak_vm_hwm_bytes": 352645120,
+        "wall_clock_seconds_sum": 16.047,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherTranches -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherTranches -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherTranches -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"empty_scatter_slice_oracle_exact\": true, \"gatk_oracle_exact\": true, \"input_shards\": 2, \"merged_tranches\": 3, \"mode_required\": true, \"mode_validation\": true, \"selected_tranches\": 2, \"short_tranche_alias\": true, \"status\": \"pass\", \"version_validation\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

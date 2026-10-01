@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "tool": "SplitIntervals",
+  "native_binary": "fastgatk-split-intervals",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 53.65,
+  "scripts": [
+    {
+      "name": "verify_split_intervals.py",
+      "exit_code": 0,
+      "elapsed_seconds": 53.65,
+      "wall_clock_seconds": 53.65,
+      "peak_rss_bytes": 382484480,
+      "peak_vm_hwm_bytes": 382484480,
+      "cpu_time_seconds": 6845.101,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 14,
+      "native": {
+        "peak_rss_bytes": 5820416,
+        "peak_vm_hwm_bytes": 5820416,
+        "wall_clock_seconds_sum": 0.037,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-split-intervals -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/hg19micro.fasta -O /tmp/fastgatk-split-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-split-intervals -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/hg19micro.fasta -L /tmp/fastgatk-split-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-split-intervals -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/hg19micro.fasta -L /tmp/fastgatk-split-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-split-intervals -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/hg19micro.fasta -L /tmp/fastgatk-split-"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 382484480,
+        "peak_vm_hwm_bytes": 382484480,
+        "wall_clock_seconds_sum": 53.567,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SplitIntervals -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SplitIntervals -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SplitIntervals -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SplitIntervals -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SplitIntervals -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SplitIntervals -R /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SplitIntervals -R /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"java_oracle\": true, \"scatter_modes_checked\": 5, \"scatter_shards\": 3, \"status\": \"pass\", \"suite\": \"split-intervals\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

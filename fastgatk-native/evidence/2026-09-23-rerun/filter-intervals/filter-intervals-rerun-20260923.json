@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "tool": "FilterIntervals",
+  "native_binary": "fastgatk-filter-intervals",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 20.663,
+  "scripts": [
+    {
+      "name": "verify_filter_intervals.py",
+      "exit_code": 0,
+      "elapsed_seconds": 20.663,
+      "wall_clock_seconds": 20.663,
+      "peak_rss_bytes": 356601856,
+      "peak_vm_hwm_bytes": 356601856,
+      "cpu_time_seconds": 992.802,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 14,
+      "native": {
+        "peak_rss_bytes": 18788352,
+        "peak_vm_hwm_bytes": 18788352,
+        "wall_clock_seconds_sum": 0.085,
+        "process_count": 11,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-ety39hy_/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-ety39hy_/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-ety39hy_/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-ety39hy_/targets.interval_list --annotated-intervals /tmp/fastgatk-filter-inte",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-ety39hy_/left.interval_list -L /tmp/fastgatk-filter-intervals-ety39hy_/right.i",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-ety39hy_/multi.interval_list -L /tmp/fastgatk-filter-intervals-ety39hy_/multi-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-filter-intervals -L /tmp/fastgatk-filter-intervals-ety39hy_/count-targets.interval_list -I /tmp/fastgatk-filter-intervals-ety39hy",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-collect-read-counts -I /tmp/fastgatk-filter-intervals-ety39hy_/hdf5-reads.sam -L /tmp/fastgatk-filter-intervals-ety39hy_/hdf5-tar"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 356601856,
+        "peak_vm_hwm_bytes": 356601856,
+        "wall_clock_seconds_sum": 20.542,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FilterIntervals -L ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FilterIntervals -L ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FilterIntervals -L "
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"count_input_intervals\": 6, \"count_java_oracle\": true, \"count_output_intervals\": 5, \"dictionary_order_union\": true, \"hdf5_output_intervals\": 2, \"input_intervals\": 5, \"java_oracle\": true, \"merge_validation\": true, \"output_intervals\": 2, \"padding_rejection\": true, \"set_rule_validation\": true, \"short_aliases\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

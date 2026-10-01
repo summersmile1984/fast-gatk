@@ -1,3 +1,4 @@
+#include "fastgatk/kernels/gpu_safety.hpp"
 #include "fastgatk/kernels/activity_profile.hpp"
 
 #include "fastgatk/core/plan.hpp"

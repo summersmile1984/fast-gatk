@@ -1,0 +1,3 @@
+targetSensitivity	numBad	truthSensitivity	numVars	filterName	model	cdf	tp	fp	fn	numKnown
+99.0	0	99.0	0	VQSReCAL	SNP	0.0	0	0	0	0
+95.0	1	95.0	1	VQSReCAL	SNP	0.05	1	0	0	0

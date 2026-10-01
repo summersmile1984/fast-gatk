@@ -1,0 +1,54 @@
+# Verify-script re-run index — 2026-09-26
+
+- Tools covered: **1** (excluding `genomicsdb-export` (native-only bridge, no verify script))
+- Scripts total: **13**
+- Passed: **13**    Failed: **0**    Skipped: **0**
+- Total elapsed: **975.701s**
+
+Per-tool summaries (cross-ref with `fastgatk-native/docs/cli-alignment.md` *Bit-identical / bounded-parity evidence* table):
+
+| Tool | Native binary | Scripts | Passed | Failed | Skipped | Elapsed (s) | Report |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `FilterMutectCalls` | `fastgatk-filter-mutect-calls` | 13 | 13 | 0 | 0 | 975.701 | [filter-mutect-calls-rerun-20260926.md](fastgatk-native/evidence/2026-09-26-rerun/filter-mutect-calls/filter-mutect-calls-rerun-20260926.md) |
+
+## Bridge binary with no verify script
+
+- `fastgatk-genomicsdb-export` — (native-only bridge, no verify script); cross-reference the docs.
+
+## GATK-alignment status
+
+Run `aggregate_alignment_status.py` after a re-run to cross-reference
+this index with the *Bit-identical / bounded-parity evidence* table
+in `fastgatk-native/docs/cli-alignment.md`.  It writes
+`ALIGNMENT_STATUS.md` next to this file.
+
+## Native-vs-Java resource comparison
+
+Run `compare_native_vs_java.py` to classify every descendant process
+of the rerun into `native` (comm starts with `fastgatk-`) vs `java`
+(comm == `java`) buckets, and emit `NATIVE_VS_JAVA.md` next to this
+file.  Anomalies (native slower than Java, or native RSS exceeding
+Java's) are auto-flagged in that report.
+
+## Workflow documentation
+
+Full workflow, schema details, and an anomaly follow-up playbook
+live in `fastgatk-native/docs/regression-evidence.md`.
+
+## Reproduction
+
+```bash
+python3 fastgatk-native/scripts/rerun_all_verify.py --repo .
+```
+
+```bash
+python3 fastgatk-native/scripts/verify_rerun_report.py --repo .
+```
+
+```bash
+python3 fastgatk-native/scripts/aggregate_alignment_status.py --repo .
+```
+
+```bash
+python3 fastgatk-native/scripts/compare_native_vs_java.py --repo .
+```

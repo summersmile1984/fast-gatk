@@ -1,0 +1,11 @@
+== 18:12:57 fastgatk-native/build/fastgatk-mark-duplicates -I NA12878.chrom20.ILLUMINA.bwa.CEU.low_coverage.20121211.bam -O public_pipeline/full_chr20/native/mkdup/out.bam --metrics-file public_pipeline/full_chr20/native/mkdup/metrics.txt
+{"tool":"MarkDuplicates","status":"prototype","input_records":3245545,"output_records":3245545,"duplicate_records":200861,"optical_duplicate_records":0,"estimated_library_size":12264363,"spill_run_count":0,"resumed":false}
+   wall: 29s
+== 18:13:27 fastgatk-native/build/fastgatk-bqsr -I public_pipeline/full_chr20/native/mkdup/out.bam -R testdata/downloads/reference/hs37d5.fa.gz --known-sites public_pipeline/1000G.phase3.chr20.full.vcf.gz --known-sites testdata/real/mills_indels/Mills_and_1000G_gold_standard.indels.b37.sites.chr20.vcf.gz -O public_pipeline/full_chr20/native/bqsr/recal.txt
+{"tool":"BaseRecalibrator","status":"prototype","records":2993746,"bases":302368346,"covariate_rows":5178,"covariate_observations":8150}
+   wall: 639s
+== 18:24:06 fastgatk-native/build/fastgatk-apply-bqsr -I public_pipeline/full_chr20/native/mkdup/out.bam --bqsr-recal-file public_pipeline/full_chr20/native/bqsr/recal.txt -O public_pipeline/full_chr20/native/applied/out.bam
+{"tool":"ApplyBQSR","status":"prototype","records":3245545,"bases":327800045,"covariate_rows":5178}
+   wall: 61s
+== 18:25:07 fastgatk-native/build/fastgatk-hc-call -I public_pipeline/full_chr20/native/applied/out.bam -R testdata/downloads/reference/hs37d5.fa.gz -L 20:1-63025520 --gvcf -O public_pipeline/full_chr20/native/hc/out.g.vcf.gz
+已终止                  "$@" 2> "$log"

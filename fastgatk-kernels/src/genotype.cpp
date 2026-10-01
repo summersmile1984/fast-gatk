@@ -373,65 +373,97 @@ BiallelicCallConfidenceResult calculate_biallelic_call_confidence_kokkos(
             const auto base = candidate * 3;
             if (device_pl(base) < 0 || device_pl(base + 1) < 0 || device_pl(base + 2) < 0)
                 return;
-            // The implementation follows AlleleFrequencyCalculator's
-            // one-sample diploid EM.  Genotype 0/1 has a log10 combination
-            // count of log10(2); hom-ref and hom-alt have coefficient one.
-            double ref_frequency = 0.5;
-            double alt_frequency = 0.5;
-            double previous_ref_count = 0.0;
-            double previous_alt_count = 0.0;
+            // Bit-exact port of GATK AlleleFrequencyCalculator's
+            // single-sample diploid path and GenotypingEngine's QUAL
+            // extraction: log10NormalizedGenotypePosteriors,
+            // effectiveAlleleCounts, Dirichlet.log10MeanWeights and
+            // MathUtils.normalizeLog10 run in log space with the exact
+            // operation order.  A linear-space normalization drifts against
+            // GATK at the PL/QUAL rounding boundary (chr20:145715).
+            const double ref_pseudocount = device_priors[candidate * 2];
+            const double alt_pseudocount = device_priors[candidate * 2 + 1];
+            // GenotypeLikelihoods.fromPLs stores log10 likelihoods as PL * -.1.
+            const double log10_likelihoods[3] = {
+                static_cast<double>(device_pl(base)) * -.1,
+                static_cast<double>(device_pl(base + 1)) * -.1,
+                static_cast<double>(device_pl(base + 2)) * -.1};
+            double log10_ref = -0.30102999566398119521;  // -Math.log10(2)
+            double log10_alt = -0.30102999566398119521;
+            double ref_count = 0.0;
+            double alt_count = 0.0;
+            const auto log10_sum = [](const double a, const double b) {
+                // MathUtils.log10SumLog10(a, b).
+                return a > b
+                    ? a + Kokkos::log10(1.0 + Kokkos::pow(10.0, b - a))
+                    : b + Kokkos::log10(1.0 + Kokkos::pow(10.0, a - b));
+            };
+            const auto normalized_posteriors = [&](double out[3]) {
+                // GenotypeAlleleCounts index order: 0/0, 0/1, 1/1.  The het
+                // combination count is log10(2); allele-count sums follow
+                // GenotypeAlleleCounts.sumOverAlleleIndicesAndCounts.
+                out[0] = log10_likelihoods[0] + 2.0 * log10_ref;
+                out[1] = 0.30102999566398119521 + log10_likelihoods[1] +
+                    (log10_ref + log10_alt);
+                out[2] = log10_likelihoods[2] + 2.0 * log10_alt;
+                // MathUtils.normalizeLog10 -> array log10SumLog10.
+                const double maximum =
+                    Kokkos::fmax(out[0], Kokkos::fmax(out[1], out[2]));
+                // MathUtils array log10SumLog10 skips only the FIRST max
+                // element index; values tied with the max still add in.
+                int maximum_index = 0;
+                if (out[1] > out[maximum_index]) maximum_index = 1;
+                if (out[2] > out[maximum_index]) maximum_index = 2;
+                double sum = 1.0;
+                for (int index = 0; index < 3; ++index)
+                    if (index != maximum_index)
+                        sum += Kokkos::pow(10.0, out[index] - maximum);
+                const double log10_sum_total = maximum + Kokkos::log10(sum);
+                out[0] -= log10_sum_total;
+                out[1] -= log10_sum_total;
+                out[2] -= log10_sum_total;
+            };
             for (int iteration = 0; iteration < 100; ++iteration) {
-                const double log10_ref = Kokkos::log10(ref_frequency);
-                const double log10_alt = Kokkos::log10(alt_frequency);
-                const double terms[3] = {
-                    -0.1 * static_cast<double>(device_pl(base)) + 2.0 * log10_ref,
-                    -0.1 * static_cast<double>(device_pl(base + 1)) +
-                        0.30102999566398119521 + log10_ref + log10_alt,
-                    -0.1 * static_cast<double>(device_pl(base + 2)) + 2.0 * log10_alt};
-                const double maximum = Kokkos::fmax(terms[0], Kokkos::fmax(terms[1], terms[2]));
-                const double p0 = Kokkos::pow(10.0, terms[0] - maximum);
-                const double p1 = Kokkos::pow(10.0, terms[1] - maximum);
-                const double p2 = Kokkos::pow(10.0, terms[2] - maximum);
-                const double denominator = p0 + p1 + p2;
-                if (!(denominator > 0.0)) return;
-                const double new_ref_count = (2.0 * p0 + p1) / denominator;
-                const double new_alt_count = (p1 + 2.0 * p2) / denominator;
+                double posteriors[3];
+                normalized_posteriors(posteriors);
+                // AlleleFrequencyCalculator.effectiveAlleleCounts: only
+                // genotypes carrying an allele contribute to its count.
+                const double log10_ref_count = log10_sum(
+                    posteriors[0] + Kokkos::log10(2.0),
+                    posteriors[1] + Kokkos::log10(1.0));
+                const double log10_alt_count = log10_sum(
+                    posteriors[1] + Kokkos::log10(1.0),
+                    posteriors[2] + Kokkos::log10(2.0));
+                const double new_ref_count = Kokkos::pow(10.0, log10_ref_count);
+                const double new_alt_count = Kokkos::pow(10.0, log10_alt_count);
                 const double difference = Kokkos::fmax(
-                    Kokkos::fabs(new_ref_count - previous_ref_count),
-                    Kokkos::fabs(new_alt_count - previous_alt_count));
-                previous_ref_count = new_ref_count;
-                previous_alt_count = new_alt_count;
-                const double ref_pseudocount = device_priors[candidate * 2];
-                const double alt_pseudocount = device_priors[candidate * 2 + 1];
-                const double total = ref_pseudocount + alt_pseudocount +
-                    new_ref_count + new_alt_count;
-                ref_frequency = (ref_pseudocount + new_ref_count) / total;
-                alt_frequency = (alt_pseudocount + new_alt_count) / total;
+                    Kokkos::fabs(new_ref_count - ref_count),
+                    Kokkos::fabs(new_alt_count - alt_count));
+                ref_count = new_ref_count;
+                alt_count = new_alt_count;
+                // Dirichlet.log10MeanWeights: Math.log10(x / sum).
+                const double ref_posterior = ref_pseudocount + ref_count;
+                const double alt_posterior = alt_pseudocount + alt_count;
+                const double total = ref_posterior + alt_posterior;
+                log10_ref = Kokkos::log10(ref_posterior / total);
+                log10_alt = Kokkos::log10(alt_posterior / total);
                 if (difference <= 0.1) break;
             }
-
-            const double log10_ref = Kokkos::log10(ref_frequency);
-            const double log10_alt = Kokkos::log10(alt_frequency);
-            const double terms[3] = {
-                -0.1 * static_cast<double>(device_pl(base)) + 2.0 * log10_ref,
-                -0.1 * static_cast<double>(device_pl(base + 1)) +
-                    0.30102999566398119521 + log10_ref + log10_alt,
-                -0.1 * static_cast<double>(device_pl(base + 2)) + 2.0 * log10_alt};
-            const double maximum = Kokkos::fmax(terms[0], Kokkos::fmax(terms[1], terms[2]));
-            const double p0 = Kokkos::pow(10.0, terms[0] - maximum);
-            const double denominator = p0 +
-                Kokkos::pow(10.0, terms[1] - maximum) +
-                Kokkos::pow(10.0, terms[2] - maximum);
-            if (p0 > 0.0 && denominator > 0.0) {
-                const double p_alt_absent = p0 / denominator;
-                device_log10_p_alt_absent(candidate) = Kokkos::fmin(
-                    0.0, Kokkos::log10(p_alt_absent));
-                device_qual(candidate) = Kokkos::fmax(
-                    0.0, -10.0 * Kokkos::log10(p_alt_absent));
-                const double p_variant_present = 1.0 - p_alt_absent;
-                if (p_variant_present > 0.0)
-                    device_log10_p_variant_present(candidate) = Kokkos::fmin(
-                        0.0, Kokkos::log10(p_variant_present));
+            double final_posteriors[3];
+            normalized_posteriors(final_posteriors);
+            const double log10_p_no_variant = final_posteriors[0];
+            device_log10_p_alt_absent(candidate) =
+                Kokkos::fmin(0.0, log10_p_no_variant);
+            device_qual(candidate) = Kokkos::fmax(0.0, -10.0 * log10_p_no_variant);
+            if (log10_p_no_variant < 0.0) {
+                // MathUtils.log10OneMinusPow10 -> NaturalLogUtils.log1mexp.
+                const double natural = log10_p_no_variant * 2.3025850929940459;
+                const double log1mexp = (natural < -0.6931471805599453)
+                    ? Kokkos::log1p(-Kokkos::exp(natural))
+                    : Kokkos::log(-Kokkos::expm1(natural));
+                device_log10_p_variant_present(candidate) = Kokkos::fmin(
+                    0.0, log1mexp * 0.43429448190325176);
+            } else {
+                device_log10_p_variant_present(candidate) = 0.0;
             }
         });
     ExecSpace{}.fence();

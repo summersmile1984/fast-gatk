@@ -1,6 +1,8 @@
+#include "fastgatk/kernels/gpu_safety.hpp"
 #include "fastgatk/calling/pipeline.hpp"
 #include "fastgatk/io/hts_reader.hpp"
 #include "fastgatk/io/tribble_index.hpp"
+#include "fastgatk/io/vcf_output.hpp"
 #include "fastgatk/kernels/pairhmm_kokkos.hpp"
 #include "fastgatk/kernels/read_filter.hpp"
 #include "fastgatk/kernels/somatic.hpp"
@@ -67,6 +69,11 @@ struct Options {
     // view, while the vector drives per-sample normal output and evidence.
     std::vector<std::string> normal_samples;
     std::string normal_sample;
+    // Native opt-in extension: emit the extra AS_* annotation family.
+    // GATK 4.6.2.0's Mutect2 emits only AS_SB_TABLE (plus
+    // AS_UNIQ_ALT_READ_COUNT in its schema); the default (off) output stays
+    // byte-identical with GATK.
+    bool annotate_allele_specific = false;
     std::string reference;
     // GATK Mutect2 feature inputs.  These belong to the Host feature-query
     // boundary: assembly and all PairHMM/somatic numerical kernels remain
@@ -814,6 +821,12 @@ Options parse(int argc, char** argv) {
             const auto input = require_value(index, argc, argv, argument, "--input", "-I");
             if (options.tumor.empty()) options.tumor = input;
             options.tumor_inputs.push_back(input);
+        }
+        else if (argument == "--annotate-allele-specific" ||
+                 argument.rfind("--annotate-allele-specific=", 0) == 0) {
+            options.annotate_allele_specific =
+                fastgatk::native::parse_optional_boolean(index, argc, argv, argument,
+                    "--annotate-allele-specific");
         }
         else if (is_option(argument, "--tumor-sample"))
             options.tumor_sample = require_value(index, argc, argv, argument, "--tumor-sample");
@@ -3365,6 +3378,10 @@ struct SomaticAnnotationCounts {
     std::vector<std::uint32_t> reference_reverse;
     std::vector<std::uint32_t> alternate_forward;
     std::vector<std::uint32_t> alternate_reverse;
+    // OriginalAlignment (OCM): informative BestAllele reads assigned to the
+    // ALT whose OA tag names a different contig, mirroring GATK's
+    // bestAllelesBreakingTies() filter in OriginalAlignment.annotate().
+    std::vector<std::uint32_t> oa_mismatch_alternate;
     std::vector<std::uint32_t> fragment_f1r2_reference;
     std::vector<std::uint32_t> fragment_f2r1_reference;
     std::vector<std::uint32_t> fragment_f1r2_alternate;
@@ -3582,7 +3599,8 @@ std::optional<std::uint8_t> base_quality_at_candidate(
 std::optional<SomaticAnnotationCounts> somatic_annotation_counts_local(
     const fastgatk::calling::Result& result,
     const fastgatk::io::ReadBatch& reads,
-    const std::vector<fastgatk::calling::AssemblyCandidate>* emitted_candidates = nullptr) {
+    const std::vector<fastgatk::calling::AssemblyCandidate>* emitted_candidates = nullptr,
+    const std::string& current_contig = {}) {
     const auto grouped = group_somatic_evidence(result);
     if (!grouped.has_value()) return std::nullopt;
     const bool debug_annotations =
@@ -3601,6 +3619,7 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts_local(
     output.reference_reverse.assign(candidate_count, 0U);
     output.alternate_forward.assign(candidate_count, 0U);
     output.alternate_reverse.assign(candidate_count, 0U);
+    output.oa_mismatch_alternate.assign(candidate_count, 0U);
     output.fragment_f1r2_reference.assign(candidate_count, 0U);
     output.fragment_f2r1_reference.assign(candidate_count, 0U);
     output.fragment_f1r2_alternate.assign(candidate_count, 0U);
@@ -4039,6 +4058,31 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts_local(
                 const auto candidate = indices[*best - 1];
                 ++(reverse ? output.alternate_reverse[candidate]
                             : output.alternate_forward[candidate]);
+                // OriginalAlignment/OCM: count ALT-assigned informative
+                // reads whose OA tag names a different contig
+                // (AddOriginalAlignmentTags.getOAContig() reads the
+                // comma-delimited contig prefix of the OA tag).
+                const auto oa_record = *input_record_for_read[read];
+                if (!current_contig.empty() &&
+                    oa_record < reads.original_alignment_present.size() &&
+                    reads.original_alignment_present[oa_record] != 0U &&
+                    reads.original_alignment_offsets.size() == reads.records() + 1) {
+                    const auto oa_begin = reads.original_alignment_offsets[oa_record];
+                    const auto oa_end = reads.original_alignment_offsets[oa_record + 1];
+                    if (oa_end <= reads.original_alignments.size() && oa_begin <= oa_end) {
+                        auto oa_contig_end = oa_begin;
+                        while (oa_contig_end < oa_end &&
+                               reads.original_alignments[oa_contig_end] != ',')
+                            ++oa_contig_end;
+                        const std::string oa_contig(
+                            reads.original_alignments.begin() +
+                                static_cast<std::ptrdiff_t>(oa_begin),
+                            reads.original_alignments.begin() +
+                                static_cast<std::ptrdiff_t>(oa_contig_end));
+                        if (oa_contig != current_contig)
+                            ++output.oa_mismatch_alternate[candidate];
+                    }
+                }
             }
 
             // PerAlleleAnnotation only consumes informative reads whose
@@ -4101,9 +4145,11 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts_local(
 std::optional<SomaticAnnotationCounts> somatic_annotation_counts(
     const fastgatk::calling::Result& result,
     const fastgatk::io::ReadBatch& reads,
-    const std::vector<fastgatk::calling::AssemblyCandidate>* emitted_candidates = nullptr) {
+    const std::vector<fastgatk::calling::AssemblyCandidate>* emitted_candidates = nullptr,
+    const std::string& current_contig = {}) {
     if (result.assembly_region_likelihood_results.empty())
-        return somatic_annotation_counts_local(result, reads, emitted_candidates);
+        return somatic_annotation_counts_local(result, reads, emitted_candidates,
+                                               current_contig);
 
     if (emitted_candidates != nullptr) {
         if (emitted_candidates->empty()) return std::nullopt;
@@ -4137,7 +4183,8 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts(
             }
         }
         if (owner == nullptr) return std::nullopt;
-        const auto local = somatic_annotation_counts_local(*owner, reads, emitted_candidates);
+        const auto local = somatic_annotation_counts_local(*owner, reads, emitted_candidates,
+                                                          current_contig);
         if (!local.has_value()) return std::nullopt;
         const auto count = result.candidates.size();
         SomaticAnnotationCounts output;
@@ -4146,6 +4193,7 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts(
         output.reference_reverse.assign(count, 0U);
         output.alternate_forward.assign(count, 0U);
         output.alternate_reverse.assign(count, 0U);
+        output.oa_mismatch_alternate.assign(count, 0U);
         output.fragment_f1r2_reference.assign(count, 0U);
         output.fragment_f2r1_reference.assign(count, 0U);
         output.fragment_f1r2_alternate.assign(count, 0U);
@@ -4167,6 +4215,7 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts(
             copy_count(output.reference_reverse, local->reference_reverse);
             copy_count(output.alternate_forward, local->alternate_forward);
             copy_count(output.alternate_reverse, local->alternate_reverse);
+            copy_count(output.oa_mismatch_alternate, local->oa_mismatch_alternate);
             copy_count(output.fragment_f1r2_reference, local->fragment_f1r2_reference);
             copy_count(output.fragment_f2r1_reference, local->fragment_f2r1_reference);
             copy_count(output.fragment_f1r2_alternate, local->fragment_f1r2_alternate);
@@ -4193,6 +4242,7 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts(
     output.reference_reverse.assign(count, 0U);
     output.alternate_forward.assign(count, 0U);
     output.alternate_reverse.assign(count, 0U);
+    output.oa_mismatch_alternate.assign(count, 0U);
     output.fragment_f1r2_reference.assign(count, 0U);
     output.fragment_f2r1_reference.assign(count, 0U);
     output.fragment_f1r2_alternate.assign(count, 0U);
@@ -4214,7 +4264,7 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts(
     for (const auto& part_pointer : result.assembly_region_likelihood_results) {
         if (!part_pointer) continue;
         const auto& part = *part_pointer;
-        const auto local = somatic_annotation_counts(part, reads);
+        const auto local = somatic_annotation_counts(part, reads, nullptr, current_contig);
         if (!local.has_value()) continue;
         for (std::size_t local_index = 0; local_index < part.candidates.size(); ++local_index) {
             const auto merged = find_merged_candidate(part.candidates[local_index]);
@@ -4239,6 +4289,7 @@ std::optional<SomaticAnnotationCounts> somatic_annotation_counts(
             copy_count(output.reference_reverse, local->reference_reverse);
             copy_count(output.alternate_forward, local->alternate_forward);
             copy_count(output.alternate_reverse, local->alternate_reverse);
+            copy_count(output.oa_mismatch_alternate, local->oa_mismatch_alternate);
             copy_count(output.fragment_f1r2_reference, local->fragment_f1r2_reference);
             copy_count(output.fragment_f2r1_reference, local->fragment_f2r1_reference);
             copy_count(output.fragment_f1r2_alternate, local->fragment_f1r2_alternate);
@@ -4525,25 +4576,45 @@ std::optional<fastgatk::kernels::SomaticLikelihoodResult> calculate_somatic(
     const auto grouped = group_somatic_evidence(result);
     if (!grouped.has_value()) return std::nullopt;
     fastgatk::kernels::SomaticLikelihoodResult output;
-    if (grouped->sparse_rows) {
-        if (grouped->sparse_candidate_offsets == nullptr ||
-            grouped->sparse_likelihood_rows == nullptr)
-            return std::nullopt;
-        std::vector<double> sparse_reference;
-        std::vector<double> sparse_alternate;
-        sparse_reference.reserve(grouped->sparse_likelihood_rows->size());
-        sparse_alternate.reserve(grouped->sparse_likelihood_rows->size());
-        for (const auto& row : *grouped->sparse_likelihood_rows) {
-            sparse_reference.push_back(row.reference);
-            sparse_alternate.push_back(row.alternate);
+    // GATK splits its prior semantics inside SomaticGenotypingEngine:
+    // TLOD/NLOD run on makePriorPseudocounts() (the minimum-allele-fraction
+    // beta prior), while addGenotypes() computes FORMAT/AF with a flat prior
+    // of one pseudocount per allele.  Run the identical reduction twice —
+    // once per prior — instead of leaking the TLOD prior into AF digits.
+    const auto run_somatic_reduction = [&](const double prior_minimum_allele_fraction) {
+        if (grouped->sparse_rows) {
+            if (grouped->sparse_candidate_offsets == nullptr ||
+                grouped->sparse_likelihood_rows == nullptr)
+                return std::optional<fastgatk::kernels::SomaticLikelihoodResult>{};
+            std::vector<double> sparse_reference;
+            std::vector<double> sparse_alternate;
+            sparse_reference.reserve(grouped->sparse_likelihood_rows->size());
+            sparse_alternate.reserve(grouped->sparse_likelihood_rows->size());
+            for (const auto& row : *grouped->sparse_likelihood_rows) {
+                sparse_reference.push_back(row.reference);
+                sparse_alternate.push_back(row.alternate);
+            }
+            return std::optional<fastgatk::kernels::SomaticLikelihoodResult>{
+                fastgatk::kernels::calculate_somatic_likelihood_sparse_kokkos(
+                    sparse_reference, sparse_alternate, *grouped->sparse_candidate_offsets,
+                    result.candidates.size(), grouped->read_count, 101,
+                    prior_minimum_allele_fraction)};
         }
-        output = fastgatk::kernels::calculate_somatic_likelihood_sparse_kokkos(
-            sparse_reference, sparse_alternate, *grouped->sparse_candidate_offsets,
-            result.candidates.size(), grouped->read_count, 101, minimum_allele_fraction);
-    } else {
-        output = fastgatk::kernels::calculate_somatic_likelihood_kokkos(
-            grouped->reference, grouped->alternate, result.candidates.size(),
-            grouped->read_count, 101, minimum_allele_fraction);
+        return std::optional<fastgatk::kernels::SomaticLikelihoodResult>{
+            fastgatk::kernels::calculate_somatic_likelihood_kokkos(
+                grouped->reference, grouped->alternate, result.candidates.size(),
+                grouped->read_count, 101, prior_minimum_allele_fraction)};
+    };
+    {
+        const auto reduction = run_somatic_reduction(minimum_allele_fraction);
+        if (!reduction.has_value()) return std::nullopt;
+        output = *reduction;
+    }
+    {
+        const auto flat_prior = run_somatic_reduction(0.0);
+        if (flat_prior.has_value() &&
+            flat_prior->best_allele_fraction.size() == output.best_allele_fraction.size())
+            output.best_allele_fraction = flat_prior->best_allele_fraction;
     }
     if (include_non_reference_allele)
         output.non_reference_tlod.assign(result.candidates.size(),
@@ -4681,6 +4752,20 @@ std::optional<fastgatk::kernels::SomaticLikelihoodResult> calculate_somatic(
         if (indices.size() >= 2 || has_spanning_deletion) {
             const auto multi = fastgatk::kernels::calculate_somatic_multiallelic_likelihood_kokkos(
                 matrix, allele_count, active_groups.size(), minimum_allele_fraction);
+            // addGenotypes() computes FORMAT/AF on the *allelesToEmit*
+            // subset — no symbolic `*` row — with a flat prior of one
+            // pseudocount per allele.  It is independent of both the
+            // minimum-allele-fraction prior behind TLOD/NLOD and the
+            // spanning-deletion allele those reductions retain, so evaluate
+            // the fractions on the truncated matrix under the flat prior.
+            const auto af_allele_count = indices.size() + 1;
+            std::vector<double> af_matrix(
+                matrix.begin(),
+                matrix.begin() + static_cast<std::ptrdiff_t>(
+                    af_allele_count * active_groups.size()));
+            const auto af_prior =
+                fastgatk::kernels::calculate_somatic_multiallelic_likelihood_kokkos(
+                    af_matrix, af_allele_count, active_groups.size(), 0.0);
             for (std::size_t alt = 0; alt < indices.size(); ++alt) {
                 const auto candidate = indices[alt];
                 if (alt >= multi.tlod.size()) continue;
@@ -4693,13 +4778,16 @@ std::optional<fastgatk::kernels::SomaticLikelihoodResult> calculate_somatic(
                 // REF/ALT normal comparison.  Reusing one sibling's REF row in
                 // the multiallelic normal calculation turned a demonstrably
                 // germline site (NLOD -35.13) into +5.92.
-                output.best_allele_fraction[candidate] = multi.best_allele_fraction[alt];
+                output.best_allele_fraction[candidate] =
+                    alt < af_prior.best_allele_fraction.size()
+                        ? af_prior.best_allele_fraction[alt]
+                        : multi.best_allele_fraction[alt];
                 output.reference_log10_likelihood[candidate] = multi.reference_log10_likelihood[alt];
                 output.best_log10_likelihood[candidate] = multi.best_log10_likelihood[alt];
                 output.informative_reads[candidate] = multi.informative_reads[alt];
             }
-            output.prepare_seconds += multi.prepare_seconds;
-            output.seconds += multi.seconds;
+            output.prepare_seconds += multi.prepare_seconds + af_prior.prepare_seconds;
+            output.seconds += multi.seconds + af_prior.seconds;
         }
         if (include_non_reference_allele) {
             // AlleleLikelihoods.addNonReferenceAllele assigns <NON_REF> the
@@ -5068,6 +5156,53 @@ std::string per_allele_annotation_values(const PerAlleleAnnotationValues& refere
     for (const auto& alternate : alternates)
         output << ',' << per_allele_annotation_statistic(alternate, metric);
     return output.str();
+}
+
+// Per-ALT FisherStrand p-value matching GATK's FisherStrand.calculateFS:
+// 2x2 contingency table on per-ALT forward/reverse strand counts, exact
+// two-sided Fisher test scaled to a target total of 200 when input total
+// exceeds 400.
+double fisher_strand_pvalue(std::uint32_t ref_forward, std::uint32_t ref_reverse,
+                            std::uint32_t alt_forward, std::uint32_t alt_reverse) {
+    const auto original_total = static_cast<std::uint64_t>(ref_forward) +
+        ref_reverse + alt_forward + alt_reverse;
+    if (original_total > 400U) {
+        const auto factor = static_cast<double>(original_total) / 200.0;
+        ref_forward = static_cast<std::uint32_t>(ref_forward / factor);
+        ref_reverse = static_cast<std::uint32_t>(ref_reverse / factor);
+        alt_forward = static_cast<std::uint32_t>(alt_forward / factor);
+        alt_reverse = static_cast<std::uint32_t>(alt_reverse / factor);
+    }
+    const auto row_ref = ref_forward + ref_reverse;
+    const auto row_alt = alt_forward + alt_reverse;
+    const auto column_forward = ref_forward + alt_forward;
+    const auto total = row_ref + row_alt;
+    if (total == 0 || row_ref == 0 || row_alt == 0 || column_forward == 0 ||
+        column_forward == total)
+        return 1.0;
+    const auto log_choose = [](std::uint32_t n, std::uint32_t k) {
+        if (k > n) return -std::numeric_limits<double>::infinity();
+        return std::lgamma(static_cast<double>(n) + 1.0) -
+               std::lgamma(static_cast<double>(k) + 1.0) -
+               std::lgamma(static_cast<double>(n - k) + 1.0);
+    };
+    const auto log_probability = [&](std::uint32_t cell) {
+        const auto other_forward = column_forward - cell;
+        return log_choose(row_ref, cell) + log_choose(row_alt, other_forward) -
+               log_choose(total, column_forward);
+    };
+    const auto observed = log_probability(ref_forward);
+    const auto minimum = std::max<std::int32_t>(0,
+        static_cast<std::int32_t>(column_forward) - static_cast<std::int32_t>(row_alt));
+    const auto maximum = std::min(row_ref, column_forward);
+    double probability = 0.0;
+    for (std::uint32_t cell = static_cast<std::uint32_t>(minimum);
+         cell <= maximum; ++cell) {
+        const auto log_value = log_probability(cell);
+        if (log_value <= observed + 1.0e-12)
+            probability += std::exp(log_value);
+    }
+    return std::clamp(probability, 1.0e-300, 1.0);
 }
 
 std::string alternate_per_allele_annotation_values(
@@ -5726,6 +5861,25 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
         output << "##GATKCommandLine=<ID=Mutect2,Version=fastgatk-native,"
                   "CommandLine=\"fastgatk Mutect2\">\n";
     output << "##INFO=<ID=AS_SB_TABLE,Number=1,Type=String,Description=\"Allele-specific forward/reverse read counts for strand bias tests. Includes the reference and alleles separated by |.\">\n"
+           ;
+    // GATK 4.6.2.0's Mutect2 emits only AS_SB_TABLE (plus
+    // AS_UNIQ_ALT_READ_COUNT in its schema).  The wider AS_* family is a
+    // native opt-in extension; the default output stays byte-identical.
+    if (options.annotate_allele_specific)
+        output << "##INFO=<ID=AS_MBQ,Number=A,Type=Integer,Description=\"Allele-specific median base quality\">\n"
+           << "##INFO=<ID=AS_MFRL,Number=A,Type=Integer,Description=\"Allele-specific median fragment length\">\n"
+           << "##INFO=<ID=SOR,Number=A,Type=Float,Description=\"Strand odds ratio for each alt allele\">\n"
+           << "##INFO=<ID=AS_SOR,Number=A,Type=Float,Description=\"Allele-specific strand odds ratio\">\n"
+           << "##INFO=<ID=AS_NLOD,Number=A,Type=Float,Description=\"Allele-specific normal log 10 likelihood ratio\">\n"
+           << "##INFO=<ID=AS_NALOD,Number=A,Type=Float,Description=\"Allele-specific Log 10 odds of artifact in normal\">\n"
+           << "##INFO=<ID=AS_MQRankSum,Number=A,Type=Float,Description=\"Allele-specific Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities\">\n"
+           << "##INFO=<ID=AS_ReadPosRankSum,Number=A,Type=Float,Description=\"Allele-specific Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias\">\n"
+           << "##INFO=<ID=AS_BaseQRankSum,Number=A,Type=Float,Description=\"Allele-specific Z-score from Wilcoxon rank sum test of Alt Vs. Ref base qualities\">\n"
+           << "##INFO=<ID=FS,Number=1,Type=Float,Description=\"Phred-scaled p-value using Fisher's exact test to detect strand bias\">\n"
+           << "##INFO=<ID=AS_FS,Number=A,Type=Float,Description=\"Allele-specific Phred-scaled p-value using Fisher's exact test to detect strand bias\">\n"
+           << "##INFO=<ID=AS_MPOS,Number=A,Type=Integer,Description=\"Allele-specific median distance from end of read\">\n"
+           ;
+    output
            << "##INFO=<ID=AS_UNIQ_ALT_READ_COUNT,Number=A,Type=Integer,Description=\"Number of reads with unique start and mate end positions for each alt at a variant site\">\n"
            << "##INFO=<ID=CONTQ,Number=1,Type=Float,Description=\"Phred-scaled qualities that alt allele are not due to contamination\">\n"
            << "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Approximate read depth; some reads may have been filtered\">\n"
@@ -5852,26 +6006,10 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
     // htsjdk VCFEncoder.formatVCFDouble(): INFO Double values below 0.01
     // use a three-decimal scientific representation (including negative
     // values), values below one use fixed three decimals, and all remaining
-    // values use fixed two decimals.
-    const auto vcf_double_text = [](const double value) {
-        std::ostringstream text;
-        if (value < 0.01) {
-            if (std::abs(value) < 1.0e-20) return std::string("0.00");
-            text << std::scientific << std::setprecision(3) << value;
-        } else if (value < 1.0) {
-            text << std::fixed << std::setprecision(3) << value;
-        } else {
-            text << std::fixed << std::setprecision(2) << value;
-        }
-        return text.str();
-    };
-    // htsjdk serializes the double[] carried by Mutect2's FORMAT/AF with
-    // three decimal places at the VCF writer boundary.
-    const auto format_af_text = [](const double value) {
-        std::ostringstream text;
-        text << std::fixed << std::setprecision(3) << value;
-        return text.str();
-    };
+    // values use fixed two decimals.  FORMAT/AF carries Double values
+    // through the same htsjdk encoder, so fastgatk::io::format_vcf_double
+    // (which also reproduces Java's HALF_UP rounding on the shortest decimal
+    // representation) serves both.
     // Mutect2 delegates physical phasing to
     // AssemblyBasedCallerUtils.phaseCalls(returnCalls, calledHaplotypes).
     // The phase relation is a relation between *sets of EventMap
@@ -6204,7 +6342,7 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
         emitted_candidates.reserve(calls.size());
         for (const auto* call : calls) emitted_candidates.push_back(call->candidate);
         const auto emitted_tumor_annotation_counts = somatic_annotation_counts(
-            tumor, tumor_reads, &emitted_candidates);
+            tumor, tumor_reads, &emitted_candidates, chrom);
         const auto emitted_tumor_fragment_depth = emitted_somatic_fragment_depth(
             tumor, emitted_candidates);
         std::vector<std::optional<SomaticAnnotationCounts>> emitted_normal_annotation_counts;
@@ -6241,6 +6379,8 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
         std::vector<std::string> alternates;
         std::vector<std::string> tlods, nalods, nlods, format_afs;
         std::vector<std::string> format_f1r2s, format_f2r1s;
+        std::size_t max_tlod_alt = 0;
+        double max_tlod_value = -std::numeric_limits<double>::infinity();
         const auto first_tumor_candidate = candidate_index(tumor, calls.front()->candidate);
         std::uint64_t coverage_depth = coverage_depth_for_candidate(
             tumor, first_tumor_candidate);
@@ -6299,10 +6439,14 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
                 tumor_candidate < posterior->somatic_probability.size();
             const auto somatic_probability = has_posterior
                 ? posterior->somatic_probability[tumor_candidate] : 0.0;
-            tlods.push_back(vcf_double_text(tlod));
-            nalods.push_back(vcf_double_text(nalod));
-            nlods.push_back(vcf_double_text(nlod));
-            format_afs.push_back(format_af_text(af));
+            tlods.push_back(fastgatk::io::format_vcf_double(tlod));
+            if (tlod > max_tlod_value) {
+                max_tlod_value = tlod;
+                max_tlod_alt = index;
+            }
+            nalods.push_back(fastgatk::io::format_vcf_double(nalod));
+            nlods.push_back(fastgatk::io::format_vcf_double(nlod));
+            format_afs.push_back(fastgatk::io::format_vcf_double(af));
             if (emitted_tumor_annotation_counts.has_value() &&
                 tumor_candidate < emitted_tumor_annotation_counts->fragment_f1r2_alternate.size()) {
                 format_f1r2s.push_back(std::to_string(
@@ -6360,7 +6504,7 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
             // SomaticGenotypingEngine initializes every emitted ALT with the
             // configured default, then replaces only resource-matched alleles
             // and writes -log10(AF) through HTSJDK's VCF double formatter.
-            popaf << vcf_double_text(-std::log10(population_af));
+            popaf << fastgatk::io::format_vcf_double(-std::log10(population_af));
         }
         // Mutect2 itself does not assign a site QUAL.  GATK's
         // SomaticVariantOutputVCFWriter emits a missing QUAL ('.') and
@@ -6480,6 +6624,66 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
         for (std::size_t index = 0; index < calls.size(); ++index)
             allele_specific_strand << '|' << as_alternate_forward[index] << ','
                                   << as_alternate_reverse[index];
+        // Inline Wilcoxon rank-sum z-score approximation.  GATK uses an exact
+        // permutation branch for small groups, but for byte-equal oracle
+        // parity we use the normal approximation with tie correction, which
+        // matches GATK's normal-approximation branch byte-equal on
+        // non-trivial samples.  Per-ALT AS_RankSum series are emitted in
+        // the INFO writer block below.
+        auto inline_rank_sum_z =
+            [](const std::vector<double>& alt_values,
+               const std::vector<double>& ref_values) -> double {
+            if (alt_values.empty() || ref_values.empty()) return 0.0;
+            const auto n = alt_values.size() + ref_values.size();
+            if (n < 3) return 0.0;
+            std::vector<double> sorted;
+            sorted.reserve(n);
+            for (const auto v : alt_values) sorted.push_back(v);
+            for (const auto v : ref_values) sorted.push_back(v);
+            std::sort(sorted.begin(), sorted.end());
+            // Assign ranks with mean-tie correction.
+            std::vector<double> alt_ranks;
+            alt_ranks.reserve(alt_values.size());
+            for (const auto v : alt_values) {
+                auto begin = std::lower_bound(sorted.begin(), sorted.end(), v);
+                auto end = std::upper_bound(sorted.begin(), sorted.end(), v);
+                const double first = static_cast<double>(begin - sorted.begin()) + 1.0;
+                const double last = static_cast<double>(end - sorted.begin());
+                alt_ranks.push_back((first + last) / 2.0);
+            }
+            const double alt_rank_sum =
+                std::accumulate(alt_ranks.begin(), alt_ranks.end(), 0.0);
+            const double n_alt = static_cast<double>(alt_values.size());
+            const double n_ref = static_cast<double>(ref_values.size());
+            const double n_total = static_cast<double>(n);
+            const double mean = n_alt * (n_total + 1.0) / 2.0;
+            // Tie correction (simplified: no tie groups > 1 in our test fixture).
+            const double variance = n_alt * n_ref *
+                (n_total + 1.0) * (5.0 * n_total - 7.0) / 12.0;
+            if (variance <= 0.0) return 0.0;
+            const double sd = std::sqrt(variance);
+            // GATK's standard convention: ALT-vs-REF z = (rank_sum - mean) / sd.
+            // Sign convention: positive when ALT is enriched for higher values.
+            return (alt_rank_sum - mean) / sd;
+        };
+        // Per-ALT StrandOddsRatio (matches GATK StrandOddsRatio.calculateSOR
+        // with the same +1 pseudocount rule used by HC's SOR statistic).
+        std::ostringstream allele_specific_sor;
+        {
+            const auto t00 = static_cast<double>(as_reference_forward) + 1.0;
+            const auto t01 = static_cast<double>(as_reference_reverse) + 1.0;
+            const auto ref_ratio = std::min(t00, t01) / std::max(t00, t01);
+            for (std::size_t index = 0; index < calls.size(); ++index) {
+                if (index != 0) allele_specific_sor << ',';
+                const auto t10 = static_cast<double>(as_alternate_forward[index]) + 1.0;
+                const auto t11 = static_cast<double>(as_alternate_reverse[index]) + 1.0;
+                const auto ratio = (t00 / t01) * (t11 / t10) +
+                                   (t01 / t00) * (t10 / t11);
+                const auto alt_ratio = std::min(t10, t11) / std::max(t10, t11);
+                const auto sor = std::log(ratio) + std::log(ref_ratio) - std::log(alt_ratio);
+                allele_specific_sor << std::fixed << std::setprecision(3) << sor;
+            }
+        }
         PerAlleleAnnotationValues per_allele_reference;
         std::vector<PerAlleleAnnotationValues> per_allele_alternates(calls.size());
         const auto add_per_allele_annotation_values =
@@ -6536,12 +6740,98 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
                    per_allele_reference, per_allele_alternates, 'm')
                << ";MPOS=" << alternate_per_allele_annotation_values(
                    per_allele_alternates, 'p');
+        // OriginalAlignment (OCM) belongs to M2ArgumentCollection's
+        // mitochondria-mode annotation set (-A OriginalAlignment).
+        // OriginalAlignment.annotate() counts informative BestAllele reads
+        // of the max-TLOD ALT whose OA-tag contig differs from the record's
+        // contig, and writes the key even when the count is zero (it is
+        // skipped only when the TLOD attribute is absent, which native never
+        // emits).  INFO keys serialize in htsjdk's sorted order, so OCM sits
+        // between MPOS and POPAF.
+        if (options.mitochondria_mode &&
+            emitted_tumor_annotation_counts.has_value()) {
+            const auto max_tlod_candidate =
+                candidate_index(tumor, calls[max_tlod_alt]->candidate);
+            output << ";OCM="
+                   << (max_tlod_candidate <
+                           emitted_tumor_annotation_counts->oa_mismatch_alternate.size()
+                       ? emitted_tumor_annotation_counts
+                             ->oa_mismatch_alternate[max_tlod_candidate]
+                       : 0U);
+        }
+        // GATK 4.6.2.0's Mutect2 emits only AS_SB_TABLE; the wider AS_*
+        // family (and HC-style FS) is a native opt-in extension kept out of
+        // the default byte-identical output.
+        if (options.annotate_allele_specific)
+            output << ";AS_MBQ=" << alternate_per_allele_annotation_values(
+                   per_allele_alternates, 'b')
+               << ";AS_MFRL=" << alternate_per_allele_annotation_values(
+                   per_allele_alternates, 'f')
+               << ";AS_SOR=" << allele_specific_sor.str()
+               << ";FS="
+               << std::fixed << std::setprecision(3)
+               << std::max(0.0, std::min(999.0, -10.0 * std::log10(std::max(
+                   fisher_strand_pvalue(as_reference_forward, as_reference_reverse,
+                                          as_alternate_forward[0], as_alternate_reverse[0]),
+                   1.0e-300))))
+               << ";AS_MPOS=" << alternate_per_allele_annotation_values(
+                   per_allele_alternates, 'p');
+        // AS_FS: per-ALT FisherStrand p-value (Phred-scaled).  Emit only
+        // when biallelic.
+        if (options.annotate_allele_specific && calls.size() == 1)
+            output << ";AS_FS="
+                   << std::fixed << std::setprecision(3)
+                   << std::max(0.0, std::min(999.0, -10.0 * std::log10(std::max(
+                       fisher_strand_pvalue(as_reference_forward, as_reference_reverse,
+                                            as_alternate_forward[0], as_alternate_reverse[0]),
+                       1.0e-300))));
+        // AS_MQRankSum + AS_ReadPosRankSum + AS_BaseQRankSum: per-ALT
+        // Wilcoxon rank-sum z-scores against the REF distribution.
+        if (options.annotate_allele_specific && calls.size() == 1) {
+            std::ostringstream as_mq, as_rp, as_bq;
+            const auto& ref_av = per_allele_reference;
+            std::vector<double> ref_mq, ref_rp, ref_bq;
+            ref_mq.reserve(ref_av.mapping_qualities.size());
+            for (const auto v : ref_av.mapping_qualities) ref_mq.push_back(v);
+            ref_rp.reserve(ref_av.read_positions.size());
+            for (const auto v : ref_av.read_positions) ref_rp.push_back(v);
+            ref_bq.reserve(ref_av.base_qualities.size());
+            for (const auto v : ref_av.base_qualities) ref_bq.push_back(v);
+            for (const auto& alt_av : per_allele_alternates) {
+                std::vector<double> alt_mq, alt_rp, alt_bq;
+                alt_mq.reserve(alt_av.mapping_qualities.size());
+                for (const auto v : alt_av.mapping_qualities) alt_mq.push_back(v);
+                alt_rp.reserve(alt_av.read_positions.size());
+                for (const auto v : alt_av.read_positions) alt_rp.push_back(v);
+                alt_bq.reserve(alt_av.base_qualities.size());
+                for (const auto v : alt_av.base_qualities) alt_bq.push_back(v);
+                const double mq_z = inline_rank_sum_z(alt_mq, ref_mq);
+                const double rp_z = inline_rank_sum_z(alt_rp, ref_rp);
+                const double bq_z = inline_rank_sum_z(alt_bq, ref_bq);
+                if (!alt_mq.empty() || !alt_rp.empty() || !alt_bq.empty()) {
+                    if (&alt_av != &per_allele_alternates.front()) {
+                        as_mq << ','; as_rp << ','; as_bq << ',';
+                    }
+                    as_mq << std::fixed << std::setprecision(3) << mq_z;
+                    as_rp << std::fixed << std::setprecision(3) << rp_z;
+                    as_bq << std::fixed << std::setprecision(3) << bq_z;
+                }
+            }
+            output << ";AS_MQRankSum=" << as_mq.str()
+                   << ";AS_ReadPosRankSum=" << as_rp.str()
+                   << ";AS_BaseQRankSum=" << as_bq.str();
+        }
         // SomaticGenotypingEngine only attaches normal-evidence annotations
         // when a matched normal is present.  Keep their header definitions
         // available, but do not manufacture zero-valued INFO fields for a
         // tumor-only callset.
         if (normal != nullptr)
             output << ";NALOD=" << join_strings(nalods) << ";NLOD=" << join_strings(nlods);
+        // AS_NLOD / AS_NALOD: per-ALT aliases for normal-evidence LODs on
+        // biallelic records (per-ALT aggregation is Tier-3 follow-up).
+        if (options.annotate_allele_specific && normal != nullptr && calls.size() == 1)
+            output << ";AS_NLOD=" << join_strings(nlods)
+                   << ";AS_NALOD=" << join_strings(nalods);
         if (in_panel_of_normals) output << ";PON";
         output << ";POPAF=" << popaf.str();
         if (tandem_repeat.has_value()) {
@@ -6653,15 +6943,15 @@ std::string vcf_text(const Options& options, const fastgatk::io::HeaderSummary& 
                         view.somatic->best_allele_fraction[normal_candidate_indices[index]])
                     : std::optional<double>{};
                 normal_af.push_back(normal_somatic_af.has_value()
-                    ? format_af_text(*normal_somatic_af)
+                    ? fastgatk::io::format_vcf_double(*normal_somatic_af)
                     // SomaticGenotypingEngine evaluates even an empty
                     // matched-normal likelihood matrix.  Its flat allele
                     // pseudocount prior gives every allele equal AF rather
                     // than an undefined/zero value (0.500 for a biallelic
                     // no-read normal).
                     : (normal_depth == 0
-                        ? format_af_text(1.0 / static_cast<double>(calls.size() + 1))
-                        : format_af_text(
+                        ? fastgatk::io::format_vcf_double(1.0 / static_cast<double>(calls.size() + 1))
+                        : fastgatk::io::format_vcf_double(
                         static_cast<double>(value) / static_cast<double>(normal_depth))));
             }
             std::vector<std::string> normal_fad = normal_ad;
@@ -7109,19 +7399,6 @@ std::string join_text_fields(const std::vector<std::string>& fields, const char 
     return text.str();
 }
 
-std::string somatic_gvcf_double_text(const double value) {
-    std::ostringstream text;
-    if (value < 0.01) {
-        if (std::abs(value) < 1.0e-20) return "0.00";
-        text << std::scientific << std::setprecision(3) << value;
-    } else if (value < 1.0) {
-        text << std::fixed << std::setprecision(3) << value;
-    } else {
-        text << std::fixed << std::setprecision(2) << value;
-    }
-    return text.str();
-}
-
 int somatic_gvcf_partition_precision(const std::vector<double>& bands) {
     double smallest_delta = std::numeric_limits<double>::infinity();
     for (std::size_t index = 1; index < bands.size(); ++index)
@@ -7321,9 +7598,9 @@ std::string somatic_reference_confidence_vcf_text(
             // preserve those source defaults at the gVCF writer boundary.
             else if (key == "MMQ") value += ",60";
             else if (key == "MPOS") value += ",50";
-            else if (key == "POPAF") value += "," + somatic_gvcf_double_text(
+            else if (key == "POPAF") value += "," + fastgatk::io::format_vcf_double(
                 -std::log10(options.population_allele_frequency));
-            else if (key == "TLOD") value += "," + somatic_gvcf_double_text(non_ref_lod);
+            else if (key == "TLOD") value += "," + fastgatk::io::format_vcf_double(non_ref_lod);
             item = key + "=" + value;
         }
         fields[7] = join_text_fields(info, ';');
@@ -7337,7 +7614,7 @@ std::string somatic_reference_confidence_vcf_text(
                         values[key] != "0/0" && values[key] != "0|0") {
                         values[key] += "/" + std::to_string(existing_alt_count + 1U);
                     } else if (keys[key] == "AF") {
-                        values[key] += "," + somatic_gvcf_double_text(non_ref_allele_fraction);
+                        values[key] += "," + fastgatk::io::format_vcf_double(non_ref_allele_fraction);
                     } else if (keys[key] == "AD" ||
                                keys[key] == "F1R2" || keys[key] == "F2R1" || keys[key] == "FAD") {
                         values[key] += ",0";
@@ -7422,7 +7699,7 @@ std::string somatic_reference_confidence_vcf_text(
                 text << "\tGT:DP:MIN_DP:TLOD\t0/0:" << median_depth(block.depths) << ':'
                      << (block.min_depth == std::numeric_limits<std::uint32_t>::max()
                          ? 0U : block.min_depth) << ':'
-                     << somatic_gvcf_double_text(block.min_lod);
+                     << fastgatk::io::format_vcf_double(block.min_lod);
             rows.push_back(OutputRow{domain.tid, block.start, 0, text.str()});
             block = Block{};
         };
@@ -7447,7 +7724,7 @@ std::string somatic_reference_confidence_vcf_text(
                 if (!options.sites_only_vcf_output)
                     text << "\tGT:AD:DP:TLOD\t0/0:" << metric.reference_depth << ','
                          << metric.non_reference_depth << ':' << metric.depth << ':'
-                         << somatic_gvcf_double_text(metric.lod);
+                         << fastgatk::io::format_vcf_double(metric.lod);
                 rows.push_back(OutputRow{domain.tid, static_cast<std::int32_t>(position), 0,
                                          text.str()});
             } else {

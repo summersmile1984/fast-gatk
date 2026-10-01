@@ -43,6 +43,9 @@ struct Options {
     std::string reference;
     std::string output;
     std::string manifest;
+    bool quiet = false;
+    std::string tmp_dir;
+    std::string verbosity;
     std::vector<std::string> intervals;
     std::vector<std::string> exclude_intervals;
     enum class IntervalSetRule : std::uint8_t { Union, Intersection };
@@ -221,7 +224,10 @@ Options parse_options(int argc, char** argv) {
                          "      --read-filter-tag-op OP  LESS/LESS_OR_EQUAL/GREATER/GREATER_OR_EQUAL/EQUAL/NOT_EQUAL\n"
                          "      --batch-records N        bounded HTSlib/Kokkos batch size (default 65536)\n"
                          "      --threads N              HTSlib/Kokkos threads\n"
-                         "      --output-manifest FILE   OutputManifest JSON\n";
+                         "      --output-manifest FILE   OutputManifest JSON\n"
+                         "      --QUIET[=true|false]     Picard/GATK quiet switch\n"
+                         "      --tmp-dir DIR            temporary directory\n"
+                         "      --verbosity LEVEL        ERROR/WARNING/INFO/DEBUG\n";
             std::exit(0);
         } else if (argument == "-I" || argument == "--input" ||
                    !inline_value(argument, "--input").empty()) {
@@ -421,6 +427,28 @@ Options parse_options(int argc, char** argv) {
                      "--seconds-between-progress-updates");
                 (void)value_for(index, argc, argv, argument, name);
             }
+        } else if (argument == "--QUIET" || argument == "--quiet" ||
+                   argument.rfind("--QUIET=", 0) == 0 ||
+                   argument.rfind("--quiet=", 0) == 0) {
+            // Picard/GATK launcher quiet switch (P1 CLI parity).
+            options.quiet = true;
+        } else if (argument == "--tmp-dir" || !inline_value(argument, "--tmp-dir").empty()) {
+            options.tmp_dir = value_for(index, argc, argv, argument, "--tmp-dir");
+        } else if (argument == "--verbosity" ||
+                   !inline_value(argument, "--verbosity").empty()) {
+            options.verbosity = value_for(index, argc, argv, argument, "--verbosity");
+        } else if (argument == "--java-options" ||
+                   !inline_value(argument, "--java-options").empty() ||
+                   argument == "-java-options" ||
+                   !inline_value(argument, "-java-options").empty()) {
+            // Launcher-level JVM passthrough: accepted for CLI parity; the
+            // native binary has no JVM.
+            (void)value_for(index, argc, argv, argument,
+                            argument.rfind("-java-", 0) == 0 ? "-java-options"
+                                                             : "--java-options");
+        } else if (argument == "--gatk-config-file" ||
+                   !inline_value(argument, "--gatk-config-file").empty()) {
+            (void)value_for(index, argc, argv, argument, "--gatk-config-file");
         } else {
             throw std::invalid_argument("unknown option: " + argument);
         }

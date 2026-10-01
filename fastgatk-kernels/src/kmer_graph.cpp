@@ -3282,6 +3282,7 @@ KmerGraphResult build_kmer_graph_kokkos(const KmerGraphInput& input,
             } else {
                 merge_haplotype_paths(selected, attempt);
             }
+            selected.kmer_sizes_used.push_back(kmer_size);
         } else if (!have_selected) {
             // Keep diagnostics for an all-failed call without exposing its
             // paths as assembly candidates.

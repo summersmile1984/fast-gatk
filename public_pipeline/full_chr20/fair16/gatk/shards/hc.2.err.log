@@ -1,0 +1,66 @@
+19:26:12.014 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_compression.so
+19:26:16.454 INFO  HaplotypeCaller - ------------------------------------------------------------
+19:26:16.456 INFO  HaplotypeCaller - The Genome Analysis Toolkit (GATK) v4.6.2.0
+19:26:16.456 INFO  HaplotypeCaller - For support and documentation go to https://software.broadinstitute.org/gatk/
+19:26:16.456 INFO  HaplotypeCaller - Executing as turing-agents@turing-agents-MotherBoard-Series on Linux v7.0.0-31-generic amd64
+19:26:16.456 INFO  HaplotypeCaller - Java runtime: OpenJDK 64-Bit Server VM v17.0.20+8
+19:26:16.460 INFO  HaplotypeCaller - Start Date/Time: 2026年9月19日 CST 下午7:26:11
+19:26:16.460 INFO  HaplotypeCaller - ------------------------------------------------------------
+19:26:16.460 INFO  HaplotypeCaller - ------------------------------------------------------------
+19:26:16.461 INFO  HaplotypeCaller - HTSJDK Version: 4.2.0
+19:26:16.461 INFO  HaplotypeCaller - Picard Version: 3.4.0
+19:26:16.462 INFO  HaplotypeCaller - Built for Spark Version: 3.5.0
+19:26:16.464 INFO  HaplotypeCaller - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+19:26:16.466 INFO  HaplotypeCaller - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+19:26:16.466 INFO  HaplotypeCaller - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+19:26:16.466 INFO  HaplotypeCaller - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+19:26:16.466 INFO  HaplotypeCaller - Deflater: IntelDeflater
+19:26:16.466 INFO  HaplotypeCaller - Inflater: IntelInflater
+19:26:16.466 INFO  HaplotypeCaller - GCS max retries/reopens: 20
+19:26:16.466 INFO  HaplotypeCaller - Requester pays: disabled
+19:26:16.467 INFO  HaplotypeCaller - Initializing engine
+19:26:16.702 INFO  IntervalArgumentCollection - Processing 3939095 bp from intervals
+19:26:16.715 INFO  HaplotypeCaller - Done initializing engine
+19:26:16.717 INFO  HaplotypeCallerEngine - Tool is in reference confidence mode and the annotation, the following changes will be made to any specified annotations: 'StrandBiasBySample' will be enabled. 'ChromosomeCounts', 'FisherStrand', 'StrandOddsRatio' and 'QualByDepth' annotations have been disabled
+19:26:16.760 INFO  NativeLibraryLoader - Loading libgkl_utils.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_utils.so
+19:26:16.762 INFO  NativeLibraryLoader - Loading libgkl_smithwaterman.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_smithwaterman.so
+19:26:16.767 INFO  IntelSmithWaterman - Using CPU-supported AVX-512 instructions
+19:26:16.767 INFO  SmithWatermanAligner - Using AVX accelerated SmithWaterman implementation
+19:26:16.770 INFO  HaplotypeCallerEngine - Standard Emitting and Calling confidence set to -0.0 for reference-model confidence output
+19:26:16.770 INFO  HaplotypeCallerEngine - All sites annotated with PLs forced to true for reference-model confidence output
+19:26:16.787 INFO  NativeLibraryLoader - Loading libgkl_pairhmm_omp.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_pairhmm_omp.so
+19:26:16.799 INFO  IntelPairHmm - Using CPU-supported AVX-512 instructions
+19:26:16.802 INFO  IntelPairHmm - Flush-to-zero (FTZ) is enabled when running PairHMM
+19:26:16.802 INFO  IntelPairHmm - Available threads: 1
+19:26:16.802 INFO  IntelPairHmm - Requested threads: 4
+19:26:16.802 WARN  IntelPairHmm - Using 1 available threads, but 4 were requested
+19:26:16.802 INFO  PairHMM - Using the OpenMP multi-threaded AVX-accelerated native PairHMM implementation
+19:26:16.915 INFO  ProgressMeter - Starting traversal
+19:26:16.916 INFO  ProgressMeter -        Current Locus  Elapsed Minutes     Regions Processed   Regions/Minute
+19:26:17.714 WARN  InbreedingCoeff - InbreedingCoeff will not be calculated at position 20:7879592 and possibly subsequent; at least 10 samples must have called genotypes
+19:26:26.983 INFO  ProgressMeter -           20:8120384              0.2                  1110           6617.6
+19:26:36.986 INFO  ProgressMeter -           20:8547381              0.3                  3150           9417.0
+19:26:41.175 WARN  DepthPerSampleHC - org.broadinstitute.hellbender.tools.walkers.annotator.DepthPerSampleHC$$Lambda$573/0x00007e834563d220@2c32d689
+19:26:41.179 WARN  StrandBiasBySample - org.broadinstitute.hellbender.tools.walkers.annotator.StrandBiasBySample$$Lambda$574/0x00007e834563d448@18300d58
+19:26:47.000 INFO  ProgressMeter -           20:8932001              0.5                  5240          10450.7
+19:26:57.020 INFO  ProgressMeter -           20:9642137              0.7                  8480          12687.0
+19:27:07.024 INFO  ProgressMeter -          20:10248240              0.8                 11590          13878.0
+19:27:17.028 INFO  ProgressMeter -          20:11331196              1.0                 16940          16908.4
+19:27:20.412 INFO  HaplotypeCaller - 4593 read(s) filtered by: MappingQualityReadFilter 
+0 read(s) filtered by: MappingQualityAvailableReadFilter 
+0 read(s) filtered by: MappedReadFilter 
+0 read(s) filtered by: NotSecondaryAlignmentReadFilter 
+18798 read(s) filtered by: NotDuplicateReadFilter 
+0 read(s) filtered by: PassesVendorQualityCheckReadFilter 
+0 read(s) filtered by: NonZeroReferenceLengthAlignmentReadFilter 
+0 read(s) filtered by: GoodCigarReadFilter 
+0 read(s) filtered by: WellformedReadFilter 
+23391 total reads filtered out of 229914 reads processed
+19:27:20.412 INFO  ProgressMeter -          20:11816857              1.1                 19411          18342.3
+19:27:20.412 INFO  ProgressMeter - Traversal complete. Processed 19411 total regions in 1.1 minutes.
+19:27:20.419 INFO  VectorLoglessPairHMM - Time spent in setup for JNI call : 0.048543366000000004
+19:27:20.420 INFO  PairHMM - Total compute time in PairHMM computeLogLikelihoods() : 0.7211184620000001
+19:27:20.420 INFO  SmithWatermanAligner - Total compute time in native Smith-Waterman : 1.48 sec
+19:27:20.420 INFO  HaplotypeCaller - Shutting down engine
+[2026年9月19日 CST 下午7:27:20] org.broadinstitute.hellbender.tools.walkers.haplotypecaller.HaplotypeCaller done. Elapsed time: 1.14 minutes.
+Runtime.totalMemory()=1461780480

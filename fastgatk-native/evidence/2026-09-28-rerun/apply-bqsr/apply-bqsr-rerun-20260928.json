@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "tool": "ApplyBQSR",
+  "native_binary": "fastgatk-apply-bqsr",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 46.614,
+  "scripts": [
+    {
+      "name": "verify_apply_bqsr_alias_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 46.614,
+      "wall_clock_seconds": 46.614,
+      "peak_rss_bytes": 473141248,
+      "peak_vm_hwm_bytes": 473141248,
+      "cpu_time_seconds": 81.406,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 10,
+      "native": {
+        "peak_rss_bytes": 8757248,
+        "peak_vm_hwm_bytes": 8757248,
+        "wall_clock_seconds_sum": 5.333,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-bqsr -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/t",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-bqsr -I /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/NA12878.chr17_69k_70k.dictFix.bam -R /home/t"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 473141248,
+        "peak_vm_hwm_bytes": 473141248,
+        "wall_clock_seconds_sum": 41.254,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar BaseRecalibrator -R",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyBQSR -R /home/",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyBQSR -R /home/",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PrintReads -I /tmp/",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PrintReads -I /tmp/",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PrintReads -I /tmp/",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PrintReads -I /tmp/"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "s\":493,\"bases\":37468,\"covariate_rows\":0}\n{\"tool\":\"ApplyBQSR\",\"status\":\"prototype\",\"records\":493,\"bases\":37468,\"covariate_rows\":0}\n{\"alias\": \"-bqsr\", \"gatk_version\": \"4.6.2.0\", \"java_alias_long_records_bit_identical\": true, \"long_option\": \"--bqsr-recal-file\", \"native_alias_long_records_bit_identical\": true, \"native_java_alias_records_bit_identical\": true, \"records_compared\": 493, \"status\": \"pass\"}\n",
+      "stderr_tail": ":43:19.788 INFO  ProgressMeter -             unmapped              0.0                   493        1183200.0\n05:43:19.788 INFO  ProgressMeter - Traversal complete. Processed 493 total reads in 0.0 minutes.\n05:43:19.837 INFO  PrintReads - Shutting down engine\n[2026\u5e749\u670828\u65e5 CST \u4e0a\u53485:43:19] org.broadinstitute.hellbender.tools.PrintReads done. Elapsed time: 0.05 minutes.\nRuntime.totalMemory()=285212672\n",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

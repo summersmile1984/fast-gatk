@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "tool": "CombineGVCFs",
+  "native_binary": "fastgatk-combine-gvcfs",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 118.562,
+  "scripts": [
+    {
+      "name": "verify_combine_gvcfs.py",
+      "exit_code": 0,
+      "elapsed_seconds": 9.05,
+      "wall_clock_seconds": 9.05,
+      "peak_rss_bytes": 395636736,
+      "peak_vm_hwm_bytes": 395636736,
+      "cpu_time_seconds": 679.338,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 21,
+      "native": {
+        "peak_rss_bytes": 7733248,
+        "peak_vm_hwm_bytes": 7733248,
+        "wall_clock_seconds_sum": 0.135,
+        "process_count": 20,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard1.g.vcf.gz -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard2.g.vcf.gz -O ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard1.g.vcf.gz -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard2.g.vcf.gz -O ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard1.g.vcf.gz -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard2.g.vcf.gz -O ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/combined.g.vcf.gz -L chr1:8-8 -O /tmp/fastgatk-combine-gvcfs-eoes4goz/index",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/combined.g.vcf.gz -L chr1:8-8 -O /tmp/fastgatk-combine-gvcfs-eoes4goz/index",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/combined.g.vcf.gz -L chr1:8-8 -L chr1:8-8 -O /tmp/fastgatk-combine-gvcfs-eo",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard1.g.vcf.gz -O /tmp/fastgatk-combine-gvcfs-eoes4goz/split-aggregate.g.v",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-eoes4goz/shard1.g.vcf.gz -O /tmp/fastgatk-combine-gvcfs-eoes4goz/split-stream.g.vcf."
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 395636736,
+        "peak_vm_hwm_bytes": 395636736,
+        "wall_clock_seconds_sum": 8.851,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVariants -V /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"records\": 2, \"indexed\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_combine_gvcfs_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 45.33,
+      "wall_clock_seconds": 45.33,
+      "peak_rss_bytes": 412672000,
+      "peak_vm_hwm_bytes": 412672000,
+      "cpu_time_seconds": 723.139,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 7372800,
+        "peak_vm_hwm_bytes": 7372800,
+        "wall_clock_seconds_sum": 0.026,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -V /tmp/fastgatk-combine-gvcfs-gatk-oracle-fivq0twu/first.g.vcf -V /tmp/fastgatk-combine-gvcfs-gatk-oracle-fivq0twu",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 412672000,
+        "peak_vm_hwm_bytes": 412672000,
+        "wall_clock_seconds_sum": 45.262,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs -R /ho",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs -R /ho",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs -R /ho"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"call_genotypes_payload_bit_identical\": true, \"full_sample_payload_bit_identical\": true, \"gatk_version\": \"4.6.2.0\", \"indexed\": true, \"records\": 2, \"sample_union\": 2, \"site_set_exact\": true, \"sites_only_vcf_output_shape_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_combine_gvcfs_interval_refblock_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 33.741,
+      "wall_clock_seconds": 33.741,
+      "peak_rss_bytes": 414515200,
+      "peak_vm_hwm_bytes": 414515200,
+      "cpu_time_seconds": 704.943,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 2809856,
+        "peak_vm_hwm_bytes": 2809856,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 414515200,
+        "peak_vm_hwm_bytes": 414515200,
+        "wall_clock_seconds_sum": 33.692,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs -R /ho",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs -R /ho"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16203776,
+        "peak_vm_hwm_bytes": 16203776,
+        "wall_clock_seconds_sum": 0.012,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_combine_gvcfs_interval_refblock_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "{\"cases\": {\"contained_end\": {\"aggregate_exact\": true, \"gatk_rows\": 1, \"stream_exact\": true}, \"cut\": {\"aggregate_exact\": true, \"gatk_rows\": 0, \"stream_exact\": true}}, \"contained_end_preserves_full_block\": true, \"gatk_version\": \"4.6.2.0\", \"interval_cut_drops_block\": true, \"reference_block_end\": 69005, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_combine_gvcfs_plless_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 30.441,
+      "wall_clock_seconds": 30.441,
+      "peak_rss_bytes": 394850304,
+      "peak_vm_hwm_bytes": 394850304,
+      "cpu_time_seconds": 690.812,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 2695168,
+        "peak_vm_hwm_bytes": 2695168,
+        "wall_clock_seconds_sum": 0.011,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-combine-gvcfs -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb.fasta -V /tmp/fas"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 394850304,
+        "peak_vm_hwm_bytes": 394850304,
+        "wall_clock_seconds_sum": 30.393,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CombineGVCFs -R /ho"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"pl_less_rows_exact\": true, \"records\": 1, \"sample_count\": 2, \"status\": \"pass\", \"stream_rows_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

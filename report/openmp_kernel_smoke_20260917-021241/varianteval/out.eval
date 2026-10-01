@@ -1,0 +1,134 @@
+# fastgatk VariantEval native prototype
+# status=prototype bit_identical_to_gatk=false
+##table=CountVariants
+Metric	Value
+nProcessedLoci	66
+nCalledLoci	66
+nReferenceLoci	64
+nVariantLoci	0
+variantRate	0.00000000
+nSNPs	0
+nMNPs	0
+nInsertions	0
+nDeletions	0
+nComplex	0
+nSymbolic	2
+nMixed	0
+nNoCalls	0
+nHomRef	64
+nHets	1
+nHomVar	1
+heterozygosity	0.01515152
+
+##table=CountVariantsBySample
+Sample	nProcessedLoci	nCalledLoci	nReferenceLoci	nVariantLoci	nSNPs	nMNPs	nInsertions	nDeletions	nComplex	nSymbolic	nMixed	nNoCalls	nHets	nHomRef	nHomVar	nSingletons
+NA12878	1000000	66	64	2	0	0	0	0	0	2	0	0	1	64	1	0
+
+##table=TiTvVariantEvaluator
+Metric	Value
+nTi	0
+nTv	0
+tiTvRatio	0.00000000
+
+##table=VariantSummary
+Metric	Value
+nProcessedLoci	66
+nCalledLoci	66
+nReferenceLoci	64
+nVariantLoci	0
+nFilteredLoci	0
+nNoCallGenotypes	0
+nCalledNotFilteredGenotypes	66
+nNoCallOrFilteredGenotypes	0
+nSNPs	0
+nMNPs	0
+nInsertions	0
+nDeletions	0
+nComplex	0
+nSymbolic	2
+nMixed	0
+
+##table=IndelSummary
+Metric	Value
+n_SNPs	0
+n_singleton_SNPs	0
+n_indels	0
+n_singleton_indels	0
+n_indel_sites	0
+n_multiallelic_indel_sites	0
+n_insertions	0
+n_deletions	0
+insertion_to_deletion_ratio	0.00000000
+n_large_insertions	0
+n_large_deletions	0
+percent_of_sites_with_more_than_2_alleles	0.00000000
+
+##table=IndelLengthHistogram
+Length	Freq
+-10	0.00
+-9	0.00
+-8	0.00
+-7	0.00
+-6	0.00
+-5	0.00
+-4	0.00
+-3	0.00
+-2	0.00
+-1	0.00
+1	0.00
+2	0.00
+3	0.00
+4	0.00
+5	0.00
+6	0.00
+7	0.00
+8	0.00
+9	0.00
+10	0.00
+
+##table=MultiallelicSummary
+Metric	Value
+nProcessedLoci	66
+nSNPs	0
+nMultiSNPs	0
+processedMultiSnpRatio	0.00000000
+variantMultiSnpRatio	0.00000000
+nIndels	0
+nMultiIndels	0
+processedMultiIndelRatio	0.00000000
+variantMultiIndelRatio	0.00000000
+nTi	0
+nTv	0
+TiTvRatio	0.00000000
+knownSNPsPartial	0
+knownSNPsComplete	0
+
+##table=Contig
+Stratum	nProcessedLoci	nVariantLoci	nSNPs	nMNPs	nInsertions	nDeletions	nComplex	nSymbolic	nMixed	nTi	nTv
+17	66	0	0	0	0	0	0	2	2	0	0
+
+##table=Filter
+Stratum	nProcessedLoci	nVariantLoci	nSNPs	nMNPs	nInsertions	nDeletions	nComplex	nSymbolic	nMixed	nTi	nTv
+PASS	66	0	0	0	0	0	0	2	2	0	0
+
+##table=VariantType
+Stratum	nProcessedLoci	nVariantLoci	nSNPs	nMNPs	nInsertions	nDeletions	nComplex	nSymbolic	nMixed	nTi	nTv
+MIXED	2	0	0	0	0	0	0	2	2	0	0
+NO_VARIATION	64	0	0	0	0	0	0	0	0	0	0
+
+##table=AlleleFrequency
+Stratum	nProcessedLoci	nVariantLoci	nSNPs	nMNPs	nInsertions	nDeletions	nComplex	nSymbolic	nMixed	nTi	nTv
+0	64	0	0	0	0	0	0	0	0	0	0
+0.50-1.00	1	0	0	0	0	0	0	1	1	0	0
+1.00	1	0	0	0	0	0	0	1	1	0	0
+
+##table=Novelty
+Stratum	nProcessedLoci	nVariantLoci	nSNPs	nMNPs	nInsertions	nDeletions	nComplex	nSymbolic	nMixed	nTi	nTv
+all	66	0	0	0	0	0	0	2	2	0	0
+novel	66	0	0	0	0	0	0	2	2	0	0
+
+##table=Sample
+Stratum	nProcessedLoci	nVariantLoci	nSNPs	nMNPs	nInsertions	nDeletions	nComplex	nSymbolic	nMixed	nTi	nTv
+ALL_SAMPLES	66	0	0	0	0	0	0	2	2	0	0
+NA12878	66	0	0	0	0	0	0	2	2	0	0
+

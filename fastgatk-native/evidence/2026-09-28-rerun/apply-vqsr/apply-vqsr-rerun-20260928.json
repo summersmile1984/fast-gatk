@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "tool": "ApplyVQSR",
+  "native_binary": "fastgatk-apply-vqsr",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 6,
+  "scripts_passed": 6,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 187.317,
+  "scripts": [
+    {
+      "name": "verify_apply_vqsr.py",
+      "exit_code": 0,
+      "elapsed_seconds": 35.55,
+      "wall_clock_seconds": 35.55,
+      "peak_rss_bytes": 388341760,
+      "peak_vm_hwm_bytes": 388341760,
+      "cpu_time_seconds": 179.645,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 14,
+      "native": {
+        "peak_rss_bytes": 5435392,
+        "peak_vm_hwm_bytes": 5435392,
+        "wall_clock_seconds_sum": 0.036,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-urxgu89b/input.vcf --recal-file /tmp/fastgatk-apply-vqsr-urxgu89b/recal.vcf --tranches-fil",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-urxgu89b/input.vcf --recal-file /tmp/fastgatk-apply-vqsr-urxgu89b/recal.vcf --lod-score-cu",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-urxgu89b/input.vcf --recal-file /tmp/fastgatk-apply-vqsr-urxgu89b/recal.vcf --tranches-fil",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-urxgu89b/filtered.input.vcf --recal-file /tmp/fastgatk-apply-vqsr-urxgu89b/filtered.recal.",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-urxgu89b/as.java.input.vcf --recal-file /tmp/fastgatk-apply-vqsr-urxgu89b/as.java.recal.vc"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 388341760,
+        "peak_vm_hwm_bytes": 388341760,
+        "wall_clock_seconds_sum": 35.474,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVariants -V /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"allele_specific_applied\": true, \"filtered_records\": 1, \"indexed\": true, \"input_records\": 3, \"java_as_oracle\": {\"records_compared\": 2, \"semantic_records_bit_identical\": true, \"status\": \"pass\"}, \"java_oracle\": {\"records_compared\": 3, \"semantic_records_bit_identical\": true, \"status\": \"pass\"}, \"missing_allele_specific_rejected\": true, \"scored_records\": 2, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_apply_vqsr_default_cutoff_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.04,
+      "wall_clock_seconds": 14.04,
+      "peak_rss_bytes": 402833408,
+      "peak_vm_hwm_bytes": 402833408,
+      "cpu_time_seconds": 98.17,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 819200,
+        "peak_vm_hwm_bytes": 819200,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-default-cutoff-fzqak2n6/input.vcf --recal-file /tmp/fastgatk-apply-vqsr-default-cutoff-fzq"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 402833408,
+        "peak_vm_hwm_bytes": 402833408,
+        "wall_clock_seconds_sum": 13.999,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"default_cutoff_semantics_exact\": true, \"effective_cutoff\": 0.0, \"filter_vector_exact\": true, \"gatk_version\": \"4.6.2.0\", \"status\": \"pass\", \"tranches_file_supplied\": true, \"truth_sensitivity_target_supplied\": false}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_apply_vqsr_exclude_intervals_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 35.486,
+      "wall_clock_seconds": 35.486,
+      "peak_rss_bytes": 391147520,
+      "peak_vm_hwm_bytes": 391147520,
+      "cpu_time_seconds": 154.835,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 4993024,
+        "peak_vm_hwm_bytes": 4993024,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-xl-oracle-3jk3yv29/input.vcf --recal-file /tmp/fastgatk-apply-vqsr-xl-oracle-3jk3yv29/reca"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 391147520,
+        "peak_vm_hwm_bytes": 391147520,
+        "wall_clock_seconds_sum": 35.447,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"cases\": 3, \"exclude_positions_exact\": true, \"java_native_vqslod_filter_exact\": true, \"manifest_telemetry\": true, \"padding_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_apply_vqsr_filter_booleans_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 69.301,
+      "wall_clock_seconds": 69.301,
+      "peak_rss_bytes": 390090752,
+      "peak_vm_hwm_bytes": 390090752,
+      "cpu_time_seconds": 219.135,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 14,
+      "native": {
+        "peak_rss_bytes": 5652480,
+        "peak_vm_hwm_bytes": 5652480,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-filter-bool-kxqzttzj/filtered.input.vcf --recal-file /tmp/fastgatk-apply-vqsr-filter-bool-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-filter-bool-kxqzttzj/filtered.input.vcf --recal-file /tmp/fastgatk-apply-vqsr-filter-bool-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-filter-bool-kxqzttzj/filtered.input.vcf --recal-file /tmp/fastgatk-apply-vqsr-filter-bool-",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-filter-bool-kxqzttzj/excluded.input.vcf --recal-file /tmp/fastgatk-apply-vqsr-filter-bool-"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 390090752,
+        "peak_vm_hwm_bytes": 390090752,
+        "wall_clock_seconds_sum": 69.246,
+        "process_count": 10,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"exclude_filtered_bare_true_false_exact\": true, \"filter_and_vqslod_rows_exact\": true, \"gatk_version\": \"4.6.2.0\", \"ignore_all_filters_bare_true_false_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_apply_vqsr_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.5,
+      "wall_clock_seconds": 14.5,
+      "peak_rss_bytes": 408256512,
+      "peak_vm_hwm_bytes": 408256512,
+      "cpu_time_seconds": 115.121,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 408256512,
+        "peak_vm_hwm_bytes": 408256512,
+        "wall_clock_seconds_sum": 14.464,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"multi_alt_records\": 2, \"number_a_vectors_exact\": true, \"per_alt_scalar_culprit_exact\": true, \"site_filter_most_lenient_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_apply_vqsr_sites_only_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 18.44,
+      "wall_clock_seconds": 18.44,
+      "peak_rss_bytes": 392175616,
+      "peak_vm_hwm_bytes": 392175616,
+      "cpu_time_seconds": 131.579,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 5271552,
+        "peak_vm_hwm_bytes": 5271552,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-apply-vqsr -V /tmp/fastgatk-apply-vqsr-sites-only-oracle-h5nbe38u/input.vcf --recal-file /tmp/fastgatk-apply-vqsr-sites-only-orac"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 392175616,
+        "peak_vm_hwm_bytes": 392175616,
+        "wall_clock_seconds_sum": 18.402,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ApplyVQSR -V /tmp/f"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"eight_column_shape_exact\": true, \"filter_and_vqslod_rows_exact\": true, \"gatk_version\": \"4.6.2.0\", \"manifest_telemetry_exact\": true, \"records\": 2, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

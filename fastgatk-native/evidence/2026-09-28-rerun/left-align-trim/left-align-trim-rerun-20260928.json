@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "tool": "LeftAlignAndTrimVariants",
+  "native_binary": "fastgatk-left-align-trim",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 164.203,
+  "scripts": [
+    {
+      "name": "verify_left_align.py",
+      "exit_code": 0,
+      "elapsed_seconds": 43.231,
+      "wall_clock_seconds": 43.231,
+      "peak_rss_bytes": 372494336,
+      "peak_vm_hwm_bytes": 372494336,
+      "cpu_time_seconds": 5575.259,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 20,
+      "native": {
+        "peak_rss_bytes": 7786496,
+        "peak_vm_hwm_bytes": 7786496,
+        "wall_clock_seconds_sum": 0.086,
+        "process_count": 11,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/input-plain.vcf -R /tmp/fastgatk-left-align-gmefiaey/ref.fa -O /tmp/fastgatk",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/input.vcf.gz -R /tmp/fastgatk-left-align-gmefiaey/ref.fa -O /tmp/fastgatk-le",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/symbolic-multiallelic.vcf.gz -R /tmp/fastgatk-left-align-gmefiaey/ref.fa -O ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/input.vcf.gz -R /tmp/fastgatk-left-align-gmefiaey/ref.fa -L chr1:1-10 -L chr",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/input.vcf.gz -R /tmp/fastgatk-left-align-gmefiaey/ref.fa -L /tmp/fastgatk-le",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/long-indel.vcf -R /tmp/fastgatk-left-align-gmefiaey/long-ref.fa -O /tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/long-indel.vcf -R /tmp/fastgatk-left-align-gmefiaey/long-ref.fa -O /tmp/fast",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-gmefiaey/span.g.vcf.gz -R /tmp/fastgatk-left-align-gmefiaey/ref.fa -L chr1:4-4 -O /tm"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 372494336,
+        "peak_vm_hwm_bytes": 372494336,
+        "wall_clock_seconds_sum": 43.028,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SelectVariants -V /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 17973248,
+        "peak_vm_hwm_bytes": 17973248,
+        "wall_clock_seconds_sum": 0.075,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_left_align.py"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"normalized_records\": 1}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_left_align_cli_boundary_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 53.825,
+      "wall_clock_seconds": 53.825,
+      "peak_rss_bytes": 340905984,
+      "peak_vm_hwm_bytes": 340905984,
+      "cpu_time_seconds": 5601.284,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 13,
+      "native": {
+        "peak_rss_bytes": 7503872,
+        "peak_vm_hwm_bytes": 7503872,
+        "wall_clock_seconds_sum": 0.031,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-cli-oracle-t4aqpged/input.vcf -R /tmp/fastgatk-left-align-cli-oracle-t4aqpged/referen",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-cli-oracle-t4aqpged/input.vcf -R /tmp/fastgatk-left-align-cli-oracle-t4aqpged/referen",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-cli-oracle-t4aqpged/input.vcf -R /tmp/fastgatk-left-align-cli-oracle-t4aqpged/referen"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 340905984,
+        "peak_vm_hwm_bytes": 340905984,
+        "wall_clock_seconds_sum": 53.763,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "val_set_rule\": \"UNION\", \"interval_subset\": true, \"keep_original_ac\": false, \"max_indel_length\": 200, \"max_leading_bases\": 1000, \"repeat_left_shift\": true, \"sites_only_vcf_output\": false, \"split_multiallelics\": false, \"vcf_index\": true}, \"positions\": [9, 12], \"records\": 2}}, \"gatk_version\": \"4.6.2.0\", \"interval_exclusion_padding_exact\": true, \"optional_boolean_forms_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_left_align_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 38.596,
+      "wall_clock_seconds": 38.596,
+      "peak_rss_bytes": 340631552,
+      "peak_vm_hwm_bytes": 340631552,
+      "cpu_time_seconds": 5549.883,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 12,
+      "native": {
+        "peak_rss_bytes": 7663616,
+        "peak_vm_hwm_bytes": 7663616,
+        "wall_clock_seconds_sum": 0.068,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-oracle-o7c6h2ps/source.vcf -R /tmp/fastgatk-left-align-oracle-o7c6h2ps/reference.fa -",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-oracle-o7c6h2ps/source.vcf -R /tmp/fastgatk-left-align-oracle-o7c6h2ps/reference.fa -",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-oracle-o7c6h2ps/source.vcf -R /tmp/fastgatk-left-align-oracle-o7c6h2ps/reference.fa -",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-oracle-o7c6h2ps/span.g.vcf -R /tmp/fastgatk-left-align-oracle-o7c6h2ps/reference.fa -"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 340631552,
+        "peak_vm_hwm_bytes": 340631552,
+        "wall_clock_seconds_sum": 38.484,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16560128,
+        "peak_vm_hwm_bytes": 16560128,
+        "wall_clock_seconds_sum": 0.01,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_left_align_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"oracle\": \"GATK-4.6.2.0\", \"surface\": [\"split\", \"orig-counts\", \"no-trim\", \"interval\", \"END-overlap\"]}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_left_align_sites_only_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 28.551,
+      "wall_clock_seconds": 28.551,
+      "peak_rss_bytes": 323510272,
+      "peak_vm_hwm_bytes": 323510272,
+      "cpu_time_seconds": 5525.64,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 7507968,
+        "peak_vm_hwm_bytes": 7507968,
+        "wall_clock_seconds_sum": 0.05,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-sites-only-oracle-4d6vzgf2/input.vcf -R /tmp/fastgatk-left-align-sites-only-oracle-4d",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-sites-only-oracle-4d6vzgf2/input.vcf -R /tmp/fastgatk-left-align-sites-only-oracle-4d",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-left-align-trim -V /tmp/fastgatk-left-align-sites-only-oracle-4d6vzgf2/input.vcf -R /tmp/fastgatk-left-align-sites-only-oracle-4d"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 323510272,
+        "peak_vm_hwm_bytes": 323510272,
+        "wall_clock_seconds_sum": 28.47,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar LeftAlignAnd"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"format_payload_preserved_when_false\": true, \"gatk_version\": \"4.6.2.0\", \"optional_boolean_forms\": {\"false-separated\": {\"columns\": 10, \"records\": 2, \"shape_exact\": true}, \"true-bare\": {\"columns\": 8, \"records\": 2, \"shape_exact\": true}, \"true-separated\": {\"columns\": 8, \"records\": 2, \"shape_exact\": true}}, \"sites_only_shape_exact\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

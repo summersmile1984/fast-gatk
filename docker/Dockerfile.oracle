@@ -1,0 +1,54 @@
+# Oracle-only image for the pinned GATK 4.6.2.0 reference.
+#
+# This image is the *only* place fast-gatk carries a JRE + the pinned GATK
+# jar. Production workers MUST NOT pull or run this image. CI oracles and
+# the dispatcher `--fallback` integration tests run from here.
+#
+# The native binaries are copied in too so the oracle image can both invoke
+# the native tool and compare its output to the GATK reference. The image
+# still fails closed: only tools registered in the dispatcher can be invoked,
+# the bare `java -jar gatk-package-4.6.2.0-local.jar <tool>` form is reserved
+# for the GATK oracle scripts and never wired into Nextflow/SLURM.
+
+ARG FASTGATK_NATIVE_TAG=latest
+FROM fastgatk-native:${FASTGATK_NATIVE_TAG} AS native
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    JAVA_HOME=/opt/jdk17 \
+    PATH=/opt/jdk17/bin:/opt/fastgatk/bin:/opt/fastgatk/dispatcher:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# JRE 17 (matches the pinned GATK 4.6.2.0 requirement) and a pinned JRE
+# hash. The OpenJDK tarball is vendored under third_party/ so the image is
+# reproducible without network access.
+COPY third_party/jdk17/ /opt/jdk17/
+COPY third_party/gatk-package/gatk-4.6.2.0/ /opt/gatk-oracle/gatk-4.6.2.0/
+
+RUN ln -sf /opt/gatk-oracle/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar /opt/gatk-oracle/gatk.jar \
+    && printf '#!/usr/bin/env bash\nexec /opt/jdk17/bin/java -jar /opt/gatk-oracle/gatk.jar "$@"\n' \
+        > /usr/local/bin/gatk \
+    && chmod +x /usr/local/bin/gatk
+
+# Override the production marker: this image explicitly advertises a JVM so
+# the dispatcher's oracle-mode knows it is allowed to call the GATK jar.
+RUN { \
+        echo '{'; \
+        echo '  "name": "fastgatk-oracle",'; \
+        echo '  "schema_version": 1,'; \
+        echo '  "jvm": "OpenJDK 17",'; \
+        echo '  "fallback_policy": "explicit-only",'; \
+        echo '  "java_path": "/opt/jdk17/bin/java",'; \
+        echo '  "gatk_jar": "/opt/gatk-oracle/gatk.jar",'; \
+        echo '  "gatk_version": "4.6.2.0",'; \
+        echo '  "build_script": "fastgatk-native/scripts/build_container.sh",'; \
+        echo '  "evidence": "fastgatk-native/evidence/container-manifest.json",'; \
+        echo '  "intended_use": "ci-oracle-only"'; \
+        echo '}'; \
+    } > /etc/fastgatk-image.json
+
+USER fastgatk
+WORKDIR /scratch
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/bin/sh", "-c", "/opt/jdk17/bin/java -jar /opt/gatk-oracle/gatk.jar --help"]

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "tool": "AnalyzeCovariates",
+  "native_binary": "fastgatk-analyze-covariates",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 35.147,
+  "scripts": [
+    {
+      "name": "verify_analyze_covariates.py",
+      "exit_code": 0,
+      "elapsed_seconds": 21.623,
+      "wall_clock_seconds": 21.623,
+      "peak_rss_bytes": 353497088,
+      "peak_vm_hwm_bytes": 353497088,
+      "cpu_time_seconds": 23.785,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 6688768,
+        "peak_vm_hwm_bytes": 6688768,
+        "wall_clock_seconds_sum": 0.022,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-analyze-covariates -before /tmp/fastgatk-analyze-covariates-audidsrr/before.table -after /tmp/fastgatk-analyze-covariates-audidsr",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-analyze-covariates -before /tmp/fastgatk-analyze-covariates-audidsrr/before.table -after /tmp/fastgatk-analyze-covariates-audidsr"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 353497088,
+        "peak_vm_hwm_bytes": 353497088,
+        "wall_clock_seconds_sum": 21.567,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar BaseRecalibr",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar AnalyzeCovar",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar AnalyzeCovar"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"before_after_rows\": 388, \"csv_bit_identical\": true, \"csv_rows\": 194, \"execution_space\": \"OpenMP\", \"pdf_header\": \"%PDF-1.4\", \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_analyze_covariates_bqsr_alias_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 13.524,
+      "wall_clock_seconds": 13.524,
+      "peak_rss_bytes": 525197312,
+      "peak_vm_hwm_bytes": 525197312,
+      "cpu_time_seconds": 12.847,
+      "max_rss_kb_children_rusage": 508584,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 15282176,
+        "peak_vm_hwm_bytes": 15282176,
+        "wall_clock_seconds_sum": 0.189,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-analyze-covariates -bqsr /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/too",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-analyze-covariates -BQSR /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/too",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-analyze-covariates -bqsr=/home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/too"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 525197312,
+        "peak_vm_hwm_bytes": 525197312,
+        "wall_clock_seconds_sum": 13.311,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar AnalyzeCovariates -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar AnalyzeCovariates -"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"embedded_short_alias_rejected\": true, \"execution_space\": \"OpenMP\", \"gatk_lower_alias\": true, \"gatk_lower_long_csv_identical\": true, \"gatk_version\": \"4.6.2.0\", \"native_lower_upper_csv_identical\": true, \"native_rows\": 12087, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

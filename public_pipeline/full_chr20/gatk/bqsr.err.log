@@ -1,0 +1,58 @@
+03:22:26.073 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_compression.so
+03:22:28.681 INFO  BaseRecalibrator - ------------------------------------------------------------
+03:22:28.682 INFO  BaseRecalibrator - The Genome Analysis Toolkit (GATK) v4.6.2.0
+03:22:28.682 INFO  BaseRecalibrator - For support and documentation go to https://software.broadinstitute.org/gatk/
+03:22:28.682 INFO  BaseRecalibrator - Executing as turing-agents@turing-agents-MotherBoard-Series on Linux v7.0.0-31-generic amd64
+03:22:28.683 INFO  BaseRecalibrator - Java runtime: OpenJDK 64-Bit Server VM v17.0.20+8
+03:22:28.683 INFO  BaseRecalibrator - Start Date/Time: 2026年9月19日 CST 上午3:22:26
+03:22:28.683 INFO  BaseRecalibrator - ------------------------------------------------------------
+03:22:28.683 INFO  BaseRecalibrator - ------------------------------------------------------------
+03:22:28.683 INFO  BaseRecalibrator - HTSJDK Version: 4.2.0
+03:22:28.683 INFO  BaseRecalibrator - Picard Version: 3.4.0
+03:22:28.683 INFO  BaseRecalibrator - Built for Spark Version: 3.5.0
+03:22:28.685 INFO  BaseRecalibrator - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+03:22:28.685 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+03:22:28.685 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+03:22:28.685 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+03:22:28.685 INFO  BaseRecalibrator - Deflater: IntelDeflater
+03:22:28.685 INFO  BaseRecalibrator - Inflater: IntelInflater
+03:22:28.685 INFO  BaseRecalibrator - GCS max retries/reopens: 20
+03:22:28.685 INFO  BaseRecalibrator - Requester pays: disabled
+03:22:28.685 INFO  BaseRecalibrator - Initializing engine
+03:22:28.781 INFO  FeatureManager - Using codec VCFCodec to read file file:///home/turing-agents/Documents/fast-gatk/public_pipeline/1000G.phase3.chr20.full.vcf.gz
+03:22:29.528 INFO  FeatureManager - Using codec VCFCodec to read file file:///home/turing-agents/Documents/fast-gatk/testdata/real/mills_indels/Mills_and_1000G_gold_standard.indels.b37.sites.chr20.vcf.gz
+03:22:29.535 INFO  BaseRecalibrator - Done initializing engine
+03:22:29.538 INFO  BaseRecalibrationEngine - The covariates being used here: 
+03:22:29.538 INFO  BaseRecalibrationEngine - 	ReadGroupCovariate
+03:22:29.538 INFO  BaseRecalibrationEngine - 	QualityScoreCovariate
+03:22:29.538 INFO  BaseRecalibrationEngine - 	ContextCovariate
+03:22:29.538 INFO  BaseRecalibrationEngine - 	CycleCovariate
+03:22:29.542 INFO  ProgressMeter - Starting traversal
+03:22:29.543 INFO  ProgressMeter -        Current Locus  Elapsed Minutes       Reads Processed     Reads/Minute
+03:22:39.616 INFO  ProgressMeter -            20:708241              0.2                 32000         190627.5
+03:22:49.762 INFO  ProgressMeter -           20:1417181              0.3                 67000         198822.9
+03:23:00.025 INFO  ProgressMeter -           20:2131958              0.5                102000         200780.8
+03:23:10.281 INFO  ProgressMeter -           20:2866007              0.7                138000         203250.0
+03:23:20.311 INFO  ProgressMeter -           20:3611635              0.8                175000         206823.2
+03:23:30.372 INFO  ProgressMeter -           20:4320438              1.0                209000         206151.7
+03:23:40.428 INFO  ProgressMeter -           20:5001257              1.2                244000         206531.7
+03:23:50.585 INFO  ProgressMeter -           20:5690788              1.4                280000         207299.9
+03:24:00.622 INFO  ProgressMeter -           20:6389875              1.5                317000         208829.7
+03:24:10.655 INFO  ProgressMeter -           20:7091293              1.7                355000         210657.5
+03:24:20.673 INFO  ProgressMeter -           20:7768529              1.9                391000         211106.0
+03:24:30.761 INFO  ProgressMeter -           20:8510860              2.0                430000         212839.7
+03:24:40.785 INFO  ProgressMeter -           20:9272230              2.2                470000         214870.2
+03:24:50.985 INFO  ProgressMeter -          20:10012978              2.4                509000         215918.9
+03:25:01.141 INFO  ProgressMeter -          20:10767250              2.5                549000         217285.2
+03:25:11.200 INFO  ProgressMeter -          20:11457847              2.7                586000         217497.5
+03:25:21.384 INFO  ProgressMeter -          20:12168217              2.9                623000         217526.7
+03:25:31.523 INFO  ProgressMeter -          20:12816023              3.0                657000         216617.2
+03:25:41.591 INFO  ProgressMeter -          20:13586563              3.2                698000         218070.5
+03:25:51.726 INFO  ProgressMeter -          20:14403317              3.4                742000         220196.6
+03:26:02.018 INFO  ProgressMeter -          20:15146591              3.5                781000         220543.6
+03:26:12.155 INFO  ProgressMeter -          20:15858130              3.7                819000         220742.8
+03:26:22.168 INFO  ProgressMeter -          20:16552050              3.9                855000         220526.6
+03:26:32.234 INFO  ProgressMeter -          20:17213063              4.0                890000         220032.9
+03:26:42.500 INFO  ProgressMeter -          20:17897811              4.2                925000         219405.7
+03:26:52.635 INFO  ProgressMeter -          20:18627328              4.4                962000         219390.9
+03:27:02.826 INFO  ProgressMeter -          20:19346405              4.6                999000         219333.1

@@ -1,3 +1,4 @@
+#include "fastgatk/kernels/gpu_safety.hpp"
 #include "fastgatk/calling/pipeline.hpp"
 
 #include "fastgatk/core/plan.hpp"
@@ -20,7 +21,11 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#if defined(__GLIBC__)
+#include <malloc.h>
+#endif
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -3764,6 +3769,9 @@ std::optional<std::size_t> tandem_repeat_longest_span(
 
     std::size_t repeat_length = longer.size();
     for (std::size_t length = 1; length <= longer.size(); ++length) {
+        // Only lengths that tile the whole string can pass: a short final
+        // piece always fails the piece.size() != length check below.
+        if (longer.size() % length != 0) continue;
         bool repeated = true;
         for (std::size_t start = length; start < longer.size(); start += length) {
             const auto piece = longer.substr(start, length);
@@ -3778,22 +3786,31 @@ std::optional<std::size_t> tandem_repeat_longest_span(
         }
     }
     const auto unit = longer.substr(0, repeat_length);
-    const auto leading_repetitions = [&](const std::string_view bases) {
+    // Repeat units can continue past the allele into the flanking reference.
+    // Count them over the *virtual* concatenation head + tail; materializing
+    // contig.substr(after_anchor) copied the whole contig tail (tens of MB
+    // per candidate on a real chromosome) into temporary strings on every
+    // call and dominated the Mutect2 wall profile.
+    const auto leading_repetitions = [&](const std::string_view head,
+                                         const std::string_view tail) {
         std::size_t repetitions = 0;
-        for (std::size_t start = 0; start + unit.size() <= bases.size();
-             start += unit.size()) {
-            if (bases.substr(start, unit.size()) != unit) break;
+        std::size_t pos = 0;
+        for (;;) {
+            for (std::size_t offset = 0; offset < unit.size(); ++offset) {
+                const std::size_t at = pos + offset;
+                const char base = at < head.size() ? head[at]
+                    : (at - head.size() < tail.size() ? tail[at - head.size()] : '\0');
+                if (base != unit[offset]) return repetitions;
+            }
+            pos += unit.size();
             ++repetitions;
         }
-        return repetitions;
     };
-    const auto repetitions_inside_ref = leading_repetitions(ref_bases);
-    std::string ref_with_context(ref_bases);
-    ref_with_context.append(contig.substr(after_anchor));
-    std::string alt_with_context(alt_bases);
-    alt_with_context.append(contig.substr(after_anchor));
-    const auto reference_repetitions = leading_repetitions(ref_with_context);
-    const auto alternate_repetitions = leading_repetitions(alt_with_context);
+    const std::string_view contig_tail(contig.data() + after_anchor,
+                                       contig.size() - after_anchor);
+    const auto repetitions_inside_ref = leading_repetitions(ref_bases, {});
+    const auto reference_repetitions = leading_repetitions(ref_bases, contig_tail);
+    const auto alternate_repetitions = leading_repetitions(alt_bases, contig_tail);
     if (reference_repetitions <= repetitions_inside_ref ||
         alternate_repetitions <= repetitions_inside_ref)
         return std::nullopt;
@@ -4003,9 +4020,25 @@ double rank_sum_z(const std::vector<double>& alt,
 bool read_overlaps_annotation_interval(const io::ReadBatch& reads, std::size_t record,
                                        const AssemblyCandidate& candidate,
                                        std::uint32_t informative_read_overlap_margin);
+// Best-haplotype read projection in 0-based [start, end) reference
+// coordinates (end exclusive), mirroring GATK's changeEvidence()
+// realignment.  A negative start marks a source record without a valid
+// projection and falls back to the original alignment.
+struct RealignedSourceSpan {
+    std::int32_t tid = -1;
+    std::int64_t start = -1;
+    std::int64_t end = -1;
+};
+// GATK builds its retainEvidence window from the merged VariantContext of
+// every event at the locus (makeMergedVariantContext): the merged REF spans
+// the longest event before reverseTrimAlleles shrinks the emitted record.
+std::size_t locus_merged_reference_length(const std::vector<AssemblyCandidate>& candidates,
+                                          const AssemblyCandidate& candidate);
 bool read_overlaps_hc_genotyping_interval(const io::ReadBatch& reads, std::size_t record,
                                           const AssemblyCandidate& candidate,
-                                          std::uint32_t informative_read_overlap_margin);
+                                          std::uint32_t informative_read_overlap_margin,
+                                          const RealignedSourceSpan* realigned_span = nullptr,
+                                          std::size_t merged_reference_length = 0);
 
 // The annotation engine receives the candidate-local likelihood collection
 // after HC has retained evidence around the EventMap locus.  It must use the
@@ -4298,9 +4331,33 @@ fastgatk::calling::GenotypeCall::Annotations calculate_variant_annotations(
             // MQ below deliberately retains its separate likelihood-evidence
             // population.  This is HC-only; Mutect2 has its own fragment and
             // annotation path.
+            RealignedSourceSpan hc_realigned_span;
+            const bool hc_has_realigned_span =
+                likelihood_result != nullptr &&
+                source_record < likelihood_result->likelihood_read_realigned_tids.size() &&
+                source_record < likelihood_result->likelihood_read_realigned_starts.size() &&
+                source_record < likelihood_result->likelihood_read_realigned_ends.size() &&
+                likelihood_result->likelihood_read_realigned_tids[source_record] >= 0 &&
+                likelihood_result->likelihood_read_realigned_starts[source_record] >= 0 &&
+                likelihood_result->likelihood_read_realigned_ends[source_record] >
+                    likelihood_result->likelihood_read_realigned_starts[source_record];
+            if (hc_has_realigned_span) {
+                hc_realigned_span.tid =
+                    likelihood_result->likelihood_read_realigned_tids[source_record];
+                hc_realigned_span.start =
+                    likelihood_result->likelihood_read_realigned_starts[source_record];
+                hc_realigned_span.end =
+                    likelihood_result->likelihood_read_realigned_ends[source_record];
+            }
+            const auto merged_reference_length =
+                likelihood_result != nullptr
+                    ? locus_merged_reference_length(likelihood_result->candidates, candidate)
+                    : candidate_reference(candidate).size();
             const bool retained_for_hc_allele_annotations = !has_likelihood_rows ||
                 read_overlaps_hc_genotyping_interval(
-                    reads, record, candidate, informative_read_overlap_margin);
+                    reads, record, candidate, informative_read_overlap_margin,
+                    hc_has_realigned_span ? &hc_realigned_span : nullptr,
+                    merged_reference_length);
             // Pileup-only candidates lack a sparse AssemblyRegion context.
             // For that compatibility fallback retain the original CIGAR-aware
             // overlap predicate instead of requiring a finite PairHMM row:
@@ -4328,7 +4385,28 @@ fastgatk::calling::GenotypeCall::Annotations calculate_variant_annotations(
             // before the BestAllele consumers below.  Strand and rank-sum
             // statistics receive HC's candidate-specific retainEvidence()
             // subset, while MQ preserves the full collection contract.
-            if (!retained_for_hc_allele_annotations) continue;
+            if (!retained_for_hc_allele_annotations) {
+                if (debug_annotations) {
+                    std::cerr << "[FASTGATK_ANNOTATION_EVIDENCE] candidate="
+                              << candidate_index << " source_record=" << source_record
+                              << " physical_record=" << record
+                              << " read=" << read_string_span(
+                                     reads.names, reads.name_offsets, record)
+                              << " ref_ll=" << ref_likelihood
+                              << " alt_ll=" << alt_likelihood
+                              << " spanning_ll=" << spanning_deletion_likelihood
+                              << " finite=" << (has_finite_likelihood_row ? 1 : 0)
+                              << " retained=0"
+                              << " qualified=" << ((likelihood_result == nullptr ||
+                                      likelihood_result->annotation_read_qualified.size() <= source_record ||
+                                      likelihood_result->annotation_read_qualified[source_record] != 0) ? 1 : 0)
+                              << " informative=" << (likelihood_informative ? 1 : 0)
+                              << " allele=" << (likelihood_alt ? "ALT" : "REF")
+                              << " best_alt_candidate=" << best_alt_index
+                              << " reverse=" << (reverse ? 1 : 0) << '\n';
+                }
+                continue;
+            }
             // GATK StrandBiasTest consumes every informative BestAllele in
             // the retained collection.  It does not require an original-CIGAR
             // base at the candidate position, because its read has already
@@ -4459,8 +4537,7 @@ fastgatk::calling::GenotypeCall::Annotations calculate_variant_annotations(
                     alt_base_qualities.push_back(quality);
                 }
             }
-            if (debug_annotations && has_finite_likelihood_row &&
-                retained_for_hc_allele_annotations) {
+            if (debug_annotations) {
                 std::cerr << "[FASTGATK_ANNOTATION_EVIDENCE] candidate="
                           << candidate_index << " source_record=" << source_record
                           << " physical_record=" << record
@@ -4468,6 +4545,12 @@ fastgatk::calling::GenotypeCall::Annotations calculate_variant_annotations(
                                  reads.names, reads.name_offsets, record)
                           << " ref_ll=" << ref_likelihood
                           << " alt_ll=" << alt_likelihood
+                          << " spanning_ll=" << spanning_deletion_likelihood
+                          << " finite=" << (has_finite_likelihood_row ? 1 : 0)
+                          << " retained=" << (retained_for_hc_allele_annotations ? 1 : 0)
+                          << " qualified=" << ((likelihood_result == nullptr ||
+                                  likelihood_result->annotation_read_qualified.size() <= source_record ||
+                                  likelihood_result->annotation_read_qualified[source_record] != 0) ? 1 : 0)
                           << " informative=" << (likelihood_informative ? 1 : 0)
                           << " allele=" << (likelihood_alt ? "ALT" : "REF")
                           << " best_alt_candidate=" << best_alt_index
@@ -5127,28 +5210,46 @@ void append_graph_variant_candidates(
         fastgatk::kernels::SmithWatermanOverhangStrategy::Indel);
     std::vector<fastgatk::kernels::SmithWatermanAlignment> graph_alignments(
         graph.haplotype_path_sequences.size());
+    // Build the same request sequence the score path consumed (in the same
+    // iteration order as `graph_sw.scores`) and dispatch a single batched
+    // alignment.  This collapses N scalar `smith_waterman_align_reference`
+    // calls — each of which allocated a full `(read_len+1)*(ref_len+1)` score
+    // and backtrack matrix plus a host mirror — into one Kokkos DP fill plus
+    // one host deep_copy plus N scalar traceback walks over the shared
+    // backtrack matrix.  Bit-identical CIGARs are guaranteed because the
+    // Kokkos DP recurrence and tie policy mirror the scalar
+    // `smith_waterman::calculate_matrix`; the numeric contract is checked
+    // post-hoc against `graph_sw.scores`.
+    std::vector<fastgatk::kernels::SmithWatermanRequest> graph_align_requests;
+    graph_align_requests.reserve(graph_sw_paths.size());
     for (std::size_t request = 0; request < graph_sw_paths.size(); ++request) {
         const auto path = graph_sw_paths[request];
         const auto tid = graph.haplotype_path_tids[path];
         const auto start = graph.haplotype_path_starts[path];
         const auto& reference = references[static_cast<std::size_t>(tid)];
-        auto end = graph.haplotype_path_ends[path];
         const auto path_length = graph.haplotype_path_sequences[path].size();
         const auto local_halo = std::max<std::size_t>(8, std::min<std::size_t>(64, path_length / 2));
-        const auto local_end = start + static_cast<std::int32_t>(path_length + local_halo);
-        if (end <= start) end = local_end;
-        else end = std::min(end, local_end);
-        end = std::min<std::int32_t>(end, static_cast<std::int32_t>(reference.size()));
+        auto local_end = start + static_cast<std::int32_t>(path_length + local_halo);
+        const auto path_end = graph.haplotype_path_ends[path];
+        if (path_end > start) local_end = std::min(local_end, path_end);
+        local_end = std::min<std::int32_t>(local_end, static_cast<std::int32_t>(reference.size()));
         const auto& path_sequence = graph.haplotype_path_sequences[path];
-        const auto alignment = fastgatk::kernels::smith_waterman_align_reference(
-            reinterpret_cast<const std::uint8_t*>(path_sequence.data()), path_sequence.size(),
-            reinterpret_cast<const std::uint8_t*>(reference.data() + start),
-            static_cast<std::size_t>(end - start), graph_sw_parameters,
-            fastgatk::kernels::SmithWatermanOverhangStrategy::Indel);
-        if (request >= graph_sw.scores.size() || alignment.score != graph_sw.scores[request])
+        graph_align_requests.push_back(fastgatk::kernels::SmithWatermanRequest{
+            std::vector<std::uint8_t>(path_sequence.begin(), path_sequence.end()),
+            std::vector<std::uint8_t>(
+                reference.begin() + static_cast<std::ptrdiff_t>(start),
+                reference.begin() + static_cast<std::ptrdiff_t>(local_end))});
+    }
+    const auto graph_alignments_batch = fastgatk::kernels::smith_waterman_align_kokkos(
+        graph_align_requests, graph_sw_parameters,
+        fastgatk::kernels::SmithWatermanOverhangStrategy::Indel);
+    for (std::size_t request = 0; request < graph_sw_paths.size(); ++request) {
+        const auto path = graph_sw_paths[request];
+        if (request >= graph_sw.scores.size() ||
+            graph_alignments_batch[request].score != graph_sw.scores[request])
             throw std::runtime_error(
                 "NUMERICAL_CONTRACT_FAILURE: graph candidate SW score/traceback mismatch");
-        graph_alignments[path] = alignment;
+        graph_alignments[path] = graph_alignments_batch[request];
     }
 
     for (std::size_t path = 0; path < graph.haplotype_path_sequences.size(); ++path) {
@@ -5919,12 +6020,36 @@ bool assembly_region_read_span(const io::ReadBatch& reads, std::size_t record,
     return clipped_end > clipped_begin;
 }
 
+// GATK's diploid het likelihood composes each read as
+// MathUtils.approximateLog10SumLog10(L1, L2) - log10(2): the sum uses the
+// quantized JacobianLogTable (MAX_TOLERANCE 8.0, TABLE_STEP 0.0001,
+// cache[k] = log10(1 + 10^(-k*step))) rather than an exact log10 of the
+// linear mixture.  The exact form drifts against GATK at the PL/QUAL
+// rounding boundary (chr20:145715 QD 30.26 vs 30.27), so mirror the table
+// here exactly as calculate_joint_genotype_pl_kokkos already does.
+double jacobian_log10_sum(double first, double second) {
+    if (first > second) std::swap(first, second);
+    if (!(first > -1.0e299)) return second;
+    const double difference = second - first;
+    static constexpr double kJacobianMaximumDifference = 8.0;
+    static constexpr double kJacobianStep = 0.0001;
+    if (difference >= kJacobianMaximumDifference) return second;
+    static const std::vector<double> jacobian_cache = [] {
+        std::vector<double> cache(
+            static_cast<std::size_t>(kJacobianMaximumDifference / kJacobianStep) + 1);
+        for (std::size_t index = 0; index < cache.size(); ++index)
+            cache[index] = std::log10(
+                1.0 + std::pow(10.0, -static_cast<double>(index) * kJacobianStep));
+        return cache;
+    }();
+    const auto table_index = static_cast<std::size_t>(
+        difference / kJacobianStep + 0.5);
+    return second + jacobian_cache[std::min(
+        table_index, jacobian_cache.size() - 1)];
+}
+
 double log10_mix_half(double first, double second) {
-    const double high = std::max(first, second);
-    if (!std::isfinite(high)) return high;
-    const double scaled = 0.5 * (std::pow(10.0, first - high) +
-                                 std::pow(10.0, second - high));
-    return high + std::log10(std::max(scaled, std::numeric_limits<double>::min()));
+    return jacobian_log10_sum(first, second) - std::log10(2.0);
 }
 
 // Derive the same biallelic likelihoods that the HC VCF writer materializes
@@ -5971,6 +6096,7 @@ bool derive_pairhmm_biallelic_pl(const Result& result, const std::size_t candida
     }
     return true;
 }
+
 
 // HaplotypeCaller first genotypes a spanning-deletion EventMap locus with
 // alleles REF, concrete ALT, and `*`, then computes AF/QUAL while treating
@@ -6743,24 +6869,51 @@ bool read_overlaps_annotation_interval(const io::ReadBatch& reads,
 // genotype matrix.  Keep this one-coordinate conversion at the HC-only
 // genotyping boundary; the broader annotation and somatic fragment helpers
 // intentionally retain their existing source-coordinate contracts.
+std::size_t locus_merged_reference_length(const std::vector<AssemblyCandidate>& candidates,
+                                          const AssemblyCandidate& candidate) {
+    std::size_t merged = candidate_reference(candidate).size();
+    for (const auto& sibling : candidates) {
+        if (sibling.tid == candidate.tid && sibling.position == candidate.position)
+            merged = std::max(merged, candidate_reference(sibling).size());
+    }
+    return merged;
+}
+
 bool read_overlaps_hc_genotyping_interval(const io::ReadBatch& reads,
                                           std::size_t record,
                                           const AssemblyCandidate& candidate,
-                                          const std::uint32_t informative_read_overlap_margin) {
+                                          const std::uint32_t informative_read_overlap_margin,
+                                          const RealignedSourceSpan* realigned_span,
+                                          const std::size_t merged_reference_length) {
     if (record >= reads.records() || record >= reads.tids.size() ||
         reads.tids[record] != candidate.tid || record >= reads.positions.size() ||
         reads.positions[record] < 0)
         return false;
-    const auto reference_length = candidate_reference(candidate).size();
+    const auto reference_length = merged_reference_length != 0
+        ? merged_reference_length : candidate_reference(candidate).size();
     const auto margin = static_cast<std::int64_t>(informative_read_overlap_margin);
+    // GATK's retainEvidence() predicate (HaplotypeCallerGenotypingEngine
+    // .composeReadQualifiesForGenotypingPredicate) is
+    // SimpleInterval.overlaps(read) applied to the *realigned* read:
+    // HaplotypeCallerEngine.realignReadsToTheirBestHaplotype +
+    // changeEvidence() replaces every evidence read with its
+    // best-haplotype projection before genotyping.  Overlap is inclusive
+    // on both ends against [vcStart - margin, vcEnd + margin] where the
+    // VariantContext start/end are the 1-based VCF coordinates.  htsjdk is
+    // 1-based inclusive on both ends; the decoded native span is a 0-based
+    // start whose exclusive end equals htsjdk's inclusive end numerically.
     const auto variant_start = static_cast<std::int64_t>(candidate.position) + 1;
-    const auto event_start = std::max<std::int64_t>(0, variant_start - margin);
-    const auto event_end = std::max<std::int64_t>(event_start + 1,
-        variant_start + static_cast<std::int64_t>(reference_length == 0 ? 1 : reference_length) +
-            margin);
-    const auto read_start = static_cast<std::int64_t>(reads.positions[record]);
-    const auto read_end = io::reference_end(reads, record);
-    return read_end >= 0 && read_start < event_end && read_end > event_start;
+    const auto target_start = std::max<std::int64_t>(1, variant_start - margin);
+    const auto target_end = variant_start +
+        static_cast<std::int64_t>(reference_length == 0 ? 1 : reference_length) - 1 + margin;
+    std::int64_t read_start = static_cast<std::int64_t>(reads.positions[record]) + 1;
+    std::int64_t read_end = io::reference_end(reads, record);
+    if (realigned_span != nullptr && realigned_span->tid == candidate.tid &&
+        realigned_span->start >= 0 && realigned_span->end > realigned_span->start) {
+        read_start = realigned_span->start + 1;
+        read_end = realigned_span->end;
+    }
+    return read_end >= 0 && target_start <= read_end && target_end >= read_start;
 }
 
 const CandidateReadRealignment* annotation_candidate_read_realignment(
@@ -11532,10 +11685,32 @@ PairHmmAggregate run_pairhmm(
         // retaining it for the next SNP (chr20:10020429 vs 10020431).
         // Filter only at this post-PairHMM allele boundary: filtering the
         // request matrix itself would change GATK's per-read normalization.
+        RealignedSourceSpan candidate_realigned_span;
+        const bool candidate_has_realigned_span =
+            candidate_read.source_record < aggregate.rcm_realigned_source_records.size() &&
+            aggregate.rcm_realigned_source_records[candidate_read.source_record] != 0U &&
+            candidate_read.source_record < aggregate.realigned_source_tids.size() &&
+            candidate_read.source_record < aggregate.realigned_source_starts.size() &&
+            candidate_read.source_record < aggregate.realigned_source_ends.size() &&
+            aggregate.realigned_source_tids[candidate_read.source_record] >= 0 &&
+            aggregate.realigned_source_starts[candidate_read.source_record] >= 0 &&
+            aggregate.realigned_source_ends[candidate_read.source_record] >
+                aggregate.realigned_source_starts[candidate_read.source_record];
+        if (candidate_has_realigned_span) {
+            candidate_realigned_span.tid =
+                aggregate.realigned_source_tids[candidate_read.source_record];
+            candidate_realigned_span.start =
+                aggregate.realigned_source_starts[candidate_read.source_record];
+            candidate_realigned_span.end =
+                aggregate.realigned_source_ends[candidate_read.source_record];
+        }
         const bool retained_for_candidate = somatic_mode ||
             read_overlaps_hc_genotyping_interval(
                 reads, candidate_read.source_record,
-                candidates[candidate_read.candidate], informative_read_overlap_margin);
+                candidates[candidate_read.candidate], informative_read_overlap_margin,
+                candidate_has_realigned_span ? &candidate_realigned_span : nullptr,
+                locus_merged_reference_length(candidates,
+                    candidates[candidate_read.candidate]));
         if (!retained_for_candidate) continue;
         if (candidate_read.candidate >= candidate_locus_id.size()) continue;
         const auto locus_id = candidate_locus_id[candidate_read.candidate];
@@ -11947,6 +12122,8 @@ PairHmmAggregate run_pairhmm(
             std::cerr << "[FASTGATK_ALLELE_MARGINALIZED_ROW]"
                       << " group=" << candidate_read.group_ordinal
                       << " source_record=" << candidate_read.source_record
+                      << " name=" << read_string_span(
+                             reads.names, reads.name_offsets, candidate_read.source_record)
                       << " candidate=" << candidate_read.candidate
                       << " position=" << candidates[candidate_read.candidate].position
                       << " row=" << row
@@ -12159,6 +12336,16 @@ PairHmmAggregate run_pairhmm(
     // source-record-wide "last row wins" state can incorrectly resurrect a
     // poorly-modelled row from a neighboring region.  The sorted sparse
     // context is exactly that collection's evidence cardinality.
+    // GATK's Coverage/retainEvidence window is built from the merged
+    // VariantContext of every event at the locus
+    // (AssemblyBasedCallerUtils.makeMergedVariantContext): its REF spans the
+    // longest event before reverseTrimAlleles shrinks the emitted record.
+    // Widen the candidate-local span to the locus-merged span so window-edge
+    // reads match GATK's population (chr20:145715 sibling
+    // AACACACACAC>A extends the window past the trimmed AAC>A record).
+    const auto merged_reference_length_of = [&](const AssemblyCandidate& candidate) {
+        return locus_merged_reference_length(candidates, candidate);
+    };
     const auto qualified_annotation_depth = [&](const AssemblyCandidate& candidate) {
         std::uint32_t depth = 0;
         const auto candidate_index = static_cast<std::size_t>(&candidate - candidates.data());
@@ -12171,7 +12358,7 @@ PairHmmAggregate run_pairhmm(
             [](const CandidateReadRealignment& context, const std::uint32_t value) {
                 return context.context_ordinal < value;
             });
-        const auto reference_length = candidate_reference(candidate).size();
+        const auto reference_length = merged_reference_length_of(candidate);
         const auto event_start = std::max<std::int64_t>(
             0, static_cast<std::int64_t>(candidate.position) -
                 static_cast<std::int64_t>(informative_read_overlap_margin));
@@ -13757,6 +13944,11 @@ void accumulate_independent_region_telemetry(Result& merged, const Result& part)
     merged.graph_kmer_size_selected = std::max(
         merged.graph_kmer_size_selected, part.graph_kmer_size_selected);
     merged.graph_kmer_iterations = std::max(merged.graph_kmer_iterations, part.graph_kmer_iterations);
+    for (const auto kmer_size : part.graph_kmer_sizes_used)
+        if (std::find(merged.graph_kmer_sizes_used.begin(),
+                      merged.graph_kmer_sizes_used.end(), kmer_size) ==
+            merged.graph_kmer_sizes_used.end())
+            merged.graph_kmer_sizes_used.push_back(kmer_size);
     merged.graph_has_non_reference_cycles = merged.graph_has_non_reference_cycles ||
         part.graph_has_non_reference_cycles;
     merged.graph_reference_paths += part.graph_reference_paths;
@@ -14555,10 +14747,37 @@ Result run(const io::ReadBatch& reads,
     // represented by the adjacent projected bases, whereas a deletion needs
     // these explicit synthetic observations as well as its adjacent bases.
     std::vector<std::uint32_t> hc_activity_deletion_counts;
+    std::vector<std::uint32_t> somatic_activity_deletion_counts;
     if (options.somatic_mode)
         somatic_activity_indel_qualities.resize(loci.size());
     else
         hc_activity_deletion_counts.assign(loci.size(), 0U);
+    if (options.somatic_mode)
+        somatic_activity_deletion_counts.assign(loci.size(), 0U);
+    // Mutect2Engine.isActive()'s normal-suppression gate rebuilds the same
+    // PileupQualBuffer classification as the activity LOD.  Collect the
+    // INDEL-bucket events here (soft-clip-adjacent bases, I/D anchors and
+    // every deleted reference element) so the gate summary counts exactly
+    // what accumulateQuals() would: base observations are counted in the
+    // gate's observation loop, while deleted elements have no base
+    // observation and contribute their own pileup (depth) row as well.
+    struct GateIndelEvent {
+        std::uint8_t sample_role = 0;  // 0 = tumor, 1 = normal
+        std::uint8_t quality = 0;
+        bool counts_as_depth = false;
+    };
+    std::vector<std::vector<GateIndelEvent>> gate_indel_events;
+    const auto gate_role = [&](const std::size_t record) -> std::uint8_t {
+        const bool has_ids = active_reads.sample_ids.size() == active_reads.records();
+        if (!has_ids) return 0U;
+        if (record < active_reads.sample_ids.size() &&
+            is_normal_activity_sample(
+                static_cast<std::int32_t>(active_reads.sample_ids[record])))
+            return 1U;
+        return 0U;
+    };
+    if (options.somatic_mode)
+        gate_indel_events.resize(loci.size());
     // ReferenceConfidenceModel.isAltBeforeAssembly includes the aligned base
     // immediately beside I/D/soft-clip CIGAR operations.  Keep one compact
     // marker per decoded read base, then scatter it into the per-locus
@@ -14596,7 +14815,12 @@ Result run(const io::ReadBatch& reads,
     if (activity_evidence_reads.has_cigar() &&
         activity_evidence_reads.cigar_offsets.size() == activity_evidence_reads.records() + 1) {
         for (std::size_t record = 0; record < activity_evidence_reads.records(); ++record) {
-            if (!is_tumor_activity_record(record)) continue;
+            // The activity LOD consumes tumor evidence only, but the
+            // normal-suppression gate must classify normal elements with the
+            // same PileupQualBuffer rules (deletion spans, I/D anchors and
+            // soft-clip edges).  Walk every record here and gate the
+            // activity-only pushes on the tumor role below.
+            const bool tumor_activity_record = is_tumor_activity_record(record);
             if (record >= activity_evidence_reads.tids.size() ||
                 record >= activity_evidence_reads.positions.size() ||
                 activity_evidence_reads.tids[record] < 0 ||
@@ -14671,19 +14895,33 @@ Result run(const io::ReadBatch& reads,
                                       static_cast<std::int32_t>(position)};
                         const auto locus = index.find(key);
                         if (locus == index.end()) return;
-                        if (activity_input.indel_counts[locus->second] !=
-                            std::numeric_limits<std::uint32_t>::max())
-                            ++activity_input.indel_counts[locus->second];
-                        somatic_activity_indel_qualities[locus->second].push_back(30U);
+                        if (tumor_activity_record) {
+                            if (activity_input.indel_counts[locus->second] !=
+                                std::numeric_limits<std::uint32_t>::max())
+                                ++activity_input.indel_counts[locus->second];
+                            somatic_activity_indel_qualities[locus->second].push_back(30U);
+                        }
                         const auto source = read_begin + read_offset;
                         if (source < activity_somatic_indel_by_base.size())
                             activity_somatic_indel_by_base[source] = 1U;
+                        if (!gate_indel_events.empty() &&
+                            locus->second < gate_indel_events.size())
+                            gate_indel_events[locus->second].push_back(
+                                GateIndelEvent{gate_role(record), 30U, false});
                     };
                     // `isAfterSoftClip` and `isBeforeSoftClip` respectively:
                     // PileupQualBuffer examines only the neighbouring clipped
-                    // base's quality, not an aggregate clip statistic.
+                    // base's quality, not an aggregate clip statistic.  Its
+                    // if/else-if chain classifies an element as INDEL first
+                    // when it precedes an I/D op; a single aligned base both
+                    // after a soft clip and before an indel must therefore
+                    // contribute only the anchor observation below.
+                    const auto following_is_indel = next.valid() &&
+                        (next.code == io::CigarOpCode::Insertion ||
+                         next.code == io::CigarOpCode::Deletion);
                     if (previous.valid() && previous.code == io::CigarOpCode::SoftClip &&
-                        previous.length > 0U) {
+                        previous.length > 0U &&
+                        !(operation.length == 1U && following_is_indel)) {
                         append_useful_softclip(read_cursor, reference_cursor, read_cursor - 1U);
                     }
                     if (next.valid() && next.code == io::CigarOpCode::SoftClip && next.length > 0U) {
@@ -14735,15 +14973,66 @@ Result run(const io::ReadBatch& reads,
                                      static_cast<std::int32_t>(reference_cursor - 1)};
                     const auto locus = index.find(anchor);
                     if (locus != index.end() && locus->second < activity_input.indel_counts.size()) {
-                        if (activity_input.indel_counts[locus->second] !=
-                            std::numeric_limits<std::uint32_t>::max())
-                            ++activity_input.indel_counts[locus->second];
-                        if (options.somatic_mode) {
-                            const auto indel_quality = static_cast<std::uint8_t>(
-                                std::min<std::uint32_t>(30U +
-                                    (operation.length - 1U) * 10U, 127U));
-                            somatic_activity_indel_qualities[locus->second].push_back(indel_quality);
+                        const auto indel_quality = static_cast<std::uint8_t>(
+                            std::min<std::uint32_t>(30U +
+                                (operation.length - 1U) * 10U, 127U));
+                        // The anchor's aligned base is classified into the
+                        // INDEL bucket by PileupQualBuffer's if/else-if
+                        // chain; flag it so the substitution scan (and the
+                        // gate's substitution summary) skip it.
+                        if (tumor_activity_record) {
+                            if (activity_input.indel_counts[locus->second] !=
+                                std::numeric_limits<std::uint32_t>::max())
+                                ++activity_input.indel_counts[locus->second];
+                            if (options.somatic_mode)
+                                somatic_activity_indel_qualities[locus->second].push_back(
+                                    indel_quality);
                         }
+                        if (options.somatic_mode && !gate_indel_events.empty() &&
+                            locus->second < gate_indel_events.size())
+                            gate_indel_events[locus->second].push_back(
+                                GateIndelEvent{gate_role(record), indel_quality, false});
+                    }
+                }
+                if (options.somatic_mode && operation.code == io::CigarOpCode::Deletion &&
+                    operation.length > 0U && reference_cursor >= 0) {
+                    // PileupQualBuffer's accumulateQuals() classifies every
+                    // PileupElement of a deletion span (pe.isDeletion()) as an
+                    // INDEL observation with indelQual(currentCigarElement
+                    // .getLength()) — one observation per deleted reference
+                    // position, in addition to the aligned base immediately
+                    // before the D op handled by the anchor block above.
+                    // Dropping these per-position observations removes the
+                    // dominant indel-bucket evidence over high-depth deletion
+                    // spans (chrM:8372's 7-base deletion is the recorded
+                    // case) and leaves the corresponding loci inactive.
+                    const auto deletion_quality = static_cast<std::uint8_t>(
+                        std::min<std::uint32_t>(30U +
+                            (operation.length - 1U) * 10U, 127U));
+                    for (std::uint32_t offset = 0; offset < operation.length; ++offset) {
+                        const auto position = reference_cursor +
+                            static_cast<std::int64_t>(offset);
+                        if (position < 0 ||
+                            position > std::numeric_limits<std::int32_t>::max())
+                            break;
+                        const Key key{activity_evidence_reads.tids[record],
+                                      static_cast<std::int32_t>(position)};
+                        const auto locus = index.find(key);
+                        if (locus == index.end() ||
+                            locus->second >= somatic_activity_deletion_counts.size())
+                            continue;
+                        if (tumor_activity_record) {
+                            auto& deletion_count =
+                                somatic_activity_deletion_counts[locus->second];
+                            if (deletion_count != std::numeric_limits<std::uint32_t>::max())
+                                ++deletion_count;
+                            somatic_activity_indel_qualities[locus->second].push_back(
+                                deletion_quality);
+                        }
+                        if (!gate_indel_events.empty() &&
+                            locus->second < gate_indel_events.size())
+                            gate_indel_events[locus->second].push_back(
+                                GateIndelEvent{gate_role(record), deletion_quality, true});
                     }
                 }
                 if (!options.somatic_mode && operation.code == io::CigarOpCode::Deletion &&
@@ -14808,9 +15097,11 @@ Result run(const io::ReadBatch& reads,
             if (is_tumor_activity_record(record) && static_cast<std::size_t>(locus) < loci.size())
                 ++activity_input.quality_offsets[static_cast<std::size_t>(locus) + 1];
         }
-        if (!options.somatic_mode) {
-            for (std::size_t locus = 0; locus < hc_activity_deletion_counts.size(); ++locus) {
-                const auto deletion_count = hc_activity_deletion_counts[locus];
+        if (!options.somatic_mode || !somatic_activity_deletion_counts.empty()) {
+            const auto& deletion_counts = options.somatic_mode
+                ? somatic_activity_deletion_counts : hc_activity_deletion_counts;
+            for (std::size_t locus = 0; locus < deletion_counts.size(); ++locus) {
+                const auto deletion_count = deletion_counts[locus];
                 auto& count = activity_input.quality_offsets[locus + 1U];
                 if (deletion_count > std::numeric_limits<std::uint32_t>::max() - count)
                     throw std::invalid_argument("activity deletion evidence count overflow");
@@ -14859,9 +15150,19 @@ Result run(const io::ReadBatch& reads,
                 }
             }
         }
-        if (!options.somatic_mode) {
-            for (std::size_t locus = 0; locus < hc_activity_deletion_counts.size(); ++locus) {
-                const auto count = hc_activity_deletion_counts[locus];
+        if (!options.somatic_mode || !somatic_activity_deletion_counts.empty()) {
+            // Synthetic deletion elements: GATK's base pileup carries one
+            // PileupElement per deleted reference position (counted by
+            // pileup.size() and classified into the INDEL bucket), while the
+            // compact observation list only holds aligned read bases.  Pad
+            // the quality arrays with flagged placeholder entries so
+            // total_observations matches GATK's nRef accounting; the flag
+            // keeps them out of the substitution scan for both the somatic
+            // LOD and the HC Ref-vs-Any kernels.
+            const auto& deletion_counts = options.somatic_mode
+                ? somatic_activity_deletion_counts : hc_activity_deletion_counts;
+            for (std::size_t locus = 0; locus < deletion_counts.size(); ++locus) {
+                const auto count = deletion_counts[locus];
                 for (std::uint32_t deletion = 0; deletion < count; ++deletion) {
                     const auto destination = quality_cursor[locus]++;
                     // The activity kernel only needs equality to the
@@ -14942,14 +15243,45 @@ Result run(const io::ReadBatch& reads,
             const auto normal_record = has_activity_sample_ids &&
                 record < active_reads.sample_ids.size() && is_normal_activity_sample(
                     static_cast<std::int32_t>(active_reads.sample_ids[record]));
+            // PileupQualBuffer classifies soft-clip-adjacent and I/D-anchored
+            // elements into the shared INDEL bucket first; those observations
+            // arrive through gate_indel_events below and must not also count
+            // as substitutions here.  They still occupy a pileup element.
+            bool indel_classified = false;
+            if (record + 1 < active_reads.offsets.size()) {
+                const auto source = static_cast<std::size_t>(active_reads.offsets[record]) +
+                    static_cast<std::size_t>(
+                        somatic_activity_observations.read_offset[observation]);
+                if (source < activity_somatic_indel_by_base.size() &&
+                    activity_somatic_indel_by_base[source] != 0U)
+                    indel_classified = true;
+            }
             if (tumor_record) {
-                accumulate(tumor_summary[locus], locus,
-                           somatic_activity_observations.base[observation],
-                           somatic_activity_observations.quality[observation]);
+                if (!indel_classified)
+                    accumulate(tumor_summary[locus], locus,
+                               somatic_activity_observations.base[observation],
+                               somatic_activity_observations.quality[observation]);
+                else
+                    ++tumor_summary[locus].depth;
             } else if (normal_record) {
-                accumulate(normal_summary[locus], locus,
-                           somatic_activity_observations.base[observation],
-                           somatic_activity_observations.quality[observation]);
+                if (!indel_classified)
+                    accumulate(normal_summary[locus], locus,
+                               somatic_activity_observations.base[observation],
+                               somatic_activity_observations.quality[observation]);
+                else
+                    ++normal_summary[locus].depth;
+            }
+        }
+        // INDEL-bucket events: soft-clip edges and I/D anchors share the base
+        // observation already counted above; deleted reference elements carry
+        // their own pileup element and add a depth row as well.
+        for (std::size_t locus = 0; locus < gate_indel_events.size(); ++locus) {
+            for (const auto& event : gate_indel_events[locus]) {
+                auto& summary = event.sample_role == 0U ? tumor_summary[locus]
+                                                        : normal_summary[locus];
+                ++summary.count[4];
+                summary.quality_sum[4] += event.quality;
+                if (event.counts_as_depth) ++summary.depth;
             }
         }
         const auto accumulate_indel = [&](AltPileupSummary& summary,
@@ -15019,6 +15351,22 @@ Result run(const io::ReadBatch& reads,
             const auto reference_base = activity_input.reference_bases[locus];
             const auto tumor_alt = best_alt(tumor_summary[locus], reference_base);
             const auto normal_alt = best_alt(normal_summary[locus], reference_base);
+            if (const char* gate_debug =
+                    std::getenv("FASTGATK_DEBUG_NORMAL_GATE");
+                gate_debug != nullptr &&
+                loci[locus].key.position >= std::atoi(gate_debug)) {
+                std::fprintf(stderr,
+                    "[FASTGATK_DEBUG_NORMAL_GATE] pos=%d ref=%u tumor_best=%u normal_best=%u "
+                    "tumor_depth=%u normal_depth=%u normal_count=%u normal_qsum=%u "
+                    "gate=%d roles=%d\n",
+                    loci[locus].key.position, (unsigned)reference_base,
+                    (unsigned)tumor_alt, (unsigned)normal_alt,
+                    tumor_summary[locus].depth, normal_summary[locus].depth,
+                    normal_alt < 5U ? normal_summary[locus].count[normal_alt] : 0U,
+                    normal_alt < 5U ? normal_summary[locus].quality_sum[normal_alt] : 0U,
+                    (int)(has_activity_normal_gate && has_activity_sample_ids),
+                    (int)has_explicit_activity_roles);
+            }
             if (tumor_alt >= 5U || normal_alt != tumor_alt) continue;
             if (static_cast<double>(normal_summary[locus].count[normal_alt]) >
                     static_cast<double>(normal_summary[locus].depth) * 0.3 &&
@@ -15223,6 +15571,41 @@ Result run(const io::ReadBatch& reads,
         result.somatic_reference_confidence_seconds = std::chrono::duration<double>(
             reference_confidence_end - reference_confidence_begin).count();
         result.somatic_reference_confidence_execution_space = ExecSpace::name();
+    }
+    if (const char* activity_evidence_debug =
+            std::getenv("FASTGATK_DEBUG_ACTIVITY_EVIDENCE")) {
+        int debug_start = -1, debug_end = -1;
+        std::sscanf(activity_evidence_debug, "%d-%d", &debug_start, &debug_end);
+        for (std::size_t locus = 0; locus < loci.size(); ++locus) {
+            const auto debug_position = loci[locus].key.position;
+            if (debug_start >= 0 && (debug_position < debug_start ||
+                                     debug_position > debug_end))
+                continue;
+            const auto debug_qbegin = static_cast<std::size_t>(
+                activity_input.quality_offsets[locus]);
+            const auto debug_qend = static_cast<std::size_t>(
+                activity_input.quality_offsets[locus + 1]);
+            const auto debug_ibegin = static_cast<std::size_t>(
+                activity_input.indel_quality_offsets.empty()
+                    ? 0U : activity_input.indel_quality_offsets[locus]);
+            const auto debug_iend = static_cast<std::size_t>(
+                activity_input.indel_quality_offsets.empty()
+                    ? 0U : activity_input.indel_quality_offsets[locus + 1]);
+            std::cerr << "[FASTGATK_DEBUG_ACTIVITY_EVIDENCE] pos=" << debug_position
+                      << " ref=" << decode_base(activity_input.reference_bases[locus])
+                      << " obs=";
+            for (std::size_t index = debug_qbegin; index < debug_qend; ++index) {
+                std::cerr << decode_base(activity_input.quality_bases[index])
+                          << static_cast<int>(activity_input.quality_values[index])
+                          << (activity_input.quality_alt_flags[index] ? "*" : "")
+                          << ',';
+            }
+            std::cerr << " indel=";
+            for (std::size_t index = debug_ibegin; index < debug_iend; ++index)
+                std::cerr << static_cast<int>(activity_input.indel_quality_values[index])
+                          << ',';
+            std::cerr << '\n';
+        }
     }
     const auto activity = fastgatk::kernels::compute_activity_profile_kokkos(
         activity_input, activity_options);
@@ -16152,6 +16535,7 @@ Result run(const io::ReadBatch& reads,
     result.graph_reference_kmer_rejected = graph.reference_kmer_rejected;
     result.graph_kmer_size_selected = graph.kmer_size;
     result.graph_kmer_iterations = graph.kmer_iterations;
+    result.graph_kmer_sizes_used = graph.kmer_sizes_used;
     result.graph_has_non_reference_cycles = graph.has_non_reference_cycles;
     result.graph_haplotype_sequences = graph.haplotype_path_sequences;
     result.graph_haplotype_sequence_count = result.graph_haplotype_sequences.size();
@@ -16913,7 +17297,16 @@ Result run(const io::ReadBatch& reads,
         pairhmm_path_cigars.size() == pairhmm_graph.haplotype_path_sequences.size() &&
         std::all_of(pairhmm_path_cigars.begin(), pairhmm_path_cigars.end(),
                     [](const auto& cigar) { return !cigar.empty(); });
-    const auto pairhmm = run_pairhmm(
+// Hand the slab top chunks back to the OS before PairHMM's per-bucket
+    // Kokkos Views grow the working set.  The activity profile and graph
+    // stages have already released their Views by this point via
+    // `release_views`; `malloc_trim(0)` returns the freed chunks so the
+    // peak PairHMM RSS reflects the PairHMM working set rather than the
+    // cumulative slabs of prior stages.
+#if defined(__GLIBC__)
+    malloc_trim(0);
+#endif
+const auto pairhmm = run_pairhmm(
         corrected_reads, reference_sequences, result.candidates,
         unmodeled_haplotype_competitors, pairhmm_graph,
         pairhmm_event_maps, pairhmm_path_cigars, pairhmm_path_alignment_offsets,
@@ -16946,6 +17339,16 @@ Result run(const io::ReadBatch& reads,
         pairhmm_graph_event_map_available,
         options.shared_assembly_graph.has_value(),
         pileup_likelihoods);
+    // PairHMM's per-bucket Kokkos Views were released back to the OpenMP
+    // memory pool by `release_views` in `pairhmm_kokkos.cpp`.  The pool
+    // itself, however, retains the top chunks and inflates the process RSS
+    // seen by the kernel.  `malloc_trim(0)` (glibc) releases those top
+    // chunks back to the OS once the calling code has finished using them;
+    // Mutect2's flow is sequential per region, so this is a safe and
+    // unconditional shrink between PairHMM and the next major stage.
+#if defined(__GLIBC__)
+    malloc_trim(0);
+#endif
     // Preserve boundary telemetry even when PairHMM has no requests and
     // returns an explicit compatibility fallback.
     result.pairhmm_assembly_region_groups = pairhmm.assembly_region_groups;
@@ -17374,20 +17777,51 @@ Result run(const io::ReadBatch& reads,
         confidence_priors[candidate * 2] = ref_pseudocount;
         confidence_priors[candidate * 2 + 1] = heterozygosity * ref_pseudocount;
     }
+    if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr) {
+        for (std::size_t c = 0; c < result.candidate_sites; ++c)
+            std::cerr << "[MERGED_AF] confidence_pl[" << c << "]="
+                      << confidence_pl[c*3] << ',' << confidence_pl[c*3+1]
+                      << ',' << confidence_pl[c*3+2] << ' ';
+        std::cerr << '\n';
+    }
     const auto confidence = fastgatk::kernels::calculate_biallelic_call_confidence_kokkos(
         confidence_pl, confidence_priors);
+    if (std::getenv("FASTGATK_DEBUG_MERGED_AF") != nullptr) {
+        for (std::size_t c = 0; c < confidence.qual.size(); ++c)
+            std::cerr << "[MERGED_AF] kernel_qual[" << c << "]=" << confidence.qual[c] << ' ';
+        std::cerr << "\n";
+    }
     result.call_confidence_prepare_seconds = confidence.prepare_seconds;
     result.call_confidence_seconds = confidence.seconds;
     result.call_confidence_execution_space = confidence.execution_space;
     auto confidence_qual = confidence.qual;
     const auto& confidence_log10_p_alt_absent = confidence.log10_p_alt_absent;
-    // A monomorphic GenotypeGivenAlleles record uses the complementary
-    // P(variant present) site confidence. Both posterior values are computed
-    // by the Kokkos AF kernel; this merely applies GATK's feature policy.
+    // GenotypingEngine applies the complementary P(variant present) QUAL
+    // only when the record's output allele set is monomorphic: no ALT at the
+    // locus passes the AF plausibility threshold (its siteIsMonomorphic
+    // branch).  A plausible sibling ALT keeps every candidate on the
+    // standard AF QUAL (chr1:600 monomorphic forced site vs the
+    // multialt-subset-max1 record whose retained ALT is plausible).
     for (std::size_t candidate = 0; candidate < result.candidate_sites; ++candidate) {
         if (!result.candidates[candidate].forced_by_alleles_feature ||
             candidate >= confidence.log10_p_variant_present.size())
             continue;
+        constexpr double kGatkAfThresholdEpsilon = 1.0e-10;
+        const auto threshold = -0.1 * result.genotype_standard_confidence_for_calling;
+        bool locus_plausible = false;
+        for (std::size_t sibling = 0; sibling < result.candidate_sites; ++sibling) {
+            if (result.candidates[sibling].tid != result.candidates[candidate].tid ||
+                result.candidates[sibling].position != result.candidates[candidate].position ||
+                sibling >= confidence.log10_p_alt_absent.size())
+                continue;
+            const auto absent = confidence.log10_p_alt_absent[sibling];
+            if (std::isfinite(absent) &&
+                absent + kGatkAfThresholdEpsilon < threshold) {
+                locus_plausible = true;
+                break;
+            }
+        }
+        if (locus_plausible) continue;
         const auto log10_variant_present = confidence.log10_p_variant_present[candidate];
         if (std::isfinite(log10_variant_present) && log10_variant_present < 0.0)
             confidence_qual[candidate] = -10.0 * log10_variant_present;

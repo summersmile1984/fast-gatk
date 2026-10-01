@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "tool": "GatherBQSRReports",
+  "native_binary": "fastgatk-gather-bqsr-reports",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 32.948,
+  "scripts": [
+    {
+      "name": "verify_gather_bqsr_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 32.948,
+      "wall_clock_seconds": 32.948,
+      "peak_rss_bytes": 447983616,
+      "peak_vm_hwm_bytes": 447983616,
+      "cpu_time_seconds": 2121.073,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 447983616,
+        "peak_vm_hwm_bytes": 447983616,
+        "wall_clock_seconds_sum": 32.908,
+        "process_count": 8,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar BaseRecalibrator -R",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar BaseRecalibrator -R",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherBQSRReports -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar BaseRecalibrator -R",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherBQSRReports -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar BaseRecalibrator -R",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GatherBQSRReports -"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "covariate_bytes\": 16451, \"covariate_rows\": 406, \"execution_space\": \"Host\", \"input_reports\": 2, \"observations\": 585, \"output_bytes\": 22432, \"status\": \"prototype\", \"tool\": \"GatherBQSRReports\", \"wall_seconds\": 0.002068722}, \"quantizing_levels\": 4, \"status\": \"pass\", \"table_rows\": {\"Arguments\": 17, \"Quantized\": 94, \"RecalTable0\": 1, \"RecalTable1\": 26, \"RecalTable2\": 406}, \"tables_bit_identical\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "tool": "MarkDuplicates",
+  "native_binary": "fastgatk-mark-duplicates",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 53.373,
+  "scripts": [
+    {
+      "name": "verify_mark_duplicates.py",
+      "exit_code": 0,
+      "elapsed_seconds": 7.951,
+      "wall_clock_seconds": 7.951,
+      "peak_rss_bytes": 563625984,
+      "peak_vm_hwm_bytes": 563625984,
+      "cpu_time_seconds": 5617.656,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 5767168,
+        "peak_vm_hwm_bytes": 5767168,
+        "wall_clock_seconds_sum": 0.027,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mark-duplicates -I /tmp/fastgatk-mark-duplicates-zgoy9a7c/input.sam -O /tmp/fastgatk-mark-duplicates-zgoy9a7c/marked.sam --metric",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mark-duplicates -I /tmp/fastgatk-mark-duplicates-zgoy9a7c/input.sam -O /tmp/fastgatk-mark-duplicates-zgoy9a7c/bounded.sam --metri",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mark-duplicates -I /tmp/fastgatk-mark-duplicates-zgoy9a7c/giant-group.sam -O /tmp/fastgatk-mark-duplicates-zgoy9a7c/giant-group-m",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mark-duplicates -I /tmp/fastgatk-mark-duplicates-zgoy9a7c/input.sam -O /tmp/fastgatk-mark-duplicates-zgoy9a7c/indexed.bam --metri",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mark-duplicates -I /tmp/fastgatk-mark-duplicates-zgoy9a7c/input.sam -O /tmp/fastgatk-mark-duplicates-zgoy9a7c/native-oracle.sam -"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 563625984,
+        "peak_vm_hwm_bytes": 563625984,
+        "wall_clock_seconds_sum": 7.887,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicat",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicat"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"duplicate_records\": 1, \"optical_duplicate_records\": 0, \"removed_output_records\": 2, \"indexed\": true, \"picard_oracle\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mark_duplicates_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 37.245,
+      "wall_clock_seconds": 37.245,
+      "peak_rss_bytes": 7435022336,
+      "peak_vm_hwm_bytes": 7435022336,
+      "cpu_time_seconds": 5655.919,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 7435022336,
+        "peak_vm_hwm_bytes": 7435022336,
+        "wall_clock_seconds_sum": 37.198,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicates -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicates -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicates -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicates -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicates -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"create_index_default\": false, \"create_index_explicit\": true, \"duplicate_records\": 6, \"gatk_version\": \"4.6.2.0\", \"metrics_and_histogram_semantically_identical\": true, \"records_compared\": 14, \"remove_duplicates_records_compared\": 8, \"remove_sequencing_duplicates_records_compared\": 12, \"stale_duplicate_state_cleared\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mark_duplicates_pair_key_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.076,
+      "wall_clock_seconds": 4.076,
+      "peak_rss_bytes": 555626496,
+      "peak_vm_hwm_bytes": 555626496,
+      "cpu_time_seconds": 5605.792,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 555626496,
+        "peak_vm_hwm_bytes": 555626496,
+        "wall_clock_seconds_sum": 4.04,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicat"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"duplicate_records\": 2, \"gatk_version\": \"4.6.2.0\", \"no_mc_pair_key_exact\": true, \"records_compared\": 4, \"status\": \"pass\", \"unclipped_coordinate_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_mark_duplicates_tagging_policy_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.101,
+      "wall_clock_seconds": 4.101,
+      "peak_rss_bytes": 546320384,
+      "peak_vm_hwm_bytes": 546320384,
+      "cpu_time_seconds": 5610.151,
+      "max_rss_kb_children_rusage": 3333452,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 2097152,
+        "peak_vm_hwm_bytes": 2097152,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-mark-duplicates -I /tmp/fastgatk-mark-duplicates-optical-only-pp6om47q/input.sam -O /tmp/fastgatk-mark-duplicates-optical-only-pp"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 546320384,
+        "peak_vm_hwm_bytes": 546320384,
+        "wall_clock_seconds_sum": 4.06,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar MarkDuplicat"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"metrics_and_histogram_semantically_identical\": true, \"optical_dt_records\": 2, \"ordinary_dt_records\": 0, \"records_compared\": 14, \"status\": \"pass\", \"tagging_policy\": \"OpticalOnly\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

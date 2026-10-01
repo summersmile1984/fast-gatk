@@ -1,0 +1,34 @@
+19:25:29.968 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_compression.so
+19:25:33.833 INFO  ApplyBQSR - ------------------------------------------------------------
+19:25:33.835 INFO  ApplyBQSR - The Genome Analysis Toolkit (GATK) v4.6.2.0
+19:25:33.835 INFO  ApplyBQSR - For support and documentation go to https://software.broadinstitute.org/gatk/
+19:25:33.835 INFO  ApplyBQSR - Executing as turing-agents@turing-agents-MotherBoard-Series on Linux v7.0.0-31-generic amd64
+19:25:33.835 INFO  ApplyBQSR - Java runtime: OpenJDK 64-Bit Server VM v17.0.20+8
+19:25:33.835 INFO  ApplyBQSR - Start Date/Time: 2026年9月19日 CST 下午7:25:29
+19:25:33.835 INFO  ApplyBQSR - ------------------------------------------------------------
+19:25:33.835 INFO  ApplyBQSR - ------------------------------------------------------------
+19:25:33.836 INFO  ApplyBQSR - HTSJDK Version: 4.2.0
+19:25:33.836 INFO  ApplyBQSR - Picard Version: 3.4.0
+19:25:33.836 INFO  ApplyBQSR - Built for Spark Version: 3.5.0
+19:25:33.837 INFO  ApplyBQSR - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+19:25:33.839 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+19:25:33.839 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+19:25:33.840 INFO  ApplyBQSR - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+19:25:33.840 INFO  ApplyBQSR - Deflater: IntelDeflater
+19:25:33.840 INFO  ApplyBQSR - Inflater: IntelInflater
+19:25:33.840 INFO  ApplyBQSR - GCS max retries/reopens: 20
+19:25:33.840 INFO  ApplyBQSR - Requester pays: disabled
+19:25:33.841 INFO  ApplyBQSR - Initializing engine
+19:25:33.941 INFO  ApplyBQSR - Done initializing engine
+19:25:33.967 INFO  ProgressMeter - Starting traversal
+19:25:33.967 INFO  ProgressMeter -        Current Locus  Elapsed Minutes       Reads Processed     Reads/Minute
+19:25:43.977 INFO  ProgressMeter -          20:13439214              0.2                756000        4533280.0
+19:25:53.979 INFO  ProgressMeter -          20:34148422              0.3               1722000        5163160.3
+19:26:03.980 INFO  ProgressMeter -          20:52524151              0.5               2710000        5417832.9
+19:26:09.354 INFO  ApplyBQSR - 0 read(s) filtered by: WellformedReadFilter 
+
+19:26:09.354 INFO  ProgressMeter -          20:62954287              0.6               3245545        5503100.1
+19:26:09.355 INFO  ProgressMeter - Traversal complete. Processed 3245545 total reads in 0.6 minutes.
+19:26:09.422 INFO  ApplyBQSR - Shutting down engine
+[2026年9月19日 CST 下午7:26:09] org.broadinstitute.hellbender.tools.walkers.bqsr.ApplyBQSR done. Elapsed time: 0.66 minutes.
+Runtime.totalMemory()=1461780480

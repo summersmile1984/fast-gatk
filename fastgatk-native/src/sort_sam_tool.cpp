@@ -1,3 +1,4 @@
+#include "fastgatk/io/bam_htsjdk.hpp"
 #include "fastgatk/runtime/resource.hpp"
 #include "optional_boolean.hpp"
 
@@ -800,9 +801,23 @@ int run_tool(const Options& options, const fastgatk::runtime::ResourceSnapshot& 
             throw std::runtime_error("OUTPUT_CONTRACT_FAILURE: cannot set SortSam compression level");
         if (!options.reference.empty() && hts_set_fai_filename(output, options.reference.c_str()) != 0)
             throw std::runtime_error("BAD_INPUT: cannot configure output reference");
-        if (sam_hdr_write(output, header) < 0) throw std::runtime_error("cannot write SortSam header");
+        // htsjdk SAMTextHeaderCodec write semantics: @HD VN 1.6, SO reflects
+        // the sorted output order, DT/PT timestamps re-emitted in the
+        // process time zone.  ("duplicate" is a native-only order with no
+        // SAM SO code; keep the input declaration for it.)
+        const char* sort_code = (options.sort_order == "coordinate" ||
+                                 options.sort_order == "queryname")
+                                    ? options.sort_order.c_str() : nullptr;
+        sam_hdr_t* output_header = fastgatk::io::htsjdk_header(header, sort_code);
+        if (output_header == nullptr)
+            throw std::runtime_error("INTERNAL_ERROR: cannot normalize SortSam header");
+        const int header_status = sam_hdr_write(output, output_header);
+        sam_hdr_destroy(output_header);
+        if (header_status < 0) throw std::runtime_error("cannot write SortSam header");
 
-        auto write_record = [&](const bam1_t* value) {
+        auto write_record = [&](bam1_t* value) {
+            // Records flow through SortSam untouched; htsjdk then writes
+            // binary attributes byte-identically (no value-based re-encode).
             if (sam_write1(output, header, value) < 0)
                 throw std::runtime_error("cannot write SortSam record");
             ++output_records;

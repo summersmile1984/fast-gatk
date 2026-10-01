@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "tool": "GetPileupSummaries",
+  "native_binary": "fastgatk-get-pileup-summaries",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 2,
+  "scripts_passed": 2,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 45.021,
+  "scripts": [
+    {
+      "name": "verify_get_pileup_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 44.904,
+      "wall_clock_seconds": 44.904,
+      "peak_rss_bytes": 386367488,
+      "peak_vm_hwm_bytes": 386367488,
+      "cpu_time_seconds": 3974.441,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 16,
+      "native": {
+        "peak_rss_bytes": 7585792,
+        "peak_vm_hwm_bytes": 7585792,
+        "wall_clock_seconds_sum": 0.031,
+        "process_count": 6,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-gatk-oracle-su3so31v/reads.bam -V /tmp/fastgatk-get-pileup-gatk-oracle-su3so31v/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-gatk-oracle-su3so31v/reads.bam -V /tmp/fastgatk-get-pileup-gatk-oracle-su3so31v/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-gatk-oracle-su3so31v/reads.bam -V /tmp/fastgatk-get-pileup-gatk-oracle-su3so31v/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-gatk-oracle-su3so31v/no-sample.bam -V /tmp/fastgatk-get-pileup-gatk-oracle-su3so"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 386367488,
+        "peak_vm_hwm_bytes": 386367488,
+        "wall_clock_seconds_sum": 41.202,
+        "process_count": 9,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /tmp/fas",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GetPileupSummaries ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GetPileupSummaries ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GetPileupSummaries ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GetPileupSummaries ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GetPileupSummaries ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar GetPileupSummaries ",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /tmp/fas"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 357023744,
+        "peak_vm_hwm_bytes": 357023744,
+        "wall_clock_seconds_sum": 3.639,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_get_pileup_gatk_oracle.py"
+        ]
+      },
+      "stdout_tail": "{\"af_format_exact\": true, \"boolean_read_filter_argument_exact\": true, \"empty_site_table_exact\": true, \"exclude_interval_padding_exact\": true, \"exclude_intervals_exact\": true, \"gatk_version\": \"4.6.2.0\", \"inverted_read_filter_short_alias_exact\": true, \"no_sample_fail_closed\": true, \"read_filter_counts_exact\": true, \"records\": 3, \"status\": \"pass\", \"table_bytes_exact\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_get_pileup_summaries.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.117,
+      "wall_clock_seconds": 0.117,
+      "peak_rss_bytes": 7065600,
+      "peak_vm_hwm_bytes": 7065600,
+      "cpu_time_seconds": 3941.938,
+      "max_rss_kb_children_rusage": 1206576,
+      "processes_seen": 15,
+      "native": {
+        "peak_rss_bytes": 7065600,
+        "peak_vm_hwm_bytes": 7065600,
+        "wall_clock_seconds_sum": 0.079,
+        "process_count": 13,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/reads.sam -V /tmp/fastgatk-get-pileup-summaries-v_sinobq/site",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/malformed-cigar.sam -V /tmp/fastgatk-get-pileup-summaries-v_s",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/indexed-reads.sam -V /home/turing-agents/Documents/fast-gatk/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/indexed-reads.sam -V /home/turing-agents/Documents/fast-gatk/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/reads.sam -V /tmp/fastgatk-get-pileup-summaries-v_sinobq/site",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/length-reads.sam -V /tmp/fastgatk-get-pileup-summaries-v_sino",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/reads.sam -V /tmp/fastgatk-get-pileup-summaries-v_sinobq/site",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-get-pileup-summaries -I /tmp/fastgatk-get-pileup-summaries-v_sinobq/reads.sam -V /tmp/fastgatk-get-pileup-summaries-v_sinobq/site"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 8192,
+        "peak_vm_hwm_bytes": 8192,
+        "wall_clock_seconds_sum": 0.011,
+        "process_count": 2,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"sites\": 2, \"reads_used\": 2, \"bases_used\": 4}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "tool": "ValidateVariants",
+  "native_binary": "fastgatk-validate-variants",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 3,
+  "scripts_passed": 3,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 111.394,
+  "scripts": [
+    {
+      "name": "verify_validate_variants.py",
+      "exit_code": 0,
+      "elapsed_seconds": 14.245,
+      "wall_clock_seconds": 14.245,
+      "peak_rss_bytes": 330620928,
+      "peak_vm_hwm_bytes": 330620928,
+      "cpu_time_seconds": 7738.027,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 8,
+      "native": {
+        "peak_rss_bytes": 5595136,
+        "peak_vm_hwm_bytes": 5595136,
+        "wall_clock_seconds_sum": 0.026,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-1wy586hb/valid.vcf -R /tmp/fastgatk-validate-variants-1wy586hb/ref.fa -L chr",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-1wy586hb/bad-cardinality.vcf -R /tmp/fastgatk-validate-variants-1wy586hb/ref",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-1wy586hb/unused-alt.vcf -R /tmp/fastgatk-validate-variants-1wy586hb/ref.fa -",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-1wy586hb/mismatched-dictionary.vcf -R /tmp/fastgatk-validate-variants-1wy586",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-1wy586hb/complete.g.vcf -R /tmp/fastgatk-validate-variants-1wy586hb/ref.fa -"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 330620928,
+        "peak_vm_hwm_bytes": 330620928,
+        "wall_clock_seconds_sum": 14.183,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"validated_records\": 3, \"warning_cases\": 2}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_validate_variants_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 79.044,
+      "wall_clock_seconds": 79.044,
+      "peak_rss_bytes": 352804864,
+      "peak_vm_hwm_bytes": 352804864,
+      "cpu_time_seconds": 7797.648,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 20,
+      "native": {
+        "peak_rss_bytes": 5361664,
+        "peak_vm_hwm_bytes": 5361664,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-gatk-oracle-rk4nmd3n/valid.vcf -do-not-validate-filtered-records true --vali",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-gatk-oracle-rk4nmd3n/valid.vcf -disable-sequence-dictionary-validation true ",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-gatk-oracle-rk4nmd3n/invalid.vcf --validation-type-to-exclude REF",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-validate-variants -V /tmp/fastgatk-validate-variants-gatk-oracle-rk4nmd3n/valid.vcf --validate-GVCF maybe"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 352804864,
+        "peak_vm_hwm_bytes": 352804864,
+        "wall_clock_seconds_sum": 78.99,
+        "process_count": 16,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeature",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "f_switches_fail_closed\": true, \"invalid_boolean_fail_closed\": true, \"optional_boolean_forms_exact\": [\"dbsnp_short\", \"dictionary_validation_short\", \"dictionary_validation_true\", \"fail_overlap_false\", \"interval_set_rule_short\", \"skip_filtered_short\", \"skip_filtered_true\", \"validate_gvcf_false\", \"warn_short\"], \"status\": \"pass\", \"strict_fail_closed\": true, \"warning_forms_exact\": [\"--warn-on-errors\"]}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_validate_variants_symbolic_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 18.105,
+      "wall_clock_seconds": 18.105,
+      "peak_rss_bytes": 338067456,
+      "peak_vm_hwm_bytes": 338067456,
+      "cpu_time_seconds": 7751.605,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 338067456,
+        "peak_vm_hwm_bytes": 338067456,
+        "wall_clock_seconds_sum": 18.078,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ValidateVari"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": ", \"native_returncode\": 0}, \"unobserved_concrete_still_fails\": {\"gatk_returncode\": 2, \"native_returncode\": 2}, \"unobserved_symbolic_cnv_nocall\": {\"gatk_returncode\": 0, \"native_returncode\": 0}, \"unobserved_symbolic_del\": {\"gatk_returncode\": 0, \"native_returncode\": 0}}, \"concrete_alt_check_preserved\": true, \"gatk_version\": \"4.6.2.0\", \"status\": \"pass\", \"symbolic_alts_excluded_from_usage_check\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+#include "fastgatk/kernels/gpu_safety.hpp"
 #include "fastgatk/kernels/read_filter.hpp"
 
 #include "fastgatk/core/plan.hpp"

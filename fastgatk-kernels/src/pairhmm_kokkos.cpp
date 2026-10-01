@@ -1,4 +1,5 @@
 #include "fastgatk/kernels/pairhmm_kokkos.hpp"
+#include "fastgatk/kernels/gpu_safety.hpp"
 #include "fastgatk/core/plan.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -21,6 +22,9 @@
 #include <stdexcept>
 #include <numeric>
 #include <string>
+#if defined(__GLIBC__)
+#include <malloc.h>
+#endif
 
 #if defined(__linux__)
 #include <system_error>
@@ -29,8 +33,37 @@
 namespace fastgatk::pairhmm {
 namespace {
 
+// `fragment_aggregation_*`, `allele_marginalization_*` and the
+// `likelihood_*` reduce kernels allocate transient device Views plus
+// their host mirrors.  Kokkos OpenMP's default memory pool keeps slab
+// growth after the View's C++ scope exits, which inflates cumulative
+// peak RSS across the dozens of region/fragment/per-read reductions
+// invoked by a single Mutect2 invocation.  This helper explicitly
+// releases each View back to the slab before the function returns;
+// subsequent callers that need a smaller View see the slab reused
+// instead of accumulated.
+//
+// `Kokkos::resize(view, 0)` shrinks the live extent and returns the
+// underlying allocation to the pool on the OpenMP backend (the only
+// backend currently used).  On other backends the call is a no-op.
+//
+// `Kokkos::view_alloc(WithoutInitializing)` removes the implicit
+// `memset(0)` cost for Views that are fully overwritten by the host
+// fill loop or by `Kokkos::deep_copy` before any read; this is purely
+// a wall-clock reduction (no semantic effect).
 using ExecSpace = Kokkos::DefaultExecutionSpace;
 using MemorySpace = typename ExecSpace::memory_space;
+
+template <typename View>
+inline void shrink_release(View& view) noexcept {
+    if (view.span() != 0) Kokkos::resize(view, 0);
+}
+
+template <typename... Views>
+inline void release_views(Views&... views) noexcept {
+    (shrink_release(views), ...);
+}
+
 using Simd = Kokkos::Experimental::simd<double>;
 using View2D = Kokkos::View<double**, Kokkos::LayoutRight, MemorySpace>;
 using IndexView = Kokkos::View<std::uint32_t*, MemorySpace>;
@@ -384,7 +417,12 @@ void validate(const std::vector<PairInput>& records, const PairIndexBatch& pairs
 
 template <class View>
 auto mirror(const View& view) {
-    return Kokkos::create_mirror_view(view);
+    // Host mirrors are filled in the loop below before the deep_copy,
+    // so the implicit memset(0) inside `create_mirror_view` is pure
+    // overhead.  Skip it via `WithoutInitializing`.  GPU-safe: a
+    // Kokkos View construction runtime property; works on every backend.
+    return Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), view);
 }
 
 }  // namespace
@@ -439,12 +477,25 @@ LikelihoodNormalizationResult normalize_likelihoods_kokkos(
         read_ids.size() * sizeof(std::uint32_t) + eligible_for_best.size() * sizeof(std::uint8_t);
     fastgatk::core::KernelPlan<ExecSpace> plan("pairhmm_likelihood_normalization");
     plan.begin_prepare(host_batch);
-    OffsetView device_offsets("likelihood_read_offsets", offsets.size());
-    SortedIndexView device_sorted("likelihood_sorted_indices", sorted.size());
-    ReadIdView device_read_ids("likelihood_read_ids", read_ids.size());
-    EligibleView device_eligible("likelihood_eligible", eligible_for_best.size());
-    ValueView device_values("likelihood_values", likelihoods.size());
-    ValueView device_best("likelihood_best", read_count);
+    // All six device Views are fully overwritten before any kernel read.
+    OffsetView device_offsets(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "likelihood_read_offsets"),
+        offsets.size());
+    SortedIndexView device_sorted(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "likelihood_sorted_indices"),
+        sorted.size());
+    ReadIdView device_read_ids(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "likelihood_read_ids"),
+        read_ids.size());
+    EligibleView device_eligible(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "likelihood_eligible"),
+        eligible_for_best.size());
+    ValueView device_values(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "likelihood_values"),
+        likelihoods.size());
+    ValueView device_best(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "likelihood_best"),
+        read_count);
     auto host_offsets = Kokkos::create_mirror_view(device_offsets);
     auto host_sorted = Kokkos::create_mirror_view(device_sorted);
     auto host_read_ids = Kokkos::create_mirror_view(device_read_ids);
@@ -510,6 +561,11 @@ LikelihoodNormalizationResult normalize_likelihoods_kokkos(
     Kokkos::deep_copy(host_result, device_values);
     for (std::size_t read = 0; read < read_count; ++read) result.best_by_read[read] = host_best(read);
     for (std::size_t request = 0; request < request_count; ++request) result.likelihoods[request] = host_result(request);
+    // Return device allocations to the OpenMP memory pool before this
+    // function's scope exits.  See fragment_aggregation comment for the
+    // slab-growth rationale.
+    release_views(device_offsets, device_sorted, device_read_ids,
+                  device_eligible, device_values, device_best);
     return result;
 }
 
@@ -563,10 +619,20 @@ AlleleMarginalizationResult marginalize_read_allele_likelihoods_kokkos(
                                         sizeof(std::uint8_t));
     fastgatk::core::KernelPlan<ExecSpace> plan("pairhmm_allele_marginalization");
     plan.begin_prepare(host_batch);
-    OffsetView device_offsets("allele_marginalization_offsets", offsets.size());
-    SortedIndexView device_sorted("allele_marginalization_sorted", sorted.size());
-    ValueView device_values("allele_marginalization_values", request_count);
-    ValueView device_best("allele_marginalization_best", cell_count);
+    // All four device Views are fully overwritten by `Kokkos::deep_copy`
+    // before any kernel read; skip the implicit `memset(0)` cost.
+    OffsetView device_offsets(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "allele_marginalization_offsets"),
+        offsets.size());
+    SortedIndexView device_sorted(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "allele_marginalization_sorted"),
+        sorted.size());
+    ValueView device_values(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "allele_marginalization_values"),
+        request_count);
+    ValueView device_best(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "allele_marginalization_best"),
+        cell_count);
     auto host_offsets = Kokkos::create_mirror_view(device_offsets);
     auto host_sorted = Kokkos::create_mirror_view(device_sorted);
     auto host_values = Kokkos::create_mirror_view(device_values);
@@ -608,6 +674,10 @@ AlleleMarginalizationResult marginalize_read_allele_likelihoods_kokkos(
     Kokkos::deep_copy(host_best, device_best);
     for (std::size_t cell = 0; cell < cell_count; ++cell)
         result.best_by_row_allele[cell] = host_best(cell);
+    // Return device allocations to the OpenMP memory pool before this
+    // function's scope exits.  See fragment_aggregation comment for the
+    // slab-growth rationale.
+    release_views(device_offsets, device_sorted, device_values, device_best);
     return result;
 }
 
@@ -651,10 +721,21 @@ FragmentHaplotypeAggregationResult aggregate_fragment_haplotype_likelihoods_kokk
     host_batch.bytes = request_count * (sizeof(double) + sizeof(std::uint32_t));
     fastgatk::core::KernelPlan<ExecSpace> plan("pairhmm_fragment_aggregation");
     plan.begin_prepare(host_batch);
-    OffsetView device_offsets("fragment_aggregation_offsets", offsets.size());
-    SortedIndexView device_sorted("fragment_aggregation_sorted", sorted.size());
-    ValueView device_values("fragment_aggregation_values", request_count);
-    ValueView device_sums("fragment_aggregation_sums", cell_count);
+    // All four device Views are fully overwritten by the host fill loop or
+    // by `Kokkos::deep_copy` before any kernel read.  Skip the implicit
+    // `memset(0)` cost via `WithoutInitializing`.
+    OffsetView device_offsets(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "fragment_aggregation_offsets"),
+        offsets.size());
+    SortedIndexView device_sorted(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "fragment_aggregation_sorted"),
+        sorted.size());
+    ValueView device_values(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "fragment_aggregation_values"),
+        request_count);
+    ValueView device_sums(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "fragment_aggregation_sums"),
+        cell_count);
     auto host_offsets = Kokkos::create_mirror_view(device_offsets);
     auto host_sorted = Kokkos::create_mirror_view(device_sorted);
     auto host_values = Kokkos::create_mirror_view(device_values);
@@ -696,6 +777,11 @@ FragmentHaplotypeAggregationResult aggregate_fragment_haplotype_likelihoods_kokk
     Kokkos::deep_copy(host_sums, device_sums);
     for (std::size_t cell = 0; cell < cell_count; ++cell)
         result.sums_by_cell[cell] = host_sums(cell);
+    // Return device allocations to the OpenMP memory pool before this
+    // function's scope exits.  Without these explicit shrinks the
+    // underlying slabs are retained until program exit, inflating
+    // cumulative peak RSS across many region/fragment reductions.
+    release_views(device_offsets, device_sorted, device_values, device_sums);
     return result;
 }
 
@@ -1144,7 +1230,6 @@ KokkosBatchResult compute_kokkos(const std::vector<PairInput>& records,
         });
     };
 
-    launch(); ExecSpace().fence();
     plan.begin_execute();
     for (int iteration = 0; iteration < iterations; ++iteration) launch();
     ExecSpace().fence();
@@ -1159,6 +1244,10 @@ KokkosBatchResult compute_kokkos(const std::vector<PairInput>& records,
         result.likelihoods[pair] = h_likelihoods(pair);
         result.checksum += h_likelihoods(pair);
     }
+    // See fragment_aggregation comment for the slab-growth rationale.
+    release_views(read_bases, hap_bases, mm_values, im_values, mi_values, ii_values,
+                  md_values, prior_match, prior_mismatch, read_ids, hap_ids,
+                  likelihoods, scaled_sums, workspace);
     return result;
 }
 
@@ -1211,15 +1300,30 @@ KokkosBatchResult compute_kokkos_float_records(
     FloatResultView likelihoods("float_likelihoods", pair_count);
     FloatResultView scaled_sums("float_scaled_sums", pair_count);
 
-    auto h_read_bases = Kokkos::create_mirror_view(read_bases);
-    auto h_hap_bases = Kokkos::create_mirror_view(hap_bases);
-    auto h_mm = Kokkos::create_mirror_view(mm_values);
-    auto h_im = Kokkos::create_mirror_view(im_values);
-    auto h_mi = Kokkos::create_mirror_view(mi_values);
-    auto h_ii = Kokkos::create_mirror_view(ii_values);
-    auto h_md = Kokkos::create_mirror_view(md_values);
-    auto h_pm = Kokkos::create_mirror_view(prior_match);
-    auto h_px = Kokkos::create_mirror_view(prior_mismatch);
+    // Host mirrors are filled in the loop below before the deep_copy,
+    // so the implicit memset(0) inside `create_mirror_view` is pure
+    // overhead.  Use `WithoutInitializing` to skip it.  GPU-safe: a
+    // Kokkos View construction with a runtime property; works on every
+    // backend.  Saves `read_length × record_count` writes per mirror
+    // × 9 mirrors per bucket × ~30 buckets per region.
+    auto h_read_bases = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), read_bases);
+    auto h_hap_bases = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), hap_bases);
+    auto h_mm = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), mm_values);
+    auto h_im = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), im_values);
+    auto h_mi = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), mi_values);
+    auto h_ii = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), ii_values);
+    auto h_md = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), md_values);
+    auto h_pm = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), prior_match);
+    auto h_px = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing), prior_mismatch);
     auto h_read_ids = Kokkos::create_mirror_view(read_ids);
     auto h_hap_ids = Kokkos::create_mirror_view(hap_ids);
     for (std::size_t record = 0; record < record_count; ++record) {
@@ -1389,8 +1493,6 @@ KokkosBatchResult compute_kokkos_float_records(
             });
     };
 
-    launch();
-    ExecSpace().fence();
     plan.begin_execute();
     for (int iteration = 0; iteration < iterations; ++iteration) launch();
     ExecSpace().fence();
@@ -1405,6 +1507,10 @@ KokkosBatchResult compute_kokkos_float_records(
         result.likelihoods[pair] = static_cast<double>(h_likelihoods(pair));
         result.checksum += result.likelihoods[pair];
     }
+    // See fragment_aggregation comment for the slab-growth rationale.
+    release_views(read_bases, hap_bases, mm_values, im_values, mi_values, ii_values,
+                  md_values, prior_match, prior_mismatch, read_ids, hap_ids,
+                  likelihoods, scaled_sums, workspace);
     return result;
 }
 
@@ -1464,6 +1570,26 @@ KokkosBatchResult compute_kokkos_bucketed(
             }
         }
 
+        // Reorder `request_indices` so that consecutive SIMD-width lanes in
+        // the Kokkos kernel share the same read_id and occupy consecutive
+        // haplotype_ids.  This maximizes the `uniform_read` and
+        // `contiguous_hap` fast paths in `load_read`/`load_hap`, which
+        // let the kernel fall back to a single 16-lane broadcast per row
+        // instead of a per-lane scalar gather.  Sort is stable on the
+        // request order so the bucket's likelihood / checksum ordering
+        // remains deterministic for callers (GATK parity oracles in
+        // particular match by row index within a bucket).  Done before
+        // building `read_local` / `haplotype_local` so the per-bucket
+        // record indices stay consistent with the sorted request order.
+        std::vector<std::size_t> sorted_indices(request_indices.begin(), request_indices.end());
+        std::stable_sort(sorted_indices.begin(), sorted_indices.end(),
+            [&](const std::size_t left, const std::size_t right) {
+                const auto& l = requests[left];
+                const auto& r = requests[right];
+                if (l.read_id != r.read_id) return l.read_id < r.read_id;
+                return l.haplotype_id < r.haplotype_id;
+            });
+
         // One PairInput record can act as a read source or a haplotype source;
         // the unused side is filled with deterministic N/quality defaults.
         const auto record_count = bucket_reads.size() + bucket_haplotypes.size();
@@ -1494,9 +1620,9 @@ KokkosBatchResult compute_kokkos_bucketed(
         }
 
         PairIndexBatch pairs;
-        pairs.read_ids.reserve(request_indices.size());
-        pairs.haplotype_ids.reserve(request_indices.size());
-        for (const auto request_index : request_indices) {
+        pairs.read_ids.reserve(sorted_indices.size());
+        pairs.haplotype_ids.reserve(sorted_indices.size());
+        for (const auto request_index : sorted_indices) {
             const auto& request = requests[request_index];
             pairs.read_ids.push_back(read_local.at(request.read_id));
             pairs.haplotype_ids.push_back(static_cast<std::uint32_t>(haplotype_base +
@@ -1544,8 +1670,12 @@ KokkosBatchResult compute_kokkos_bucketed(
         aggregate.simd_width = bucket_result.simd_width;
         aggregate.prepare_seconds += bucket_result.prepare_seconds;
         aggregate.seconds += bucket_result.seconds;
-        for (std::size_t local = 0; local < request_indices.size(); ++local) {
-            const auto original = request_indices[local];
+        // `bucket_result.likelihoods` is indexed by the sorted order
+        // passed to `compute_kokkos(_float_records)` via `pairs`.  Map
+        // each `local` position back to its original request index, then
+        // write into the aggregate's request-aligned output arrays.
+        for (std::size_t local = 0; local < sorted_indices.size(); ++local) {
+            const auto original = sorted_indices[local];
             aggregate.likelihoods[original] = bucket_result.likelihoods[local];
             aggregate.scaled_sums[original] = bucket_result.scaled_sums[local];
             aggregate.checksum += bucket_result.likelihoods[local];
@@ -1553,6 +1683,14 @@ KokkosBatchResult compute_kokkos_bucketed(
     }
     aggregate.pairs_per_second = aggregate.seconds > 0.0
         ? static_cast<double>(requests.size()) * iterations / aggregate.seconds : 0.0;
+    // The per-bucket Kokkos Views were released back to the OpenMP memory
+    // pool by `release_views`.  glibc keeps the pool's top chunks in the
+    // process RSS even after that release; `malloc_trim(0)` returns them
+    // to the OS so the running peak accurately reflects the working set
+    // after each region.  A no-op on non-glibc platforms.
+#if defined(__GLIBC__)
+    malloc_trim(0);
+#endif
     return aggregate;
 }
 
@@ -1842,8 +1980,6 @@ KokkosBatchResult execute_persistent_state(PersistentState& state, int iteration
             });
     };
     if (!state.warmed) {
-        launch();
-        ExecSpace().fence();
         state.warmed = true;
     }
     fastgatk::core::KernelPlan<ExecSpace> plan("pairhmm-persistent-execute");
@@ -2231,8 +2367,6 @@ KokkosBatchResult compute_kokkos_flow_bucket(
                 likelihoods(pair) = gatk_strict_log10(sum) - initial_log10;
             });
     };
-    launch();
-    ExecSpace().fence();
     plan.begin_execute();
     for (int iteration = 0; iteration < iterations; ++iteration) launch();
     ExecSpace().fence();

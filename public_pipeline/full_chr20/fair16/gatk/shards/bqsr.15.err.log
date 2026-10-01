@@ -1,0 +1,64 @@
+19:22:28.690 INFO  NativeLibraryLoader - Loading libgkl_compression.so from jar:file:/home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar!/com/intel/gkl/native/libgkl_compression.so
+19:22:32.534 INFO  BaseRecalibrator - ------------------------------------------------------------
+19:22:32.536 INFO  BaseRecalibrator - The Genome Analysis Toolkit (GATK) v4.6.2.0
+19:22:32.537 INFO  BaseRecalibrator - For support and documentation go to https://software.broadinstitute.org/gatk/
+19:22:32.537 INFO  BaseRecalibrator - Executing as turing-agents@turing-agents-MotherBoard-Series on Linux v7.0.0-31-generic amd64
+19:22:32.537 INFO  BaseRecalibrator - Java runtime: OpenJDK 64-Bit Server VM v17.0.20+8
+19:22:32.537 INFO  BaseRecalibrator - Start Date/Time: 2026年9月19日 CST 下午7:22:28
+19:22:32.537 INFO  BaseRecalibrator - ------------------------------------------------------------
+19:22:32.537 INFO  BaseRecalibrator - ------------------------------------------------------------
+19:22:32.538 INFO  BaseRecalibrator - HTSJDK Version: 4.2.0
+19:22:32.539 INFO  BaseRecalibrator - Picard Version: 3.4.0
+19:22:32.539 INFO  BaseRecalibrator - Built for Spark Version: 3.5.0
+19:22:32.544 INFO  BaseRecalibrator - HTSJDK Defaults.COMPRESSION_LEVEL : 2
+19:22:32.544 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS : false
+19:22:32.545 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS : true
+19:22:32.545 INFO  BaseRecalibrator - HTSJDK Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE : false
+19:22:32.545 INFO  BaseRecalibrator - Deflater: IntelDeflater
+19:22:32.545 INFO  BaseRecalibrator - Inflater: IntelInflater
+19:22:32.545 INFO  BaseRecalibrator - GCS max retries/reopens: 20
+19:22:32.545 INFO  BaseRecalibrator - Requester pays: disabled
+19:22:32.546 INFO  BaseRecalibrator - Initializing engine
+19:22:32.767 INFO  FeatureManager - Using codec VCFCodec to read file file:///home/turing-agents/Documents/fast-gatk/public_pipeline/1000G.phase3.chr20.full.vcf.gz
+19:22:33.885 INFO  FeatureManager - Using codec VCFCodec to read file file:///home/turing-agents/Documents/fast-gatk/testdata/real/mills_indels/Mills_and_1000G_gold_standard.indels.b37.sites.chr20.vcf.gz
+19:22:33.909 INFO  IntervalArgumentCollection - Processing 3939095 bp from intervals
+19:22:33.924 INFO  BaseRecalibrator - Done initializing engine
+19:22:33.931 INFO  BaseRecalibrationEngine - The covariates being used here: 
+19:22:33.931 INFO  BaseRecalibrationEngine - 	ReadGroupCovariate
+19:22:33.931 INFO  BaseRecalibrationEngine - 	QualityScoreCovariate
+19:22:33.931 INFO  BaseRecalibrationEngine - 	ContextCovariate
+19:22:33.931 INFO  BaseRecalibrationEngine - 	CycleCovariate
+19:22:33.941 INFO  ProgressMeter - Starting traversal
+19:22:33.941 INFO  ProgressMeter -        Current Locus  Elapsed Minutes       Reads Processed     Reads/Minute
+19:22:44.314 INFO  ProgressMeter -          20:59243617              0.2                  8000          46349.9
+19:22:54.485 INFO  ProgressMeter -          20:59469804              0.3                 20000          58419.7
+19:23:04.722 INFO  ProgressMeter -          20:59666523              0.5                 30000          58481.4
+19:23:15.409 INFO  ProgressMeter -          20:59877512              0.7                 40000          57877.3
+19:23:25.842 INFO  ProgressMeter -          20:60089132              0.9                 50000          57803.5
+19:23:36.558 INFO  ProgressMeter -          20:60290262              1.0                 59000          56538.7
+19:23:47.492 INFO  ProgressMeter -          20:60489330              1.2                 68000          55472.5
+19:23:58.167 INFO  ProgressMeter -          20:60728057              1.4                 78000          55566.1
+19:24:09.539 INFO  ProgressMeter -          20:60949434              1.6                 87000          54604.8
+19:24:19.808 INFO  ProgressMeter -          20:61205151              1.8                 95000          53842.7
+19:24:29.813 INFO  ProgressMeter -          20:61455142              1.9                103000          53335.2
+19:24:40.674 INFO  ProgressMeter -          20:61693531              2.1                113000          53498.7
+19:24:51.211 INFO  ProgressMeter -          20:61917140              2.3                122000          53326.7
+19:25:01.907 INFO  ProgressMeter -          20:62163841              2.5                131000          53121.0
+19:25:12.111 INFO  ProgressMeter -          20:62624030              2.6                149000          56521.8
+19:25:16.960 INFO  BaseRecalibrator - 3799 read(s) filtered by: MappingQualityNotZeroReadFilter 
+0 read(s) filtered by: MappingQualityAvailableReadFilter 
+0 read(s) filtered by: MappedReadFilter 
+0 read(s) filtered by: NotSecondaryAlignmentReadFilter 
+6214 read(s) filtered by: NotDuplicateReadFilter 
+0 read(s) filtered by: PassesVendorQualityCheckReadFilter 
+0 read(s) filtered by: WellformedReadFilter 
+10013 total reads filtered out of 173009 reads processed
+19:25:16.960 INFO  ProgressMeter -          20:62936907              2.7                162996          59991.5
+19:25:16.960 INFO  ProgressMeter - Traversal complete. Processed 162996 total reads in 2.7 minutes.
+19:25:16.970 INFO  BaseRecalibrator - Calculating quantized quality scores...
+19:25:16.999 INFO  BaseRecalibrator - Writing recalibration report...
+19:25:18.533 INFO  BaseRecalibrator - ...done!
+19:25:18.534 INFO  BaseRecalibrator - BaseRecalibrator was able to recalibrate 162996 reads
+19:25:18.534 INFO  BaseRecalibrator - Shutting down engine
+[2026年9月19日 CST 下午7:25:18] org.broadinstitute.hellbender.tools.walkers.bqsr.BaseRecalibrator done. Elapsed time: 2.83 minutes.
+Runtime.totalMemory()=1461780480

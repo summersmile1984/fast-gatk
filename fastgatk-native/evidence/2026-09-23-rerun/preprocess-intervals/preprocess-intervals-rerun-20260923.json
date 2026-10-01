@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "tool": "PreprocessIntervals",
+  "native_binary": "fastgatk-preprocess-intervals",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 27.16,
+  "scripts": [
+    {
+      "name": "verify_preprocess_intervals.py",
+      "exit_code": 0,
+      "elapsed_seconds": 27.16,
+      "wall_clock_seconds": 27.16,
+      "peak_rss_bytes": 390246400,
+      "peak_vm_hwm_bytes": 390246400,
+      "cpu_time_seconds": 6462.78,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 3,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 390246400,
+        "peak_vm_hwm_bytes": 390246400,
+        "wall_clock_seconds_sum": 20.063,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PreprocessIntervals",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PreprocessIntervals",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PreprocessIntervals",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar PreprocessIntervals"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"input_intervals\": 2, \"interval_merging_rule_rejection\": true, \"java_oracle\": true, \"output_intervals\": 4, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

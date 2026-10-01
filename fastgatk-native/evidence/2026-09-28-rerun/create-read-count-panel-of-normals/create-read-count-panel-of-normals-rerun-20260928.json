@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "tool": "CreateReadCountPanelOfNormals",
+  "native_binary": "fastgatk-create-read-count-panel-of-normals",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 29.326,
+  "scripts": [
+    {
+      "name": "verify_create_read_count_panel_of_normals.py",
+      "exit_code": 0,
+      "elapsed_seconds": 18.487,
+      "wall_clock_seconds": 18.487,
+      "peak_rss_bytes": 643223552,
+      "peak_vm_hwm_bytes": 643223552,
+      "cpu_time_seconds": 922.181,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 17420288,
+        "peak_vm_hwm_bytes": 17420288,
+        "wall_clock_seconds_sum": 0.081,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-create-read-count-panel-of-normals -I /tmp/fastgatk-pon-contract-036fg5dd/normal-1.tsv -I /tmp/fastgatk-pon-contract-036fg5dd/nor",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-pon-contract-036fg5dd/normal-1.tsv --count-panel-of-normals /tmp/fastgatk-pon-contract-036fg",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-denoise-read-counts -I /tmp/fastgatk-pon-contract-036fg5dd/normal-1.tsv --count-panel-of-normals /tmp/fastgatk-pon-contract-036fg"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 643223552,
+        "peak_vm_hwm_bytes": 643223552,
+        "wall_clock_seconds_sum": 18.373,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CreateReadCountPane",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar DenoiseReadCounts -"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"eigensamples\": 2, \"input_samples\": 3, \"intervals\": 12, \"java_reader\": true, \"native_reader\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_create_read_count_panel_of_normals_degenerate_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.912,
+      "wall_clock_seconds": 5.912,
+      "peak_rss_bytes": 597536768,
+      "peak_vm_hwm_bytes": 597536768,
+      "cpu_time_seconds": 902.652,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 12496896,
+        "peak_vm_hwm_bytes": 12496896,
+        "wall_clock_seconds_sum": 0.038,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-create-read-count-panel-of-normals -I /tmp/fastgatk-pon-degenerate-4eazravy/normal-1.tsv -I /tmp/fastgatk-pon-degenerate-4eazravy"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 597536768,
+        "peak_vm_hwm_bytes": 597536768,
+        "wall_clock_seconds_sum": 5.849,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CreateReadCountPane"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"boundary\": \"multi-sample zero-singular-value SVD\", \"gatk_version\": \"4.6.2.0\", \"input_samples\": 3, \"java_rejected\": true, \"native_rejected\": true, \"output_absent_after_rejection\": true, \"requested_eigensamples\": 1, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_create_read_count_panel_of_normals_sample_metadata_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 4.757,
+      "wall_clock_seconds": 4.757,
+      "peak_rss_bytes": 443285504,
+      "peak_vm_hwm_bytes": 443285504,
+      "cpu_time_seconds": 890.717,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 15032320,
+        "peak_vm_hwm_bytes": 15032320,
+        "wall_clock_seconds_sum": 0.041,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-create-read-count-panel-of-normals -I /tmp/fastgatk-pon-sample-metadata-wip6g3t4/normal-1.tsv -I /tmp/fastgatk-pon-sample-metadat"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 443285504,
+        "peak_vm_hwm_bytes": 443285504,
+        "wall_clock_seconds_sum": 4.685,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar CreateReadCountPane"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"input_samples\": 3, \"java_sample_filename_alignment\": true, \"metadata\": \"absolute-input-paths-in-original-and-panel-arrays\", \"native_sample_filename_alignment\": true, \"requested_eigensamples\": 0, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_pon_gatk_bundled_byte_structure_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 0.17,
+      "wall_clock_seconds": 0.17,
+      "peak_rss_bytes": 0,
+      "peak_vm_hwm_bytes": 0,
+      "cpu_time_seconds": 884.423,
+      "max_rss_kb_children_rusage": 658736,
+      "processes_seen": 0,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "es\": [\n    2.4314872405958026,\n    0.3040173686926201\n  ],\n  \"panel_eigensamples_shape\": [\n    2,\n    90\n  ],\n  \"original_intervals_shape\": [\n    3,\n    100\n  ],\n  \"original_read_counts_shape\": [\n    2,\n    100\n  ],\n  \"panel_sample_count\": 2,\n  \"original_sample_count\": 2,\n  \"sequence_dict_sha256_16\": \"604e04600e644864\",\n  \"truncated_ref_dict_matches\": true,\n  \"b4_pon_byte_parity_recorded\": true\n}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

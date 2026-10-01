@@ -76,4 +76,25 @@ SmithWatermanBatchResult smith_waterman_score_kokkos(
     SmithWatermanParameters parameters = {},
     SmithWatermanOverhangStrategy overhang = SmithWatermanOverhangStrategy::Softclip);
 
+// Kokkos batch score + traceback + CIGAR.  Backed by a single parallel DP
+// fill over the request set: the affine DP matrix and its backtrack matrix
+// live in Kokkos Views, and only the variable-length CIGAR traceback walk
+// runs on Host after a deep_copy.  Equivalent to calling
+// `smith_waterman_align_reference` on every request but avoids the
+// per-request `std::vector::assign(rows*cols, 0)` allocation that the
+// scalar traceback uses, so the per-request overhead drops from O(mn) of
+// `memset(0)` and reallocation to a single Kokkos View deep_copy.
+//
+// Score `result.scores[i]` is bit-identical to what
+// `smith_waterman_align_reference(...)` returns for request `i`.  CIGAR and
+// alignment offsets follow GATK's `SmithWatermanJavaAligner` tie policy:
+// diagonal >= right/down, then right >= down, then tie-broken by the
+// closest-to-diagonal endpoint.
+//
+// Bounded by `requests.size() <= std::numeric_limits<std::uint32_t>::max()`.
+std::vector<SmithWatermanAlignment> smith_waterman_align_kokkos(
+    const std::vector<SmithWatermanRequest>& requests,
+    SmithWatermanParameters parameters = {},
+    SmithWatermanOverhangStrategy overhang = SmithWatermanOverhangStrategy::Softclip);
+
 }  // namespace fastgatk::kernels

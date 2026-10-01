@@ -19,6 +19,13 @@ FIXTURE_MANIFEST = ROOT / "fastgatk-native/tests/pinned_fixture_digests.sha256"
 # one bounded oracle.  A missing entry is a hard audit failure, so adding a
 # registry tool cannot silently produce an un-evidenced progress report.
 TOOL_EVIDENCE: dict[str, tuple[str, ...]] = {
+    "Funcotator": (
+        "verify_funcotator_vcf_gatk_oracle.py",
+    ),
+    "VariantAnnotator": (
+        "verify_variant_annotator_resource_expression_gatk_oracle.py",
+        "verify_variant_annotator_coverage_gatk_oracle.py",
+    ),
     "HaplotypeCaller": (
         "verify_hc_broad_gatk_oracle.py", "verify_hc_streaming.py", "verify_hc_region_streaming.py",
         "verify_hc_assembly_region_boundary_gatk_oracle.py", "verify_hc_cigar_indel_activity_gatk_oracle.py",
@@ -277,8 +284,9 @@ def _tool_audits(registry: dict[str, dict[str, object]], gate_weights: dict[str,
             "fixture_digest": _fixture_digest(evidence),
             "fallback_reason": _fallback_reason(entry),
         })
-    if len(audits) != 48:
-        raise SystemExit(f"tool audit expected 48 entries, got {len(audits)}")
+    if len(audits) != len(TOOL_EVIDENCE):
+        raise SystemExit(
+            f"tool audit expected {len(TOOL_EVIDENCE)} entries, got {len(audits)}")
     return audits
 
 

@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "tool": "VariantEval",
+  "native_binary": "fastgatk-variant-eval",
+  "report_date": "2026-09-28",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 86.756,
+  "scripts": [
+    {
+      "name": "verify_variant_eval.py",
+      "exit_code": 0,
+      "elapsed_seconds": 28.86,
+      "wall_clock_seconds": 28.86,
+      "peak_rss_bytes": 485810176,
+      "peak_vm_hwm_bytes": 485810176,
+      "cpu_time_seconds": 7863.891,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 18,
+      "native": {
+        "peak_rss_bytes": 6873088,
+        "peak_vm_hwm_bytes": 6873088,
+        "wall_clock_seconds_sum": 0.124,
+        "process_count": 13,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-3jmji92l/eval.vcf -comp /tmp/fastgatk-variant-eval-3jmji92l/comp.vcf -L chr1:1-3 -O",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-3jmji92l/eval.vcf -comp /tmp/fastgatk-variant-eval-3jmji92l/comp.vcf -O /tmp/fastga",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-3jmji92l/span.eval.g.vcf -O /tmp/fastgatk-variant-eval-3jmji92l/span.report -L 17:4",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-3jmji92l/multi.eval.vcf -O /tmp/fastgatk-variant-eval-3jmji92l/variant-af.native.ga",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-3jmji92l/multi.eval.vcf -O /tmp/fastgatk-variant-eval-3jmji92l/theta.native.gatk.re",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval --list"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 485810176,
+        "peak_vm_hwm_bytes": 485810176,
+        "wall_clock_seconds_sum": 28.701,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"eval_records\": 3, \"overlap\": 2, \"indel_summary\": true, \"multiallelic_summary\": true, \"indel_length_histogram\": true, \"genotype_filter_summary\": true, \"print_missing_comp\": true, \"variant_af\": true, \"theta\": true, \"mendelian\": true, \"family\": true, \"novelty\": true, \"gatk_report\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_variant_eval_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 37.745,
+      "wall_clock_seconds": 37.745,
+      "peak_rss_bytes": 462745600,
+      "peak_vm_hwm_bytes": 462745600,
+      "cpu_time_seconds": 7898.286,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 14,
+      "native": {
+        "peak_rss_bytes": 6008832,
+        "peak_vm_hwm_bytes": 6008832,
+        "wall_clock_seconds_sum": 0.042,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-gatk-oracle-miy5dxw5/input.vcf -O /tmp/fastgatk-variant-eval-gatk-oracle-miy5dxw5/n",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-gatk-oracle-miy5dxw5/input.vcf -O /tmp/fastgatk-variant-eval-gatk-oracle-miy5dxw5/n",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-gatk-oracle-miy5dxw5/input.vcf -O /tmp/fastgatk-variant-eval-gatk-oracle-miy5dxw5/n",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-gatk-oracle-miy5dxw5/truncated.vcf -O /tmp/fastgatk-variant-eval-gatk-oracle-miy5dx"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 462745600,
+        "peak_vm_hwm_bytes": 462745600,
+        "wall_clock_seconds_sum": 37.663,
+        "process_count": 7,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 8192,
+        "peak_vm_hwm_bytes": 8192,
+        "wall_clock_seconds_sum": 0.01,
+        "process_count": 2,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\":\"pass\",\"gatk_version\":\"4.6.2.0\",\"count_variants_report_bytes\":true,\"sample_stratification_bytes\":true,\"evaluator_report_bytes\":{\"VariantAFEvaluator\":true,\"ThetaVariantEvaluator\":true,\"TiTvVariantEvaluator\":true},\"genotype_aware_count_variants\":true,\"sites_only_count_variants\":true,\"truncated_input_fail_closed\":true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_variant_eval_keep_ac0_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 10.091,
+      "wall_clock_seconds": 10.091,
+      "peak_rss_bytes": 474083328,
+      "peak_vm_hwm_bytes": 474083328,
+      "cpu_time_seconds": 7835.702,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 7,
+      "native": {
+        "peak_rss_bytes": 6021120,
+        "peak_vm_hwm_bytes": 6021120,
+        "wall_clock_seconds_sum": 0.114,
+        "process_count": 5,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-keep-ac0-n_7osrbh/input.vcf.gz -L 17:1-6 -O /tmp/fastgatk-variant-eval-keep-ac0-n_7",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-keep-ac0-n_7osrbh/input.vcf.gz -L 17:1-6 -O /tmp/fastgatk-variant-eval-keep-ac0-n_7",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-keep-ac0-n_7osrbh/input.vcf.gz -L 17:1-6 -O /tmp/fastgatk-variant-eval-keep-ac0-n_7",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-keep-ac0-n_7osrbh/input.vcf.gz -L 17:1-6 -O /tmp/fastgatk-variant-eval-keep-ac0-n_7",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-variant-eval-keep-ac0-n_7osrbh/input.vcf.gz -L 17:1-6 -O /tmp/fastgatk-variant-eval-keep-ac0-n_7"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 474083328,
+        "peak_vm_hwm_bytes": 474083328,
+        "wall_clock_seconds_sum": 9.939,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"status\":\"pass\",\"gatk_version\":\"4.6.2.0\",\"keep_ac0_countvariants_aggregate_report\":true,\"keep_ac0_native_aliases\":true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_variant_eval_validation_report_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 10.06,
+      "wall_clock_seconds": 10.06,
+      "peak_rss_bytes": 457236480,
+      "peak_vm_hwm_bytes": 457236480,
+      "cpu_time_seconds": 7820.822,
+      "max_rss_kb_children_rusage": 7255684,
+      "processes_seen": 6,
+      "native": {
+        "peak_rss_bytes": 6926336,
+        "peak_vm_hwm_bytes": 6926336,
+        "wall_clock_seconds_sum": 0.081,
+        "process_count": 4,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-validation-report-oracle-8iiukuy9/sites-ac.eval.vcf -comp /tmp/fastgatk-validation-report-oracle",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-variant-eval -eval /tmp/fastgatk-validation-report-oracle-8iiukuy9/genotypes.eval.vcf -comp /tmp/fastgatk-validation-report-oracl"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 457236480,
+        "peak_vm_hwm_bytes": 457236480,
+        "wall_clock_seconds_sum": 9.93,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar VariantEval -R /hom"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "rison_sample_subset\": true, \"duplicate_eval_locus_fail_closed\": true, \"filtered_records_excluded_upstream\": true, \"gatk_version\": \"4.6.2.0\", \"site_states\": [\"NO_CALL\", \"MONO\", \"POLY\"], \"status\": \"pass\", \"unsafe_stratification_fail_closed\": true, \"validation_report\": {\"genotypes\": {\"execution_space\": \"OpenMP\", \"report_bytes\": true}, \"sites_ac\": {\"execution_space\": \"OpenMP\", \"report_bytes\": true}}}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

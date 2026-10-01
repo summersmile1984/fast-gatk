@@ -1,0 +1,23 @@
+== 16:29:07 fastgatk-native/build/fastgatk-mark-duplicates -I public_pipeline/NA12878.chr20.10M-11M.bam -O public_pipeline/pipeline_v4/native/mkdup/out.bam --metrics-file public_pipeline/pipeline_v4/native/mkdup/metrics.txt
+   wall: 1s
+== 16:29:08 fastgatk-native/build/fastgatk-bqsr -I public_pipeline/pipeline_v4/native/mkdup/out.bam -R testdata/downloads/reference/hs37d5.fa.gz --known-sites testdata/real/1000g_phase3/1000G.phase3.broad.withGenotypes.chr20.10100000.vcf.gz --known-sites testdata/real/mills_indels/Mills_and_1000G_gold_standard.indels.b37.sites.chr20.vcf.gz -O public_pipeline/pipeline_v4/native/bqsr/recal.txt
+   wall: 10s
+== 16:29:18 fastgatk-native/build/fastgatk-apply-bqsr -I public_pipeline/pipeline_v4/native/mkdup/out.bam --bqsr-recal-file public_pipeline/pipeline_v4/native/bqsr/recal.txt -O public_pipeline/pipeline_v4/native/applied/out.bam
+   wall: 5s
+== 16:29:23 fastgatk-native/build/fastgatk-hc-call -I public_pipeline/pipeline_v4/native/applied/out.bam -R testdata/downloads/reference/hs37d5.fa.gz -L 20:10000001-11000000 --gvcf -O public_pipeline/pipeline_v4/native/hc/out.g.vcf.gz
+   wall: 58s
+== 16:30:21 fastgatk-native/build/fastgatk-genotype-gvcf -V public_pipeline/pipeline_v4/native/hc/out.g.vcf.gz -R testdata/downloads/reference/hs37d5.fa.gz -O public_pipeline/pipeline_v4/native/gt/out.vcf.gz
+   wall: 1s
+== 16:30:22 gatk MarkDuplicates -I public_pipeline/NA12878.chr20.10M-11M.bam -O public_pipeline/pipeline_v4/gatk/mkdup.bam -M public_pipeline/pipeline_v4/gatk/mkdup_metrics.txt
+   wall: 5s
+== 16:30:27 gatk BaseRecalibrator -I public_pipeline/pipeline_v4/gatk/mkdup.bam -R testdata/downloads/reference/hs37d5.fa.gz --known-sites testdata/real/1000g_phase3/1000G.phase3.broad.withGenotypes.chr20.10100000.vcf.gz --known-sites testdata/real/mills_indels/Mills_and_1000G_gold_standard.indels.b37.sites.chr20.vcf.gz -O public_pipeline/pipeline_v4/gatk/recal.txt
+   wall: 9s
+== 16:30:36 gatk ApplyBQSR -I public_pipeline/pipeline_v4/gatk/mkdup.bam --bqsr-recal-file public_pipeline/pipeline_v4/gatk/recal.txt -O public_pipeline/pipeline_v4/gatk/applied.bam
+   wall: 5s
+== 16:30:41 gatk HaplotypeCaller -I public_pipeline/pipeline_v4/gatk/applied.bam -R testdata/downloads/reference/hs37d5.fa.gz -L 20:10000001-11000000 -ERC GVCF -O public_pipeline/pipeline_v4/gatk/full.g.vcf.gz
+   wall: 9s
+== 16:30:50 gatk GenotypeGVCFs -R testdata/downloads/reference/hs37d5.fa.gz -V public_pipeline/pipeline_v4/gatk/full.g.vcf.gz -O public_pipeline/pipeline_v4/gatk/full.vcf.gz
+   wall: 6s
+== 16:30:56 gatk HaplotypeCaller -I public_pipeline/pipeline_v4/native/mkdup/out.bam -R testdata/downloads/reference/hs37d5.fa.gz -L 20:10000001-11000000 -ERC GVCF -O public_pipeline/pipeline_v4/diag/gatk_on_native_mkdup.g.vcf.gz
+   wall: 9s
+ALL DONE

@@ -1188,6 +1188,12 @@ def dispatch(registry: Registry, parsed: Parsed) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
+    # OpenMP spin budget: libgomp's default spin count burns CPU at
+    # barrier-heavy kernels (DREAM somatic: 33 CPU-s vs 19 at spin5000, for
+    # ~10% wall).  libgomp parses GOMP_SPINCOUNT at startup, so the launcher
+    # must set it before exec; an explicit user setting always wins.  See
+    # fastgatk-native/docs/resource-parity.md for the measured frontier.
+    os.environ.setdefault("GOMP_SPINCOUNT", "5000")
     try:
         expanded = expand_argument_files(raw)
         registry = load_registry()

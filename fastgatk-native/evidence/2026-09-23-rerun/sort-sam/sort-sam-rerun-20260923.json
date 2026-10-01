@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "tool": "SortSam",
+  "native_binary": "fastgatk-sort-sam",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 4,
+  "scripts_passed": 4,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 41.845,
+  "scripts": [
+    {
+      "name": "verify_sort_sam.py",
+      "exit_code": 0,
+      "elapsed_seconds": 11.61,
+      "wall_clock_seconds": 11.61,
+      "peak_rss_bytes": 284114944,
+      "peak_vm_hwm_bytes": 284114944,
+      "cpu_time_seconds": 6807.353,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 3891200,
+        "peak_vm_hwm_bytes": 3891200,
+        "wall_clock_seconds_sum": 0.01,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-sort-sam -I /tmp/fastgatk-sort-sam-t47j9m_l/input.sam -O /tmp/fastgatk-sort-sam-t47j9m_l/sorted.sam --sort-order coordinate --max",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-sort-sam -I /tmp/fastgatk-sort-sam-t47j9m_l/input.sam -O /tmp/fastgatk-sort-sam-t47j9m_l/invalid-index.bam --create-output-bam-in"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 284114944,
+        "peak_vm_hwm_bytes": 284114944,
+        "wall_clock_seconds_sum": 11.565,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 16384000,
+        "peak_vm_hwm_bytes": 16384000,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/usr/bin/python3 /home/turing-agents/Documents/fast-gatk/fastgatk-native/scripts/verify_sort_sam.py"
+        ]
+      },
+      "stdout_tail": "{\"status\": \"pass\", \"records\": 4, \"spill_runs\": 2, \"indexed\": true, \"picard_oracle\": true}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_sort_sam_cli_boundary_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 1.318,
+      "wall_clock_seconds": 1.318,
+      "peak_rss_bytes": 282562560,
+      "peak_vm_hwm_bytes": 282562560,
+      "cpu_time_seconds": 6795.806,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 1,
+      "native": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "java": {
+        "peak_rss_bytes": 282562560,
+        "peak_vm_hwm_bytes": 282562560,
+        "wall_clock_seconds_sum": 1.284,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam --IN"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"compression_level\": 0, \"create_index\": false, \"gatk_version\": \"4.6.2.0\", \"picard_aliases\": true, \"record_order_exact\": true, \"sort_order\": \"coordinate\", \"status\": \"pass\", \"validation_stringency\": \"SILENT\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_sort_sam_duplicate_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.397,
+      "wall_clock_seconds": 5.397,
+      "peak_rss_bytes": 271974400,
+      "peak_vm_hwm_bytes": 271974400,
+      "cpu_time_seconds": 6799.94,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 2,
+      "native": {
+        "peak_rss_bytes": 843776,
+        "peak_vm_hwm_bytes": 843776,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-sort-sam -I /tmp/fastgatk-sort-sam-duplicate-afol8xwa/input.sam -O /tmp/fastgatk-sort-sam-duplicate-afol8xwa/native.sam -SO dupli"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 271974400,
+        "peak_vm_hwm_bytes": 271974400,
+        "wall_clock_seconds_sum": 5.368,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"records\": 12, \"sort_order\": \"duplicate\", \"spill_runs\": 4, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    },
+    {
+      "name": "verify_sort_sam_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 23.52,
+      "wall_clock_seconds": 23.52,
+      "peak_rss_bytes": 282525696,
+      "peak_vm_hwm_bytes": 282525696,
+      "cpu_time_seconds": 6820.52,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 5,
+      "native": {
+        "peak_rss_bytes": 2277376,
+        "peak_vm_hwm_bytes": 2277376,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-sort-sam -I /tmp/fastgatk-sort-sam-gatk-oracle-j5_wemvr/input.sam -O /tmp/fastgatk-sort-sam-gatk-oracle-j5_wemvr/index-default.na"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 282525696,
+        "peak_vm_hwm_bytes": 282525696,
+        "wall_clock_seconds_sum": 18.072,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -Xmx1g -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar SortSam -I /"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 268189696,
+        "peak_vm_hwm_bytes": 268189696,
+        "wall_clock_seconds_sum": 5.418,
+        "process_count": 1,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"create_index_default\": false, \"create_index_explicit\": true, \"gatk_version\": \"4.6.2.0\", \"sort_orders\": [\"coordinate\", \"queryname\"], \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

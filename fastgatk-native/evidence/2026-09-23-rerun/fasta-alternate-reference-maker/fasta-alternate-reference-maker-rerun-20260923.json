@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "tool": "FastaAlternateReferenceMaker",
+  "native_binary": "fastgatk-fasta-alternate-reference-maker",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 13.385,
+  "scripts": [
+    {
+      "name": "verify_fasta_alternate_iupac_hom_gatk_oracle.py",
+      "exit_code": 0,
+      "elapsed_seconds": 13.385,
+      "wall_clock_seconds": 13.385,
+      "peak_rss_bytes": 376631296,
+      "peak_vm_hwm_bytes": 376631296,
+      "cpu_time_seconds": 949.132,
+      "max_rss_kb_children_rusage": 660440,
+      "processes_seen": 3,
+      "native": {
+        "peak_rss_bytes": 462848,
+        "peak_vm_hwm_bytes": 462848,
+        "wall_clock_seconds_sum": 0.005,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-fasta-alternate-reference-maker -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/human_g1k_v37.chr17_1Mb"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 376631296,
+        "peak_vm_hwm_bytes": 376631296,
+        "wall_clock_seconds_sum": 13.343,
+        "process_count": 2,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar IndexFeatureFile -I",
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar FastaAlternateRefer"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"gatk_version\": \"4.6.2.0\", \"genotypes\": [\"2/2\", \"1/1\", \"0/0\"], \"homozygous_iupac_selected_allele_exact\": true, \"multi_alt_hom_alt2_regression\": true, \"status\": \"pass\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "tool": "ShiftFasta",
+  "native_binary": "fastgatk-shift-fasta",
+  "report_date": "2026-09-23",
+  "report_kind": "verify-rerun",
+  "scripts_total": 1,
+  "scripts_passed": 1,
+  "scripts_failed": 0,
+  "scripts_skipped": 0,
+  "total_elapsed_seconds": 5.814,
+  "scripts": [
+    {
+      "name": "verify_shift_fasta.py",
+      "exit_code": 0,
+      "elapsed_seconds": 5.814,
+      "wall_clock_seconds": 5.814,
+      "peak_rss_bytes": 365658112,
+      "peak_vm_hwm_bytes": 365658112,
+      "cpu_time_seconds": 6791.643,
+      "max_rss_kb_children_rusage": 7253508,
+      "processes_seen": 4,
+      "native": {
+        "peak_rss_bytes": 6344704,
+        "peak_vm_hwm_bytes": 6344704,
+        "wall_clock_seconds_sum": 0.021,
+        "process_count": 3,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-shift-fasta -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/org/broadinstitute/hellbender/tools/mutect/",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-shift-fasta -R /home/turing-agents/Documents/fast-gatk/gatk-source/src/test/resources/exampleFASTA.fasta -O /tmp/fastgatk-shift-f",
+          "/home/turing-agents/Documents/fast-gatk/fastgatk-native/build/fastgatk-shift-fasta -R /tmp/fastgatk-shift-fasta-fbcy63uu/example.shifted.fasta -O /tmp/fastgatk-shift-fasta-fbcy63uu/example.reshifted.f"
+        ]
+      },
+      "java": {
+        "peak_rss_bytes": 365658112,
+        "peak_vm_hwm_bytes": 365658112,
+        "wall_clock_seconds_sum": 5.77,
+        "process_count": 1,
+        "sample_cmdlines": [
+          "/home/turing-agents/Documents/fast-gatk/third_party/jdk17/bin/java -jar /home/turing-agents/Documents/fast-gatk/third_party/gatk-package/gatk-4.6.2.0/gatk-package-4.6.2.0-local.jar ShiftFasta -R /home"
+        ]
+      },
+      "other": {
+        "peak_rss_bytes": 0,
+        "peak_vm_hwm_bytes": 0,
+        "wall_clock_seconds_sum": 0.0,
+        "process_count": 0,
+        "sample_cmdlines": []
+      },
+      "stdout_tail": "{\"java_oracle\": true, \"status\": \"pass\", \"tool\": \"ShiftFasta\"}\n",
+      "stderr_tail": "",
+      "passed": true,
+      "timed_out": false,
+      "skipped": false,
+      "resource_sampled": true
+    }
+  ]
+}
